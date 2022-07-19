@@ -8,6 +8,8 @@ class ExponentialIncrementalSequence(BaseSamplingSchedule):
 
     Attributes
     ----------
+    __type: SAMPLING_SCHEDULE.EXPONENTIAL_INCREMENTAL_SEQUENCE
+        Exponential incremental sequence sampling schedule
     __n_shots : int
         Number of circuit shots for each m
     __seq_length : int

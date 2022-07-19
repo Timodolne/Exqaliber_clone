@@ -12,6 +12,11 @@ class Depolarising(BaseNoiseModel):
     __type : NOISE_MODEL.DEPOLARISING
         Depolarising noise model type
 
+    Methods
+    -------
+    get_p()
+        Get the probability that the state depolarises
+
     '''
 
     def __init__(self, p: float):

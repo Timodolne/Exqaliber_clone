@@ -8,6 +8,8 @@ class LinearIncrementalSequence(BaseSamplingSchedule):
 
     Attributes
     ----------
+    __type: SAMPLING_SCHEDULE.LINEAR_INCREMENTAL_SEQUENCE
+        Linear incremental sequence sampling schedule
     __n_shots : int
         Number of circuit shots for each m
     __seq_length : int
