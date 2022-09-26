@@ -13,7 +13,7 @@ class WrappedNormal(CircularDistributionBase):
     Concentration parameter, \sigma > 0
     
     This distribution is obtained by wrapping a 1-d Gaussian around the unit circle and adding up all probability mass that is 
-    wrapped to the same point
+    wrapped to the same point. It is closed under convolutions but not under pointwise multiplication. 
 
     Attributes
     ----------

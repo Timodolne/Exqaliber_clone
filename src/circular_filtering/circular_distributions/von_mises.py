@@ -11,8 +11,8 @@ class VonMises(CircularDistributionBase):
     Location parameter, \mu \in S^1, 
     Concentration parameter, \kappa > 0
     
-    This distribution is obtained by wrapping a 1-d Gaussian around the unit circle and adding up all probability mass that is 
-    wrapped to the same point
+    This distribution has the maximal entropy for a fixed location and scale. It is closed under
+    pointwise multiplication of densities but not convolutions.
 
     Attributes
     ----------
