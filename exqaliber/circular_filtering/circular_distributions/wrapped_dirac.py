@@ -1,5 +1,7 @@
 import numpy as np
-from .circular_distribution_base import CircularDistributionBase, CIRCULAR_DISTRIBUTION
+
+from .circular_distribution_base import (CIRCULAR_DISTRIBUTION,
+                                         CircularDistributionBase)
 
 
 class WrappedDirac(CircularDistributionBase):

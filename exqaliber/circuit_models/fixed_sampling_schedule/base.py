@@ -1,7 +1,8 @@
-import numpy as np
-
 from abc import ABC, abstractmethod
 from enum import Enum
+
+import numpy as np
+
 
 class SAMPLING_SCHEDULE(Enum):
     LINEAR_INCREMENTAL_SEQUENCE = 0

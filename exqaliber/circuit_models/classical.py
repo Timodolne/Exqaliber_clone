@@ -1,11 +1,16 @@
-import numpy as np
 import unittest
 
-from src.circuit_models.fixed_sampling_schedule.eis import ExponentialIncrementalSequence
-from src.circuit_models.fixed_sampling_schedule.lis import LinearIncrementalSequence
-from src.circuit_models.fixed_sampling_schedule.base import BaseSamplingSchedule 
+import numpy as np
+
+from src.circuit_models.fixed_sampling_schedule.base import \
+    BaseSamplingSchedule
+from src.circuit_models.fixed_sampling_schedule.eis import \
+    ExponentialIncrementalSequence
+from src.circuit_models.fixed_sampling_schedule.lis import \
+    LinearIncrementalSequence
 from src.circuit_models.noise_model.base import NOISE_MODEL, BaseNoiseModel
 from src.circuit_models.noise_model.noiseless import Noiseless
+
 
 class ClassicalAmplitudeEstimation():
     '''Classical analytic simulation of amplitude (or phase) estimation circuit

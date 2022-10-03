@@ -2,6 +2,7 @@ import unittest
 
 from src.circuit_models.noise_model.base import NOISE_MODEL, BaseNoiseModel
 
+
 class Depolarising(BaseNoiseModel):
     '''Depolarising noise
     

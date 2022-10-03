@@ -1,7 +1,10 @@
-import numpy as np
 import unittest
 
-from src.circuit_models.fixed_sampling_schedule.base import BaseSamplingSchedule, SAMPLING_SCHEDULE
+import numpy as np
+
+from src.circuit_models.fixed_sampling_schedule.base import (
+    SAMPLING_SCHEDULE, BaseSamplingSchedule)
+
 
 class ExponentialIncrementalSequence(BaseSamplingSchedule):
     '''Fixed sampling method class

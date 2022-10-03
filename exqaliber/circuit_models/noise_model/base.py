@@ -1,6 +1,7 @@
 from abc import ABC
 from enum import Enum
 
+
 class NOISE_MODEL(Enum):
     NOISELESS = 0
     DEPOLARISING = 1

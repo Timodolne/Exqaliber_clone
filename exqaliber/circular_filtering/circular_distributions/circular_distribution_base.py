@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from enum import Enum
+
 import numpy as np
+
 
 class CIRCULAR_DISTRIBUTION(Enum):
     WRAPPED_NORMAL = 0
