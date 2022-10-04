@@ -1,1 +1,1 @@
-"""Module for sequential quantum amplitude estimation algorithms"""
+"""Module for sequential quantum amplitude estimation algorithms."""

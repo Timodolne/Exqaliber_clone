@@ -1,1 +1,1 @@
-"""Update using an approximate distribution of the posterior"""
+"""Update using an approximate distribution of the posterior."""

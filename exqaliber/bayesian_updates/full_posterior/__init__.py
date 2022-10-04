@@ -1,1 +1,1 @@
-"""Update using the true distribution of the posterior"""
+"""Update using the true distribution of the posterior."""

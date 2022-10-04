@@ -1,1 +1,1 @@
-"""Circular distribution approximations and tools"""
+"""Circular distribution approximations and tools."""

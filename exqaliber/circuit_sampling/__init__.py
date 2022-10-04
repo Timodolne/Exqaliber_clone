@@ -1,1 +1,1 @@
-"""Quantum and classical models for the sampling step"""
+"""Quantum and classical models for the sampling step."""

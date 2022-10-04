@@ -1,1 +1,1 @@
-"""Techniques for the Bayesian update step"""
+"""Techniques for the Bayesian update step."""
