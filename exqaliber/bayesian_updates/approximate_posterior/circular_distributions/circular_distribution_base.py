@@ -9,10 +9,10 @@ class CIRCULAR_DISTRIBUTION(Enum):
     VON_MISES = 1
     WRAPPED_DIRAC = 2
     WRAPPED_DIRICHLET = 3
-    
+
 
 class CircularDistributionBase(ABC):
-    '''Abstract base class for circular distributions
+    r'''Abstract base class for circular distributions.
 
     Attributes
     ----------
@@ -21,44 +21,26 @@ class CircularDistributionBase(ABC):
     __parameters: dict[str, float | np.ndarray]
         Parameters that uniquely define the distribution
 
-    Methods
-    -------
-    get_circular_variance()
-        Get the circular variance of the distribution
-    get_circular_standard_deviation()
-        Get the circular variance of the distribution
-    get_circular_dispersion()
-        Gets the circular dispersion of the distribution
-    get_type()
-        Gets the type of the distribution
-    get_parameters()
-        Gets the parameters that uniquely define the distribution
-
-    Abstract Methods
-    ----------------
-    sample(n)
-        Get n samples from the distribution
-    get_circular_moment(n)
-        Get the nth circular moment of the distribution
     '''
 
     def __init__(self, distribution : CIRCULAR_DISTRIBUTION, parameters : dict[str, float | np.ndarray]):
-        '''
+        r'''
         Parameters
         ----------
-        __type : CIRCULAR_DISTRIBUTION
+        distribution : CIRCULAR_DISTRIBUTION
             Type of the distribution
-        __parameters: dict[str, float | np.ndarray]
+        parameters: dict[str, float | np.ndarray]
             Parameters that uniquely define the distribution
+
         '''
 
         self.__type = distribution
         self.__parameters = parameters
-        
+
     @abstractmethod
     def sample(self, n : int = 10) -> np.ndarray:
-        '''Get n samples from the distribution
-        
+        r'''Get n samples from the distribution
+
         Parameters
         ----------
         n : int, optional
@@ -67,81 +49,90 @@ class CircularDistributionBase(ABC):
         Returns
         -------
         np.ndarray(n, np.float)
-            Returns n samples from the distribution. Takes values in [0, 2\pi)
+            Returns n samples from the distribution. Takes values in
+            [0, 2*pi)
+
         '''
 
         pass
 
     @abstractmethod
     def get_circular_moment(self, n : int = 1) -> complex:
-        '''Get the nth circular moment of the distribution
-        
+        r'''Get the nth circular moment of the distribution.
+
         Parameters
         ----------
         n : int
             nth moment. n > 0
-        
+
         Returns
         -------
-        complex : 
-            \mathbb{E}[inX]
+        complex
+            E[1j*nX]
+
         '''
 
         pass
 
 
     def get_circular_variance(self) -> float:
-        '''Get the circular variance of the distribution
-        
+        r'''Get the circular variance of the distribution.
+
         Returns
         -------
-        float : 
-            Circular variance = 1 - |m_1|, for m_1 the circular mean
+        float
+            Circular variance = 1 - abs(m1), for m1 the circular mean
+
         '''
 
         return 1 - abs(self.get_circular_moment())
-    
+
     def get_circular_standard_deviation(self) -> float:
-        '''Gets the circular standard deviation of the distribution
+        r'''Gets the circular standard deviation of the distribution.
 
         Returns
         -------
-        float :
-            Circular standard variance \sqrt{\log(1 / |m_1|^2)}, for m_1 the circular mean        
+        float
+            Circular standard variance sqrt{log(1 / abs(m1)^2)}, for m1
+            the circular mean
+
         '''
 
         return np.sqrt(-2*np.log(abs(self.get_circular_moment())))
-    
+
     def get_circular_dispersion(self) -> float:
-        '''Gets the circular dispersion of the distribution
+        r'''Gets the circular dispersion of the distribution.
 
         Returns
         -------
-        float : 
-            Circular disperson \delta = \frac{1 - |m_2|}{2|m_2|^2}
+        float
+            Circular dispersion delta = (1 - abs(m2))/(2*abs(m2)^2)
+
         '''
 
         return (1 - self.get_circular_moment(2))/(2* self.get_circular_moment()**2)
 
     def get_type(self) -> CIRCULAR_DISTRIBUTION:
-        '''Gets the type of the distribution
+        r'''Gets the type of the distribution.
 
         Returns
         -------
-        CIRCULAR_DISTRIBUTION : 
+        CIRCULAR_DISTRIBUTION
             The type of the distribution
+
         '''
 
         return self.__type
-    
+
     def get_parameters(self) -> dict[str, float | np.ndarray]:
-        '''Get the parameters that uniquely define the distribution
-        
+        r'''Get the parameters that uniquely define the distribution
+
         Returns
         -------
-        dict[str, float | np.ndarray] : 
-            Parameters that uniquely define the distribution e.g. 
-            WN(\mu, \sigma), VM(\mu, \kappa), WD(\boldsymbol\gamma, \boldsymbol\beta)
+        dict[str, float | np.ndarray]
+            Parameters that uniquely define the distribution e.g.
+            WN(mu, sigma), VM(mu,kappa), WD(gamma,beta)
+
         '''
 
         return self.__parameters

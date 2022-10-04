@@ -10,12 +10,12 @@ class SAMPLING_SCHEDULE(Enum):
 
 class BaseSamplingSchedule(ABC):
     '''Abstract base class for sampling schedules
-    
+
     Attributes
     ----------
     __type : SAMPLING_SCHEDULE
         Sampling schedule scheme
-    
+
     Methods
     -------
     get_type()
@@ -31,15 +31,15 @@ class BaseSamplingSchedule(ABC):
         sampling_schedule : SAMPLING_SCHEDULE
             Sampling schedule scheme
         '''
-        
+
         self.__type = sampling_schedule
-    
+
     def get_type(self) -> SAMPLING_SCHEDULE:
         '''Get the type of the sampling schedule
-        
+
         Returns
         -------
-        SAMPLING_SCHEDULE: 
+        SAMPLING_SCHEDULE:
             type of the sampling schedule
         '''
 

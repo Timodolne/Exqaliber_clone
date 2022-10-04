@@ -35,6 +35,10 @@ coverage-badge = "^1.1.0"
 pytest-html = "^3.1.1"
 pytest-cov = "^3.0.0"
 Sphinx = "^5.2.1"
+sphinx-autodoc-typehints = "^1.19.4"
+
+[tool.poetry.group.dev-dependencies.dependencies]
+numpydoc = "^1.4.0"
 
 [tool.black]
 # https://github.com/psf/black

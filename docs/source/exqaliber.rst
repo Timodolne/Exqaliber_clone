@@ -3,8 +3,9 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
+.. currentmodule:: exqaliber
 
-Exqaliber Documentation
+Bayesian Updates
 ==============================================
 
 Contents:
@@ -12,13 +13,10 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
-   readme
-   getting-started
-   exqaliber
+.. autosummary::
+   :toctree: _autosummary
+   :recursive:
 
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+   bayesian_updates
+   circuit_sampling
+   sampling_schedule
