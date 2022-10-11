@@ -5,7 +5,7 @@ default_context:
   project_description: "Sequential amplitude estimation algorithms."
   organization: "Cambridge Consultants"
   license: "MIT"
-  minimal_python_version: 3.7
+  minimal_python_version: 3.10
   github_name: "jlt3"
   email: "joseph.tedds@cambridgeconsultants.com"
   version: "0.1.0"
