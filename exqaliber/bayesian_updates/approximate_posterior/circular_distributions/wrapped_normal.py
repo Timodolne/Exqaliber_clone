@@ -45,7 +45,7 @@ class WrappedNormal(CircularDistributionBase):
         self.mu = np.mod(mu, 2 * np.pi)
         self.sigma = abs(sigma)
 
-        super.__init__(
+        super().__init__(
             CIRCULAR_DISTRIBUTION.WRAPPED_NORMAL,
             {"mu": self.mu, "sigma": self.sigma},
         )

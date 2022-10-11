@@ -46,7 +46,7 @@ class WrappedDirac(CircularDistributionBase):
             beta.shape == gamma.shape
         ), "Beta and Gamma should have the same length"
 
-        super.__init__(
+        super().__init__(
             CIRCULAR_DISTRIBUTION.WRAPPED_DIRAC,
             {"beta": self.beta, "gamma": self.gamma},
         )

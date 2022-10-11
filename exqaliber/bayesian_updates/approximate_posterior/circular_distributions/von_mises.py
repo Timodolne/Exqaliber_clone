@@ -44,7 +44,7 @@ class VonMises(CircularDistributionBase):
         self.mu = np.mod(mu, 2 * np.pi)
         self.kappa = abs(kappa)
 
-        super.__init__(
+        super().__init__(
             CIRCULAR_DISTRIBUTION.VON_MISES,
             {"mu": self.mu, "kappa": self.kappa},
         )
