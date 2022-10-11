@@ -1,5 +1,6 @@
 """Implementation of von Mises distribution."""
 import numpy as np
+from scipy.stats import vonmises
 
 from .circular_distribution_base import (
     CIRCULAR_DISTRIBUTION,
@@ -99,7 +100,7 @@ class VonMises(CircularDistributionBase):
             [0, 2*pi)
 
         """
-        raise NotImplementedError
+        return vonmises.rvs(self.kappa, self.mu, size=n)
 
     @staticmethod
     def get_bessel_ratio(x: float, v: int = 0, N: int = 10) -> float:
