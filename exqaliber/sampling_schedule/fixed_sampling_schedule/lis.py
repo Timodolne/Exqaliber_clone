@@ -1,10 +1,7 @@
 """Implementation of a linear sampling schedule."""
 import numpy as np
 
-from exqaliber.sampling_schedule.fixed_sampling_schedule.base import (
-    SAMPLING_SCHEDULE,
-    BaseSamplingSchedule,
-)
+from .base import SAMPLING_SCHEDULE, BaseSamplingSchedule
 
 
 class LinearIncrementalSequence(BaseSamplingSchedule):
