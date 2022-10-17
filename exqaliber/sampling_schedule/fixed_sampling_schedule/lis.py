@@ -66,4 +66,4 @@ class LinearIncrementalSequence(BaseSamplingSchedule):
                 np.arange(self.__seq_length + 1),
                 self.__n_shots * np.ones(self.__seq_length + 1),
             )
-        ).transpose()
+        ).transpose().astype(int)

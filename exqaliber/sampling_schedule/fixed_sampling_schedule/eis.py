@@ -67,5 +67,6 @@ class ExponentialIncrementalSequence(BaseSamplingSchedule):
                     (np.zeros(1), np.exp2(np.arange(self.__seq_length)))
                 ),
                 self.__n_shots * np.ones(self.__seq_length + 1),
-            )
-        ).transpose()
+            ),
+            
+        ).transpose().astype(int)
