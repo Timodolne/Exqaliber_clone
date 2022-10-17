@@ -5,6 +5,7 @@ from exqaliber.circuit_sampling.noise_model.base import (
     NOISE_MODEL,
     BaseNoiseModel,
 )
+from exqaliber.circuit_sampling.noise_model.depolarising import Depolarising
 from exqaliber.circuit_sampling.noise_model.noiseless import Noiseless
 from exqaliber.sampling_schedule.fixed_sampling_schedule.base import (
     BaseSamplingSchedule,
@@ -19,9 +20,6 @@ class ClassicalAmplitudeEstimation:
     theta : float
         theta such that A |0> = sin(theta)|psi_1>|1> +
         cos(theta)|psi_0>|0>
-    __noise_model : BaseNoiseModel
-        Noise model for the circuit
-
     """
 
     def __init__(
@@ -86,19 +84,24 @@ class ClassicalAmplitudeEstimation:
         """
         match self.__noise_model.get_type():
             case NOISE_MODEL.NOISELESS:
-                return self.sample(n_shots, alpha)
+                sample = self.sample(n_shots, alpha)
             case NOISE_MODEL.DEPOLARISING:
-                n_depolarised = np.random.binomial(
-                    n_shots, self.noise_model.get_p()
+                assert isinstance(self.__noise_model, Depolarising)
+
+                n_decohered_shots = np.random.binomial(
+                    n_shots, self.__noise_model.get_decoherence_probability()
                 )
-                return self.sample(
-                    n_shots - n_depolarised, alpha
-                ) + np.random.binomial(n_depolarised, 0.5)
+                n_coherent_shots = n_shots - n_decohered_shots
+
+                sample = self.sample(
+                    n_coherent_shots, alpha
+                ) + np.random.binomial(n_decohered_shots, 0.5)
             case _:
                 raise NotImplementedError(
-                    "Noise model not currently implemented for "
-                    + "classical sampling"
+                    f"{self.__noise_model.get_type()} Noise model not "
+                    "currently implemented for classical sampling"
                 )
+        return sample
 
     def sample_fixed_schedule(
         self, schedule: np.ndarray, use_noise_model: bool = True
@@ -124,10 +127,10 @@ class ClassicalAmplitudeEstimation:
             given schedule.
 
         """
-        return self.sample_with_noise(
-            schedule.get_sampling_schedule()[:, 1],
-            2 * schedule.get_sampling_schedule()[:, 0]
-            + np.ones(schedule.get_sampling_schedule()[:, 0].shape),
+        sample = self.sample_with_noise(
+            schedule.get_n_shots_schedule(),
+            2 * schedule.get_grover_depth_schedule()
+            + np.ones(schedule.get_grover_depth_schedule().shape),
         )
 
     def set_noise_model(self, noise_model: BaseNoiseModel) -> None:

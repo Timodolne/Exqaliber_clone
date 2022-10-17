@@ -43,6 +43,18 @@ class BaseSamplingSchedule(ABC):
         return self.__type
 
     @abstractmethod
-    def get_sampling_schedule(self) -> np.ndarray:
-        """Get the sampling schedule pairs (m_i, n_shots_i)."""
+    def get_n_shots_schedule(self) -> np.ndarray:
+        """Get the schedule for numbers of shots (n_0, n_1, ...)."""
         pass
+
+    @abstractmethod
+    def get_grover_depth_schedule(self) -> list[tuple[int, int]]:
+        """Get the schedule for Grover depth (m_0, m_1, ...)."""
+        pass
+
+    def get_sampling_schedule(self) -> list[tuple[int, int]]:
+        """Get the sampling schedule pairs (m_i, n_shots_i)."""
+        n_shots_seq = self.get_n_shots_schedule()
+        grover_depth_seq = self.get_grover_depth_schedule()
+
+        return np.vstack((grover_depth_seq, n_shots_seq)).transpose()
