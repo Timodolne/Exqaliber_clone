@@ -11,7 +11,7 @@ readme = "README.md"
 authors = ["Cambridge Consultants <joseph.tedds@cambridgeconsultants.com>"]
 
 [tool.poetry.dependencies]
-python = ">=3.10,<3.12"
+python = "^3.10"
 numpy = "^1.23.3"
 scikit-learn = "^1.1.2"
 scipy = ">1.6.1"
@@ -22,7 +22,7 @@ importlib_metadata = {version = "^4.5.0"}
 [tool.poetry.dev-dependencies]
 black = ">=22.6.0"
 isort = {extras = ["colors"], version = "^5.10.1"}
-mypy = "^0.910"
+mypy = ">0.910"
 mypy-extensions = "^0.4.3"
 numpydoc = "^1.4.0"
 pre-commit = "^2.20.0"
@@ -73,7 +73,7 @@ color_output = true
 
 [tool.mypy]
 # https://mypy.readthedocs.io/en/latest/config_file.html#using-a-pyproject-toml-file
-python_version = 3.7
+python_version = "3.10"
 pretty = true
 show_traceback = true
 color_output = true
