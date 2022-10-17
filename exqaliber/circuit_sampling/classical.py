@@ -60,7 +60,9 @@ class ClassicalAmplitudeEstimation:
             0.5 * (np.ones(alpha.size) - np.cos(2 * alpha * self.theta)),
         )
 
-    def sample_with_noise(self, n_shots: int, alpha: float):
+    def sample_with_noise(
+        self, n_shots: int, alpha: float
+    ):
         r"""Sample from amplitude estimation circuit with noise model.
 
         Parameters
@@ -110,7 +112,7 @@ class ClassicalAmplitudeEstimation:
         pass
 
     def sample_amplitude_estimation_predefined_schedule(
-        self, schedule: BaseSamplingSchedule
+        self, schedule: BaseSamplingSchedule, ordered: bool = False
     ):
         r"""Sample  amplitude estimation circuit with a given schedule.
 
@@ -119,6 +121,9 @@ class ClassicalAmplitudeEstimation:
         schedule : BaseSamplingSchedule
             A schedule for pairs (m_i, n_i) of applications of
             controlled unitary and number of shots respectively.
+        ordered: bool, optional
+            Get the measurements as a sequence of 1's and 0's ordered by
+            the given schedule, by default False
 
         Returns
         -------
@@ -132,6 +137,20 @@ class ClassicalAmplitudeEstimation:
             2 * schedule.get_grover_depth_schedule()
             + np.ones(schedule.get_grover_depth_schedule().shape),
         )
+
+        if ordered:
+            idx = 0
+            ordered_sample = np.zeros(schedule.get_n_shots_schedule().sum())
+
+            for i_ones, i_n_shots in zip(sample,schedule.get_n_shots_schedule()):
+                i_sample = np.concatenate((np.ones(i_ones),np.zeros(i_n_shots-i_ones)))
+                np.random.shuffle(i_sample)
+                ordered_sample[idx:idx+i_n_shots]=i_sample
+                idx += i_n_shots
+            
+            sample = ordered_sample.astype(int)
+
+        return sample
 
     def set_noise_model(self, noise_model: BaseNoiseModel) -> None:
         r"""Set noise model.
