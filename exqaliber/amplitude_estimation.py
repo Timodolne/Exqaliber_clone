@@ -1,6 +1,6 @@
 """Full process for amplitude estimation."""
 
-from bayesian_updates.approximate_posterior.circular_distributions.von_mises import (  # noqa E501
+from bayesian_updates.distributions.von_mises import (  # noqa E501
     VonMises,
 )
 from circuit_sampling.classical import ClassicalAmplitudeEstimation
