@@ -79,6 +79,16 @@ class CircularDistributionBase(ABC):
         """
         pass
 
+    def get_circular_mean(self) -> float:
+        """Get the circular mean of the distribution.
+
+        Returns
+        -------
+        float
+            E[1j*X]
+        """
+        return self.get_circular_moment(1)
+
     def get_circular_variance(self) -> float:
         r"""Get the circular variance of the distribution.
 
