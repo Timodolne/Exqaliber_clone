@@ -1,3 +1,2 @@
 [flake8]
-docstring-convention = "numpy"
 extend-ignore=["E203"]
