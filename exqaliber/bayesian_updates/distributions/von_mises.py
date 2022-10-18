@@ -64,11 +64,11 @@ class VonMises(CircularDistributionBase):
             E[1i*nX]
 
         """
-        return np.exp(1j * n * self.mu - ((n * self.sigma) ** 2 / 2))
+        return np.exp(1j * n * self.mu - ((n * self.kappa) ** 2 / 2))
 
     @staticmethod
     def generate_parameters_from_m1(m1: complex) -> tuple[float]:
-        """Generate values for parameters mu, sigma from m1.
+        """Generate values for parameters mu, kappa from m1.
 
         Parameters
         ----------
@@ -80,7 +80,7 @@ class VonMises(CircularDistributionBase):
         float :
             mu, location parameter in S^1
         float :
-            sigma, concentration parameter > 0
+            kappa, concentration parameter > 0
 
         """
         return np.arctan2(m1.imag, m1.real), np.sqrt(-2 * np.log(abs(m1)))

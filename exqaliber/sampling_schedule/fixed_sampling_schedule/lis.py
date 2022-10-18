@@ -19,7 +19,7 @@ class LinearIncrementalSequence(BaseSamplingSchedule):
     """
 
     def __init__(self, n_shots: int, seq_length: int):
-        """Initialise LInearIncrementalSequece.
+        """Initialise LinearIncrementalSequece.
 
         Parameters
         ----------
@@ -52,18 +52,23 @@ class LinearIncrementalSequence(BaseSamplingSchedule):
         """
         return self.__seq_length
 
-    def get_sampling_schedule(self) -> np.ndarray:
-        """Get the linear incremental sequence pairs.
+    def get_n_shots_schedule(self) -> np.ndarray:
+        """Get the schedule for numbers of shots (n_0, n_1, ...).
+
+        Returns
+        -------
+        np.ndarray :
+            Schedule for number of shots at each Grover depth
+        """
+        return self.__n_shots * np.ones(self.__seq_length + 1).astype(int)
+
+    def get_grover_depth_schedule(self) -> list[tuple[int, int]]:
+        """Get the schedule for Grover depth (m_0, m_1, ...).
 
         Returns
         -------
         np.ndarray((self.__seq_length + 1), 2) :
-            Pairs of (n_shots, m) for m = 0, ..., seq_length
-
+            Schedule for Grover depth,
+            (0,1,2,3,...,`self.__seq_length`-1)
         """
-        return np.vstack(
-            (
-                np.arange(self.__seq_length + 1),
-                self.__n_shots * np.ones(self.__seq_length + 1),
-            )
-        ).transpose().astype(int)
+        return np.arange(self.__seq_length + 1).astype(int)

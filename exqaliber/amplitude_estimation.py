@@ -1,12 +1,15 @@
 """Full process for amplitude estimation."""
 
-from bayesian_updates.approximate_posterior.circular_distributions.von_mises import VonMises
-from sampling_schedule.fixed_sampling_schedule.lis import LinearIncrementalSequence
+from bayesian_updates.distributions.von_mises import VonMises
 from circuit_sampling.classical import ClassicalAmplitudeEstimation
+from sampling_schedule.fixed_sampling_schedule.lis import (
+    LinearIncrementalSequence,
+)
 
-def prior_dist(mu: float = 0, kappa: float = 0.5):
+
+def prior_dist(mu: float = 0.2, kappa: float = 0.5):
     """Generate a prior distribution.
-    
+
     Parameters
     ----------
     mu : float, optional
@@ -16,7 +19,7 @@ def prior_dist(mu: float = 0, kappa: float = 0.5):
 
     Returns
     -------
-    VonMises : 
+    VonMises :
         von Mises distribution
     """
     return VonMises(mu, kappa)
@@ -24,8 +27,12 @@ def prior_dist(mu: float = 0, kappa: float = 0.5):
 
 if __name__ == "__main__":
     dist = prior_dist()
-    schedule = LinearIncrementalSequence(10,10)
-    circuit_sampling = ClassicalAmplitudeEstimation(0)
+    schedule = LinearIncrementalSequence(10, 10)
+    circuit_sampling = ClassicalAmplitudeEstimation(dist.get_circular_mean())
     print(dist.sample())
     print(schedule.get_sampling_schedule())
-    print(circuit_sampling.sample_amplitude_estimation_predefined_schedule(schedule))
+    print(
+        circuit_sampling.sample_amplitude_estimation_predefined_schedule(
+            schedule
+        )
+    )

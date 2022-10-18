@@ -52,21 +52,25 @@ class ExponentialIncrementalSequence(BaseSamplingSchedule):
         """
         return self.__seq_length
 
-    def get_sampling_schedule(self) -> np.ndarray:
-        """Get the linear incremental sequence pairs.
+    def get_n_shots_schedule(self) -> np.ndarray:
+        """Get the schedule for numbers of shots (n_0, n_1, ...).
 
         Returns
         -------
-        np.ndarray((self.__seq_length + 1), 2) :
-            Pairs of (n_shots, 2^m) for m = 0, ..., seq_length
-
+        np.ndarray :
+            Schedule for number of shots at each Grover depth
         """
-        return np.vstack(
-            (
-                np.hstack(
-                    (np.zeros(1), np.exp2(np.arange(self.__seq_length)))
-                ),
-                self.__n_shots * np.ones(self.__seq_length + 1),
-            ),
-            
-        ).transpose().astype(int)
+        return self.__n_shots * np.ones(self.__seq_length + 1).astype(int)
+
+    def get_grover_depth_schedule(self) -> np.ndarray:
+        """Get the schedule for Grover depth (m_0, m_1, ...).
+
+        Returns
+        -------
+        np.ndarray(self.__seq_length + 1) :
+            Schedule for Grover depth,
+            (0,1,2,4,...,2^(`self.__seq_length`-2))
+        """
+        return np.hstack(
+            (np.zeros(1), np.exp2(np.arange(self.__seq_length)))
+        ).astype(int)
