@@ -125,6 +125,13 @@ branch = true
 fail_under = 50
 show_missing = true
 
-[tool.flake8]
+[tool.flakeheaven]
+max-doc-length = 72
+max-line-length = 79
+format = "grouped"
 docstring-convention = "numpy"
-extend-ignore=["W605"]
+
+[tool.flakeheaven.plugins]
+pycodestyle = ["+*","-E203","-W503"]
+pyflakes = ["+*"]
+flake8-docstrings = ["+*"]
