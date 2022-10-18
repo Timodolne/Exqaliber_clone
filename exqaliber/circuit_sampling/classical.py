@@ -60,9 +60,7 @@ class ClassicalAmplitudeEstimation:
             0.5 * (np.ones(alpha.size) - np.cos(2 * alpha * self.theta)),
         )
 
-    def sample_with_noise(
-        self, n_shots: int, alpha: float
-    ):
+    def sample_with_noise(self, n_shots: int, alpha: float):
         r"""Sample from amplitude estimation circuit with noise model.
 
         Parameters
@@ -142,12 +140,16 @@ class ClassicalAmplitudeEstimation:
             idx = 0
             ordered_sample = np.zeros(schedule.get_n_shots_schedule().sum())
 
-            for i_ones, i_n_shots in zip(sample,schedule.get_n_shots_schedule()):
-                i_sample = np.concatenate((np.ones(i_ones),np.zeros(i_n_shots-i_ones)))
+            for i_ones, i_n_shots in zip(
+                sample, schedule.get_n_shots_schedule()
+            ):
+                i_sample = np.concatenate(
+                    (np.ones(i_ones), np.zeros(i_n_shots - i_ones))
+                )
                 np.random.shuffle(i_sample)
-                ordered_sample[idx:idx+i_n_shots]=i_sample
+                ordered_sample[idx : idx + i_n_shots] = i_sample
                 idx += i_n_shots
-            
+
             sample = ordered_sample.astype(int)
 
         return sample
