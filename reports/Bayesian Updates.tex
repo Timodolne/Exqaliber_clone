@@ -103,7 +103,7 @@ gives
  & \quad + (-1)^y  \left. \int_{- \pi}^{\pi} e^{i \theta} \cos(\lambda \theta)   \exp(\kappa \cos(\theta - \mu)) \text{d} \theta \right)\\
  &= C(y, \lambda, \kappa) \left( \vphantom{\int_{-\pi}^\pi} 2 \pi I_1(\kappa) e^{i \mu} \right. \\
  &\quad \left.+ (-1)^y  \int_{-\pi}^{\pi} e^{i \theta} \left( \frac{e^{i \lambda \theta} + e^{- i \lambda \theta}}{2}\right)  \exp(\kappa \cos(\theta - \mu)) \text{d} \theta \right) \\
- &= 2 \pi C(y, \lambda, \kappa) \left( I_1(\kappa) e^{i \mu} + \frac{(-1)^y}{2} \left(I_{\lambda + 1}(\kappa)e^{i(\lambda + 1) \mu}  + I_{\lambda - 1}(\kappa) e^{-i(\lambda + 1)\mu}\right) \right)
+ &= 2 \pi C(y, \lambda, \kappa) \left( I_1(\kappa) e^{i \mu} + \frac{(-1)^y}{2} \left(I_{\lambda + 1}(\kappa)e^{i(\lambda + 1) \mu}  + I_{\lambda - 1}(\kappa) e^{-i(\lambda - 1)\mu}\right) \right)
 \end{align*}
 where in the penultimate line, we use the fact that
 \[
@@ -112,7 +112,7 @@ where in the penultimate line, we use the fact that
 
 This gives us that
 \[
-\mathbb{E}[e^{i \theta} | Y = y] = \frac{ I_1(\kappa) e^{i \mu} + \frac{(-1)^y}{2} \left(I_{\lambda + 1}(\kappa)e^{i(\lambda + 1) \mu}  + I_{\lambda - 1}(\kappa) e^{-i(\lambda + 1)\mu}\right)}{I_0(\kappa) + (-1)^y \cos(\lambda \mu) I_\lambda(\kappa)}.
+\mathbb{E}[e^{i \theta} | Y = y] = \frac{ I_1(\kappa) e^{i \mu} + \frac{(-1)^y}{2} \left(I_{\lambda + 1}(\kappa)e^{i(\lambda + 1) \mu}  + I_{\lambda - 1}(\kappa) e^{-i(\lambda - 1)\mu}\right)}{I_0(\kappa) + (-1)^y \cos(\lambda \mu) I_\lambda(\kappa)}.
 \]
 
 If we then take expectations over $Y$ (i.e. multiply by $\Pi(Y = y))$ and sum) this gives us
