@@ -28,11 +28,8 @@ def prior_dist(mu: float = 0.2, kappa: float = 0.5):
 if __name__ == "__main__":
     dist = prior_dist()
     schedule = LinearIncrementalSequence(10, 10)
-    circuit_sampling = ClassicalAmplitudeEstimation(dist.get_circular_mean())
-    print(dist.sample())
-    print(schedule.get_sampling_schedule())
-    print(
-        circuit_sampling.sample_amplitude_estimation_predefined_schedule(
-            schedule
-        )
+    circuit_sampling = ClassicalAmplitudeEstimation(0.2)
+
+    sample = circuit_sampling.sample_amplitude_estimation_predefined_schedule(
+        schedule, True
     )
