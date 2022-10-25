@@ -69,7 +69,7 @@ class ClassicalAmplitudeEstimation:
             Number of shots for the simulated circuit
         alpha: float
             Defines probability of noiseless circuit observing 1 as
-            (1 - cos(alpha * theta))/2
+            (1 - cos(2*alpha * theta))/2
 
         Returns
         -------
