@@ -121,8 +121,8 @@ class CircularDistributionBase(ABC):
             Circular dispersion delta = (1 - abs(m2))/(2*abs(m2)^2)
 
         """
-        return (1 - self.get_circular_moment(2)) / (
-            2 * self.get_circular_moment() ** 2
+        return (1 - abs(self.get_circular_moment(2))) / (
+            2 * abs(self.get_circular_moment(2)) ** 2
         )
 
     def get_type(self) -> CIRCULAR_DISTRIBUTION:
