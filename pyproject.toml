@@ -108,6 +108,7 @@ addopts = [
   "--tb=short",
   "--doctest-modules",
   "--doctest-continue-on-failure",
+  "--import-mode=importlib"
 ]
 
 [tool.coverage.run]
