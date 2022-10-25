@@ -49,11 +49,11 @@ class BaseSamplingSchedule(ABC):
 
     @abstractmethod
     def get_grover_depth_schedule(self) -> list[tuple[int, int]]:
-        """Get the schedule for Grover depth (m_0, m_1, ...)."""
+        """Get the schedule for Grover depth (d_0, d_1, ...)."""
         pass
 
     def get_sampling_schedule(self) -> list[tuple[int, int]]:
-        """Get the sampling schedule pairs (m_i, n_shots_i)."""
+        """Get the sampling schedule pairs (d_i, n_shots_i)."""
         n_shots_seq = self.get_n_shots_schedule()
         grover_depth_seq = self.get_grover_depth_schedule()
 
