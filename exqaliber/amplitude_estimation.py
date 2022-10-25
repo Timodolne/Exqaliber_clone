@@ -8,7 +8,7 @@ from sampling_schedule.fixed_sampling_schedule.lis import (
 from exqaliber.bayesian_updates.bayesian_model import BayesianModel
 
 
-def prior_dist(mu: float = 0.2, kappa: float = 0.5):
+def prior_dist(mu: float = 0.2, kappa: float = 0.6):
     """Generate a prior distribution.
 
     Parameters
@@ -16,7 +16,7 @@ def prior_dist(mu: float = 0.2, kappa: float = 0.5):
     mu : float, optional
         Mean of the von Mises distribution, by default 0
     kappa : float, optional
-        Concentration parameter, by default 0.5
+        Concentration parameter, by default 0.6
 
     Returns
     -------
