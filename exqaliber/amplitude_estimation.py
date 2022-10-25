@@ -1,11 +1,10 @@
 """Full process for amplitude estimation."""
-from bayesian_updates.distributions.von_mises import VonMises
-from circuit_sampling.classical import ClassicalAmplitudeEstimation
-from sampling_schedule.fixed_sampling_schedule.lis import (
+from exqaliber.bayesian_updates.bayesian_model import BayesianModel
+from exqaliber.bayesian_updates.distributions.von_mises import VonMises
+from exqaliber.circuit_sampling.classical import ClassicalAmplitudeEstimation
+from exqaliber.sampling_schedule.fixed_sampling_schedule.lis import (
     LinearIncrementalSequence,
 )
-
-from exqaliber.bayesian_updates.bayesian_model import BayesianModel
 
 
 def prior_dist(mu: float = 0.2, kappa: float = 0.6):

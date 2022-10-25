@@ -1,7 +1,10 @@
 """Implementation of an exponential sampling sequence."""
 import numpy as np
 
-from .base import SAMPLING_SCHEDULE, BaseSamplingSchedule
+from exqaliber.sampling_schedule.fixed_sampling_schedule.base import (
+    SAMPLING_SCHEDULE,
+    BaseSamplingSchedule,
+)
 
 
 class ExponentialIncrementalSequence(BaseSamplingSchedule):
