@@ -83,7 +83,9 @@ class VonMises(CircularDistributionBase):
             kappa, concentration parameter > 0
 
         """
-        return np.arctan2(m1.imag, m1.real), np.sqrt(-2 * np.log(abs(m1)))
+        return np.arctan2(
+            m1.imag, m1.real
+        ), VonMises.get_vm_concentration_param(m1)
 
     def sample(self, n: int = 10) -> np.ndarray:
         """Get n samples from the distribution.
@@ -189,9 +191,12 @@ class VonMises(CircularDistributionBase):
             k_trial = concentration_param_interval.mean()
             r_trial = VonMises.get_bessel_ratio(k_trial, v, N)
 
-            # Increase the upper limit of the interval until we contain k
+            # Increase the upper limit of the interval until we contain
+            # k
             if not found_upper_limit:
-                if r_trial > r:
+                if k_trial > 512:
+                    return 512
+                elif r_trial > r:
                     found_upper_limit = True
                     concentration_param_interval[1] = k_trial
                 else:
