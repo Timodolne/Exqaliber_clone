@@ -1,4 +1,6 @@
 """Implementation of von Mises distribution."""
+from math import prod
+
 import numpy as np
 from scipy.stats import vonmises
 
@@ -64,7 +66,11 @@ class VonMises(CircularDistributionBase):
             E[1i*nX]
 
         """
-        return np.exp(1j * n * self.mu - ((n * self.kappa) ** 2 / 2))
+        max_n = int(abs(n))
+        ratios = (
+            VonMises.get_bessel_ratio(self.kappa, i) for i in range(max_n)
+        )
+        return prod(ratios) * np.exp(1j * n * self.mu)
 
     @staticmethod
     def generate_parameters_from_m1(m1: complex) -> tuple[float]:
