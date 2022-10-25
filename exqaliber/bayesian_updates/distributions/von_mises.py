@@ -1,4 +1,5 @@
 """Implementation of von Mises distribution."""
+import warnings
 from math import isclose, prod
 
 import numpy as np
@@ -44,8 +45,17 @@ class VonMises(CircularDistributionBase):
         kappa : float
             Concentration parameter
         """
+        if mu < -np.pi or mu >= np.pi:
+            warnings.warn(
+                f"Provided mu, {mu}, should be within the range [-pi, pi)"
+            )
         self.mu = np.mod(mu, 2 * np.pi)
-        self.kappa = abs(kappa)
+        if self.mu >= np.pi:
+            self.mu = self.mu - 2 * np.pi
+
+        if kappa <= 0:
+            raise ValueError("Provided kappa must be strictly positive")
+        self.kappa = kappa
 
         super().__init__(
             CIRCULAR_DISTRIBUTION.VON_MISES,
