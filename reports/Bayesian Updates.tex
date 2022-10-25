@@ -45,7 +45,7 @@ Goal: Given a single measurement of a Bernoulli random variable and a Von-Mises 
 	\item $t$ - time step
 	\item $d_t$ - Grover depth of quantum circuit at time $t$
 	\item $Y_t$ - random variable representing a single shot measurement $y_t$ of the quantum circuit at time $t$
-	\item $\Pi_(\theta| Y_1 = y_1, \ldots, Y_t = y_t) = \Pi(\theta | \mathbf{Y}_t )$ - 'true' posterior at time $t$ (though values for $t ' < t$ have been used to approximate the earlier distributions)
+	\item $\Pi(\theta| Y_1 = y_1, \ldots, Y_t = y_t) = \Pi(\theta | \mathbf{Y}_t )$ - 'true' posterior at time $t$ (though values for $t ' < t$ have been used to approximate the earlier distributions)
 	\item  $\hat{\Pi}(\theta| Y_1 = y_1, \ldots, Y_t = y_t) = \hat{\Pi}(\theta | \mathbf{Y}_t )$ - approximate posterior at time $t$.
 \end{itemize}
 
@@ -120,8 +120,5 @@ If we then take expectations over $Y$ (i.e. multiply by $\Pi(Y = y))$ and sum) t
 \[
 \mathbb{E}[e^{i \theta}] = \frac{I_{1}(\kappa)}{I_0(\kappa)}e^{i \mu}.
 \]
-This is problematic. We're not expecting $ \mu$ to move anywhere on average, but we're hoping that $\kappa$ is going to increase ($1/ \kappa$ is analogous to $\sigma^2$ for a normal distribution.
-
-
-
+This is problematic. We're not expecting $\mu$ to move anywhere on average, but we're hoping that $\kappa$ is going to increase ($1/ \kappa$ is analogous to $\sigma^2$ for a normal distribution.
 \end{document}
