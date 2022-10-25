@@ -1,5 +1,5 @@
 """Implementation of von Mises distribution."""
-from math import prod
+from math import isclose, prod
 
 import numpy as np
 from scipy.stats import vonmises
@@ -160,9 +160,9 @@ class VonMises(CircularDistributionBase):
 
     @staticmethod
     def get_vm_concentration_param(
-        m1: complex, eps: float = pow(2, -15), v: int = 0, N: int = 10
+        m1: complex, eps: float = pow(10, -9), v: int = 0, N: int = 10
     ) -> float:
-        """Invert I_{v+1}(k)/I_v(k) = abs(m1) to precision varepsilon.
+        """Invert I_{v+1}(k)/I_v(k) = abs(m1) to precision eps.
 
         Parameters
         ----------
@@ -187,16 +187,15 @@ class VonMises(CircularDistributionBase):
 
         """
         r = abs(m1)
-        concentration_param_interval = np.array([0, 1], dtype=np.float32)
+        concentration_param_interval = np.array([0, 1], dtype=np.float128)
         found_upper_limit = False
-
-        while (
-            concentration_param_interval[1] - concentration_param_interval[0]
-            > eps
+        while not isclose(
+            concentration_param_interval[0],
+            concentration_param_interval[1],
+            rel_tol=eps,
         ):
             k_trial = concentration_param_interval.mean()
             r_trial = VonMises.get_bessel_ratio(k_trial, v, N)
-
             # Increase the upper limit of the interval until we contain
             # k
             if not found_upper_limit:
@@ -217,5 +216,4 @@ class VonMises(CircularDistributionBase):
                     concentration_param_interval[1] = k_trial
                 else:
                     concentration_param_interval[0] = k_trial
-
         return concentration_param_interval.mean()
