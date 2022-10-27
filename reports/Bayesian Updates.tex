@@ -25,17 +25,17 @@ I_{n}(\kappa) = \frac{1}{\pi} \int_0^\pi \cos(n\theta) \exp(\kappa \cos \theta) 
 \]
 
 The circular mean of the Von-Mises distribution is given by:
+ \[
+	 \mathbb{E}\left[ \exp i  \theta \right]   = \frac{I_1\left( \kappa \right) }{I_0 \left( \kappa \right) }e^{i \mu}
+.\]
+In general, this can be seen via
 \begin{align*}
-	\mathbb{E} [e^{i \theta}] &= \frac{1}{2 \pi I_0(\kappa)} \int_{- \pi}^{\pi} e^{i \theta} \exp(\kappa \cos (\theta - \mu)  \text{d}\theta   \\
-	& = \frac{I_{1}(\kappa)}{I_0(\kappa)} e^{i \mu}
+	\mathbb{E} [e^{i n \theta}] &= \frac{1}{2\pi I_0 \left( \kappa \right) }\int_{-\pi}^{\pi}\exp\left( in \theta \right) \exp\left( \kappa \cos( \theta - \mu) \right) \text{d}\theta\\
+				    &= \frac{1}{2\pi I_0\left( \kappa \right) }\int_{-\pi - \mu}^{\pi - \mu}\exp(in (\psi + \mu)) \exp\left( \kappa \cos\left( \psi \right)  \right) \text{d}\psi \\
+				    &= \frac{\exp\left( in \mu \right) }{2\pi I_0\left( \kappa \right) }\int_{-\pi}^{\pi} \exp\left( i n \theta \right) \exp \left( \kappa \cos\left( \theta \right)  \right) \text{d}\theta \\
+				    &= \frac{\exp\left( in \mu \right) }{2\pi I_0\left( \kappa \right) } \int_{-\pi}^{\pi} \cos\left( n\theta \right)  \exp \left( \kappa \cos\left( \theta \right)  \right) \text{d}\theta \\
+				    &= \frac{I_{|n|}(\kappa)}{I_0(\kappa)} e^{i n \mu}  \\
 \end{align*}
-In particular, since $\frac{I_{1}(\kappa)}{I_0(\kappa)}$ is an increasing function, the circular mean uniquely defines a Von-Mises distribution.
-
-For higher circular moments,
-
-\[
-\mathbb{E} [e^{i n \theta}] = \frac{I_{|n|}(\kappa)}{I_0(\kappa)} e^{i n \mu}
-\]
 
 \chapter{Problem Statement}
 \section{Setup}
@@ -84,26 +84,28 @@ For simplicity, we're going to consider the first step of the update, which make
 
 This gives us:
 \begin{align*}
-	\Pi(Y = y) &= \frac{1}{2 \pi I_0(\kappa)} \int_{- \pi}^{\pi} \frac{1}{2} (1 + (-1)^y \cos(\lambda \theta)) \exp(\kappa \cos(\theta - \mu)) \text{d} \theta \\
+	\Pi(Y = y) &= \int_{-\pi}^{\pi} \Pi(Y = y | \theta) \Pi\left( \theta \right) \text{d}\theta \\
+		   &= \frac{1}{2 \pi I_0(\kappa)} \int_{- \pi}^{\pi} \frac{1}{2} (1 + (-1)^y \cos(\lambda \theta)) \exp(\kappa \cos(\theta - \mu)) \text{d} \theta \\
 	&= \frac{1}{2 \pi I_0(\kappa)} \left( \int_{- \pi}^{\pi} \frac{1}{2} \exp(\kappa \cos(\theta - \mu)) \text{d} \theta \right. \\
 	 &\left. + (-1)^y \int_{- \pi}^{\pi} \frac{1}{2} \cos(\lambda \theta) \exp(\kappa \cos(\theta - \mu)) \text{d} \theta  \right) \\
+	 &= \frac{1}{4 \pi I_0\left( \kappa \right) }\left( 2\pi I_0\left( \kappa \right)  + (-1)^{y} \int_{-\pi}^{\pi}\frac{e^{i \lambda \theta} + e^{-i \lambda \theta}}{2}\exp\left( \kappa \cos \left( \theta - \mu \right)  \right) \text{d}\theta \right) \\
 	&= \frac{1}{2}\left(1 + (-1)^y \cos(\lambda \mu) \frac{I_\lambda(\kappa)}{I_0(\kappa)}\right)  \\
 \end{align*}
-
+where in the penultimate line, we use the expression for the $n$th circular moment.
 Putting this all together, and letting
 
 \[
-C(y, \lambda, \kappa) = \frac{\frac{1}{2} \frac{1}{2 \pi I_0(\kappa)}}{\frac{1}{2} (1 + (-1)^y \cos(\lambda \mu) \frac{I_\lambda(\kappa)}{I_0(\kappa)} )} = \frac{1}{ 2 \pi(I_0(\kappa) + (-1)^y \cos(\lambda \mu) I_\lambda(\kappa))}
+C(y, \lambda, \mu, \kappa) = \frac{\frac{1}{2} \frac{1}{2 \pi I_0(\kappa)}}{\frac{1}{2} (1 + (-1)^y \cos(\lambda \mu) \frac{I_\lambda(\kappa)}{I_0(\kappa)} )} = \frac{1}{ 2 \pi(I_0(\kappa) + (-1)^y \cos(\lambda \mu) I_\lambda(\kappa))}
 \]
 gives
 
 \begin{align*}
-	\mathbb{E}[e^{i \theta} | Y = y] &= C(y, \lambda, \kappa) \int_{- \pi}^{\pi} e^{i \theta} (1 + (-1)^y \cos(\lambda \theta)) \exp(\kappa \cos(\theta - \mu)) \text{d} \theta \\
-& =	C(y, \lambda, \kappa) \left(  \int_{- \pi}^{\pi} e^{i \theta} \exp(\kappa \cos(\theta - \mu)) \text{d} \theta \right. \\
+	\mathbb{E}[e^{i \theta} | Y = y] &= C(y, \lambda,\mu, \kappa) \int_{- \pi}^{\pi} e^{i \theta} (1 + (-1)^y \cos(\lambda \theta)) \exp(\kappa \cos(\theta - \mu)) \text{d} \theta \\
+& =	C(y, \lambda,\mu, \kappa) \left(  \int_{- \pi}^{\pi} e^{i \theta} \exp(\kappa \cos(\theta - \mu)) \text{d} \theta \right. \\
  & \quad + (-1)^y  \left. \int_{- \pi}^{\pi} e^{i \theta} \cos(\lambda \theta)   \exp(\kappa \cos(\theta - \mu)) \text{d} \theta \right)\\
- &= C(y, \lambda, \kappa) \left( \vphantom{\int_{-\pi}^\pi} 2 \pi I_1(\kappa) e^{i \mu} \right. \\
+ &= C(y, \lambda,\mu, \kappa) \left( \vphantom{\int_{-\pi}^\pi} 2 \pi I_1(\kappa) e^{i \mu} \right. \\
  &\quad \left.+ (-1)^y  \int_{-\pi}^{\pi} e^{i \theta} \left( \frac{e^{i \lambda \theta} + e^{- i \lambda \theta}}{2}\right)  \exp(\kappa \cos(\theta - \mu)) \text{d} \theta \right) \\
- &= 2 \pi C(y, \lambda, \kappa) \left( I_1(\kappa) e^{i \mu} + \frac{(-1)^y}{2} \left(I_{\lambda + 1}(\kappa)e^{i(\lambda + 1) \mu}  + I_{\lambda - 1}(\kappa) e^{-i(\lambda - 1)\mu}\right) \right)
+ &= 2 \pi C(y, \lambda,\mu, \kappa) \left( I_1(\kappa) e^{i \mu} + \frac{(-1)^y}{2} \left(I_{\lambda + 1}(\kappa)e^{i(\lambda + 1) \mu}  + I_{\lambda - 1}(\kappa) e^{-i(\lambda - 1)\mu}\right) \right)
 \end{align*}
 where in the penultimate line, we use the fact that
 \[
