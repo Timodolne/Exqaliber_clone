@@ -31,12 +31,13 @@ The circular mean of the Von-Mises distribution is given by:
 In general, this can be seen via
 \begin{align*}
 	\mathbb{E} [e^{i n \theta}] &= \frac{1}{2\pi I_0 \left( \kappa \right) }\int_{-\pi}^{\pi}\exp\left( in \theta \right) \exp\left( \kappa \cos( \theta - \mu) \right) \text{d}\theta\\
-				    &= \frac{1}{2\pi I_0\left( \kappa \right) }\int_{-\pi - \mu}^{\pi - \mu}\exp(in (\psi + \mu)) \exp\left( \kappa \cos\left( \psi \right)  \right) \text{d}\psi \\
-				    &= \frac{\exp\left( in \mu \right) }{2\pi I_0\left( \kappa \right) }\int_{-\pi}^{\pi} \exp\left( i n \theta \right) \exp \left( \kappa \cos\left( \theta \right)  \right) \text{d}\theta \\
-				    &= \frac{\exp\left( in \mu \right) }{2\pi I_0\left( \kappa \right) } \int_{-\pi}^{\pi} \cos\left( n\theta \right)  \exp \left( \kappa \cos\left( \theta \right)  \right) \text{d}\theta \\
-				    &= \frac{I_{|n|}(\kappa)}{I_0(\kappa)} e^{i n \mu}  \\
+				    &= \frac{1}{2\pi I_0\left( \kappa \right) }\int_{-\pi - \mu}^{\pi - \mu}\exp(in (\psi + \mu)) \exp\left( \kappa \cos\psi  \right) \text{d}\psi \\
+				    &= \frac{e^{in \mu} }{2\pi I_0\left( \kappa \right) }\int_{-\pi}^{\pi} \exp\left( i n \theta \right) \exp \left( \kappa \cos\theta  \right) \text{d}\theta \\
+				    &= \frac{e^{in \mu}}{2\pi I_0 (\kappa)} \int_{- \pi}^{\pi} \left( \cos( n \theta) + i \sin (n \theta)  \right) \exp\left( \kappa \cos \theta \right) \text{d} \theta \\
+				    &= \frac{e^{in \mu}}{2\pi I_0\left( \kappa \right) } \int_{-\pi}^{\pi} \cos\left( n\theta \right)  \exp \left( \kappa \cos \theta \right) \text{d}\theta \\
+				    &= \frac{I_{|n|}(\kappa)}{I_0(\kappa)} e^{i n \mu}. \\
 \end{align*}
-
+Note that we remove the $\sin$ integral by using the fact that the integral of an odd function over a symmetric, periodic interval is $0$.
 \chapter{Problem Statement}
 \section{Setup}
 Goal: Given a single measurement of a Bernoulli random variable and a Von-Mises prior distribution, calculate the posterior distribution and approximate to a Von-Mises distribution.
@@ -69,16 +70,11 @@ To simplify some of the computations, we're going to assert that the posterior f
 \[
 \hat{\Pi}(\theta | \mathbf{Y}_t )  \sim VM(\hat{\mu}_t, \hat{\kappa}_t).
 \]
-Now, via Bayes rule, we're computing
-\[
-\Pi (\theta | Y_t = y_t, \mathbf{Y}_{t -1}) = \frac{\Pi(Y_t = y_t | \theta) \hat{\Pi}(\theta | \mathbf{Y}_{t-1})}{\Pi(Y_t = y_t) },
-\]
-
 \section{Single shot updates}
 For simplicity, we're going to consider the first step of the update, which makes things a lot nicer. In this case, we want to know what the circular mean of the posterior distribution is after updating.
 
 \begin{itemize}
-	\item $\Pi(\theta) \sim VM(\mu, \kappa)$ - prior
+	\item $\Pi(\theta) \sim \text{VM}(\mu, \kappa)$ - prior
 	\item $\Pi(Y | \theta) \sim \text{Ber}(\frac{1}{2}(1 - \cos(\lambda \theta)))$
 \end{itemize}
 
