@@ -70,7 +70,7 @@ class BayesianModel:
         mu_t_prev, kappa_t_prev = self.estimated_params[self.t]
 
         bessel_vals = modified_bessel(
-            [0, 1, lambda_t - 1, lambda_t, lambda_t + 1], kappa_t_prev
+            [0, 1, lambda_t - 1, lambda_t, lambda_t + 1], float(kappa_t_prev)
         )
         denom = bessel_vals[0] + sign * bessel_vals[3] * np.cos(
             lambda_t * mu_t_prev
