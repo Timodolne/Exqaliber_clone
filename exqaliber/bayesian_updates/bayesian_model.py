@@ -1,4 +1,6 @@
 """Bayesian update model."""
+from typing import Tuple
+
 import numpy as np
 from scipy.special import ive as modified_bessel
 
@@ -135,3 +137,51 @@ class BayesianModel:
                 * self.estimated_params[t - 1][0]
             )
         )
+
+    @staticmethod
+    def get_ber_prob(lamda: int, kappa: float, mu: float) -> float:
+        """Get the marginal Bernoulli probability from a conditional VM.
+
+        Assume that P(X = 1 | Theta = mu) = (1/2)* (1 - cos(lamda mu)).
+        Then if Theta is distributed as VM(mu, kappa), then the
+        returned probability is the marginal probability P(X = 1).
+
+        Parameters
+        ----------
+        lamda : int
+            Scale parameter for conditional Bernoulli distribution
+        kappa : float
+            Scale parameter of prior von-Mises distribution
+        mu : float
+            Locaiton parameter of prior von-Mises distribution
+
+        Returns
+        -------
+        float
+            Marginal probability of observing a 1
+        """
+        return 0.5 * (
+            1
+            - np.cos(lamda * mu)
+            * modified_bessel(lamda, kappa)
+            / modified_bessel(0, kappa)
+        )
+
+    def get_params(self, t: int = None) -> Tuple[float, float]:
+        """Get the estimated parameters at time t.
+
+        Parameters
+        ----------
+        t : int, optional
+            Time to retrieve estimated parameters at, by default current
+            time
+
+        Returns
+        -------
+        Tuple[float,float]
+            Pair of kappa, mu estimated at time t
+        """
+        if t:
+            return self.estimated_params[t]
+        else:
+            return self.estimated_params[self.t]
