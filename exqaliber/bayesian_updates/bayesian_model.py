@@ -38,6 +38,7 @@ class BayesianModel:
         self.prior = prior
 
         self.estimated_params = [tuple(prior.get_parameters().values())]
+        self.posterior_moments = [prior.get_circular_mean()]
         self.measurements = [np.NaN]
         self.grover_depths = [np.NaN]
 
@@ -84,6 +85,7 @@ class BayesianModel:
         posterior_moment = numer / denom
 
         self.t += 1
+        self.posterior_moments.append(posterior_moment)
         self.estimated_params.append(
             VonMises.generate_parameters_from_m1(posterior_moment)
         )
