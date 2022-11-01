@@ -118,5 +118,20 @@ If we then take expectations over $Y$ (i.e. multiply by $\Pi(Y = y))$ and sum) t
 \[
 \mathbb{E}[e^{i \theta}] = \frac{I_{1}(\kappa)}{I_0(\kappa)}e^{i \mu}.
 \]
-This is problematic. We're not expecting $\mu$ to move anywhere on average, but we're hoping that $\kappa$ is going to increase ($1/ \kappa$ is analogous to $\sigma^2$ for a normal distribution.
+So, we can infer that we do not expect the angular parameter $\mu$ to move. To infer something about $\kappa$, we need to consider $\mathbb{E}[R]$. As before, let's consider $\mathbb{E}[R | Y = y]$. From the above, we can deduce that
+ \begin{align*}
+	 \mathbb{E}[R | Y = y]^{2} &= \frac{\left( I_1 + \frac{(-1)^{y}}{2}\left( e^{i \lambda \mu}I_{\lambda + 1}+ e^{- i \lambda \mu}I_{\lambda -1} \right)  \right) \left( I_1 + \frac{(-1)^{y}}{2}\left( e^{-i \lambda \mu}I_{\lambda + 1} + e^{i \lambda \mu} I_{\lambda -1 } \right)  \right) }{\left( I_0 + (-1)^{y}\cos(\lambda \mu) I_{\lambda} \right)^{2} } \\
+				   &= \frac{I_1^{2} + \frac{1}{4}\left( I_{\lambda + 1}^2 + I_{\lambda - 1}^2 \right) +\frac{1}{2} \cos\left( 2 \lambda \mu \right)  I_{\lambda +1}I_{\lambda - 1} + (-1)^{y} I_1\left( I_{\lambda + 1} + I_{\lambda - 1} \right) \cos \lambda \mu}{\left( I_0 + (-1)^{y}\cos (\lambda \mu) I_{\lambda} \right) ^2} \\
+				   &= \frac{N_y^2}{\left( I_0 + (-1)^{y}\cos(\lambda \mu) I_{\lambda} \right) ^2},
+\end{align*}
+where for brevity, we have suppressed the argument $\kappa$ for each of the Bessel functions $I_{\nu}$.
+
+Calculating $\mathbb{E}[R]$ then, is achieved by multiplying by  $\Pi(Y = y)$, square-rooting, and summing. This results in the sum of the square roots of the numerators multiplied by a constant factor of $\frac{1}{2 I_0(\kappa)}$, i.e.
+
+\begin{align*}
+	\mathbb{E}[R] &= \frac{N_0 + N_1}{2 I_0(\kappa)} \\
+		      &= \frac{1}{2 I_0(\kappa) } \sqrt{I_1^2 + \frac{1}{4} \left( I_{\lambda + 1}^{2} + I_{\lambda - 1}^2 \right)  + \frac{1}{2}\cos(2 \lambda \mu) I_{\lambda +1} I_{\lambda - 1} + I_1 \left( I_{\lambda + 1} + I_{\lambda -1 } \right) \cos (\lambda \mu) } \\
+		      & + \frac{1}{2 I_0(\kappa) } \sqrt{I_1^2 + \frac{1}{4} \left( I_{\lambda + 1}^{2} + I_{\lambda - 1}^2 \right)  + \frac{1}{2}\cos(2 \lambda \mu) I_{\lambda +1} I_{\lambda - 1} - I_1 \left( I_{\lambda + 1} + I_{\lambda -1 } \right) \cos (\lambda \mu) }
+\end{align*}
+
 \end{document}
