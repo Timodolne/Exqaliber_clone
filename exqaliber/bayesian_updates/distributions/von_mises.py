@@ -209,9 +209,7 @@ class VonMises(CircularDistributionBase):
             # Increase the upper limit of the interval until we contain
             # k
             if not found_upper_limit:
-                if k_trial > 512:
-                    return 512
-                elif r_trial > r:
+                if r_trial > r:
                     found_upper_limit = True
                     concentration_param_interval[1] = k_trial
                 else:

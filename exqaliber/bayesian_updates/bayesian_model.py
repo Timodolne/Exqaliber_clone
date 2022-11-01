@@ -1,6 +1,6 @@
 """Bayesian update model."""
 import numpy as np
-from scipy.special import iv as modified_bessel
+from scipy.special import ive as modified_bessel
 
 from exqaliber.sampling_schedule.fixed_sampling_schedule.base import (
     BaseSamplingSchedule,
