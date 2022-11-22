@@ -19,7 +19,7 @@ class BayesianModel:
     prior: VonMises
         Prior distribution for theta
     estimated_params: List[Tuple[float,float]]
-        Estimated paramters for (mu, kappa) at each time step
+        Estimated parameters for (mu, kappa) at each time step
     measurements: List[int]
         Measurement at time t
     grover_depths: List[int]
