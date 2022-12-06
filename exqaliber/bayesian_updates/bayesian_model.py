@@ -1,6 +1,8 @@
 """Bayesian update model."""
+from typing import Tuple
+
 import numpy as np
-from scipy.special import iv as modified_bessel
+from scipy.special import ive as modified_bessel
 
 from exqaliber.sampling_schedule.fixed_sampling_schedule.base import (
     BaseSamplingSchedule,
@@ -38,6 +40,7 @@ class BayesianModel:
         self.prior = prior
 
         self.estimated_params = [tuple(prior.get_parameters().values())]
+        self.posterior_moments = [prior.get_circular_mean()]
         self.measurements = [np.NaN]
         self.grover_depths = [np.NaN]
 
@@ -67,7 +70,7 @@ class BayesianModel:
         mu_t_prev, kappa_t_prev = self.estimated_params[self.t]
 
         bessel_vals = modified_bessel(
-            [0, 1, lambda_t - 1, lambda_t, lambda_t + 1], kappa_t_prev
+            [0, 1, lambda_t - 1, lambda_t, lambda_t + 1], float(kappa_t_prev)
         )
         denom = bessel_vals[0] + sign * bessel_vals[3] * np.cos(
             lambda_t * mu_t_prev
@@ -84,6 +87,7 @@ class BayesianModel:
         posterior_moment = numer / denom
 
         self.t += 1
+        self.posterior_moments.append(posterior_moment)
         self.estimated_params.append(
             VonMises.generate_parameters_from_m1(posterior_moment)
         )
@@ -132,4 +136,130 @@ class BayesianModel:
                 (4 * self.grover_depths[t] + 2)
                 * self.estimated_params[t - 1][0]
             )
+        )
+
+    @staticmethod
+    def get_ber_prob(lamda: int, kappa: float, mu: float) -> float:
+        """Get the marginal Bernoulli probability from a conditional VM.
+
+        Assume that P(X = 1 | Theta = mu) = (1/2)* (1 - cos(lamda mu)).
+        Then if Theta is distributed as VM(mu, kappa), then the
+        returned probability is the marginal probability P(X = 1).
+
+        Parameters
+        ----------
+        lamda : int
+            Scale parameter for conditional Bernoulli distribution
+        kappa : float
+            Scale parameter of prior von-Mises distribution
+        mu : float
+            Locaiton parameter of prior von-Mises distribution
+
+        Returns
+        -------
+        float
+            Marginal probability of observing a 1
+        """
+        return 0.5 * (
+            1
+            - np.cos(lamda * mu)
+            * modified_bessel(lamda, kappa)
+            / modified_bessel(0, kappa)
+        )
+
+    def get_params(self, t: int = None) -> Tuple[float, float]:
+        """Get the estimated parameters at time t.
+
+        Parameters
+        ----------
+        t : int, optional
+            Time to retrieve estimated parameters at, by default current
+            time
+
+        Returns
+        -------
+        Tuple[float,float]
+            Pair of kappa, mu estimated at time t
+        """
+        if t:
+            return self.estimated_params[t]
+        else:
+            return self.estimated_params[self.t]
+
+    def expected_radius(self, grover_depth: int, t: int = None) -> float:
+        """Calculate the expected radius of the next posterior.
+
+        Parameters
+        ----------
+        grover_depth : int
+            Grover depth to estimate radius for
+        t : int, optional
+            Time step to estimate the radius for, by default current
+            time
+
+        Returns
+        -------
+        float
+            _description_
+        """
+        lamda = 4 * grover_depth + 2
+        return self.expected_lambda_radius(lamda, t)
+
+    def expected_lambda_radius(self, lamda: int, t: int = None) -> float:
+        """Calculate the expected radius of the next step.
+
+        See report for calculations.
+
+        Parameters
+        ----------
+        lamda : int
+            Defines the probability of observing a 1 as
+            0.5(1-cos(lambda * theta))
+        t : int, optional
+            Time step to calculate the next radius for, by default use
+            the current timestep
+
+        Returns
+        -------
+        float
+            Expected radius of the next step
+        """
+        mu, kappa = self.get_params(t)
+        kappa = float(kappa)
+        constant_part = np.square(
+            np.array([1, 0.5, 0.5])
+            * modified_bessel(
+                [np.ones(lamda.shape), lamda + 1, lamda - 1], kappa
+            ).T
+        ).sum(axis=1) + 0.5 * np.cos(2 * lamda * mu) * modified_bessel(
+            [lamda + 1, lamda - 1], kappa
+        ).prod(
+            axis=0
+        )
+        phase_part = (
+            modified_bessel(1, kappa)
+            * modified_bessel([lamda + 1, lamda - 1], kappa).sum(axis=0)
+            * np.cos(lamda * mu)
+        )
+        r_0 = constant_part + phase_part
+        r_1 = constant_part - phase_part
+
+        return 0.5 * (np.sqrt(r_0) + np.sqrt(r_1)) / modified_bessel(0, kappa)
+
+    def eval_radii(self, max_depth: int) -> np.ndarray:
+        """Evaluate the expected radius up to a maximum Grover depth.
+
+        Parameters
+        ----------
+        max_depth : int
+            Maximum depth to evaluate Grover depth to
+
+        Returns
+        -------
+        np.ndarray
+            Expected radius for values of lambda up to the given max
+            depth
+        """
+        return np.ndarray(
+            [self.expected_radius(i_d) for i_d in range(max_depth)]
         )
