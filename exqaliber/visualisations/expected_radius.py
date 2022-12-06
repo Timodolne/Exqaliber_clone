@@ -4,7 +4,6 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 
-from exqaliber.bayesian_updates.bayesian_model import BayesianModel
 from exqaliber.bayesian_updates.distributions.von_mises import VonMises
 
 
@@ -17,16 +16,14 @@ def graph_radius(
     ----------
     max_lambda : int
         Largest value of lambda to calculate the expected radius for.
-        We take p(1) = 0.5(1 - cos(lambda * theta))
+        We take p(1) = 0.5(1 - cos(lambda * mu))
     mu : float, optional
         Location parameter of the von Mises distribution, by default 0.2
     kappa : float
         Scale parameter of the von Mises distribution, by default 1000
     """
-    model = BayesianModel(VonMises(mu, kappa))
-
     lambdas = np.array([i + 1 for i in range(max_lambda)], dtype=int)
-    radii = model.expected_lambda_radius(lambdas)
+    radii = VonMises.eval_radii(max_lambda, mu, kappa)
 
     df = pd.DataFrame(
         np.array((lambdas, radii)).T,
