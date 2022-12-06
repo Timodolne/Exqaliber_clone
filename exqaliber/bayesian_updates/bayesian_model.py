@@ -185,3 +185,81 @@ class BayesianModel:
             return self.estimated_params[t]
         else:
             return self.estimated_params[self.t]
+
+    def expected_radius(self, grover_depth: int, t: int = None) -> float:
+        """Calculate the expected radius of the next posterior.
+
+        Parameters
+        ----------
+        grover_depth : int
+            Grover depth to estimate radius for
+        t : int, optional
+            Time step to estimate the radius for, by default current
+            time
+
+        Returns
+        -------
+        float
+            _description_
+        """
+        lamda = 4 * grover_depth + 2
+        return self.expected_lambda_radius(lamda, t)
+
+    def expected_lambda_radius(self, lamda: int, t: int = None) -> float:
+        """Calculate the expected radius of the next step.
+
+        See report for calculations.
+
+        Parameters
+        ----------
+        lamda : int
+            Defines the probability of observing a 1 as
+            0.5(1-cos(lambda * theta))
+        t : int, optional
+            Time step to calculate the next radius for, by default use
+            the current timestep
+
+        Returns
+        -------
+        float
+            Expected radius of the next step
+        """
+        mu, kappa = self.get_params(t)
+        kappa = float(kappa)
+        constant_part = np.square(
+            np.array([1, 0.5, 0.5])
+            * modified_bessel(
+                [np.ones(lamda.shape), lamda + 1, lamda - 1], kappa
+            ).T
+        ).sum(axis=1) + 0.5 * np.cos(2 * lamda * mu) * modified_bessel(
+            [lamda + 1, lamda - 1], kappa
+        ).prod(
+            axis=0
+        )
+        phase_part = (
+            modified_bessel(1, kappa)
+            * modified_bessel([lamda + 1, lamda - 1], kappa).sum(axis=0)
+            * np.cos(lamda * mu)
+        )
+        r_0 = constant_part + phase_part
+        r_1 = constant_part - phase_part
+
+        return 0.5 * (np.sqrt(r_0) + np.sqrt(r_1)) / modified_bessel(0, kappa)
+
+    def eval_radii(self, max_depth: int) -> np.ndarray:
+        """Evaluate the expected radius up to a maximum Grover depth.
+
+        Parameters
+        ----------
+        max_depth : int
+            Maximum depth to evaluate Grover depth to
+
+        Returns
+        -------
+        np.ndarray
+            Expected radius for values of lambda up to the given max
+            depth
+        """
+        return np.ndarray(
+            [self.expected_radius(i_d) for i_d in range(max_depth)]
+        )
