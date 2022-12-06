@@ -3,6 +3,7 @@ import warnings
 from math import isclose, prod
 
 import numpy as np
+from scipy.special import ive as modified_bessel
 from scipy.stats import vonmises
 
 from .circular_distribution_base import (
@@ -119,6 +120,201 @@ class VonMises(CircularDistributionBase):
 
         """
         return vonmises.rvs(self.kappa, self.mu, size=n)
+
+    @staticmethod
+    def update(
+        measurement: int, lamda: int, mu: float, kappa: float
+    ) -> complex:
+        """Get the first circular moment given a measurement.
+
+        Updates the circular moment using a von Mises and Bernoulli
+        likelihood.
+
+        Parameters
+        ----------
+        measurement : int, {0,1}
+            Bernoulli measurement outcome
+        lamda : int
+            Defines p(1) = 0.5*(1 - cos(lamda * mu))
+        mu : float
+            Location parameter of the current von Mises distribution
+        kappa : float
+            Scale parameter of the current von Mises distribution
+
+        Returns
+        -------
+        complex
+            First circular moment of the new distribution
+        """
+        sign = (-1) ** measurement
+        bessel_vals = modified_bessel(
+            [0, 1, lamda - 1, lamda, lamda + 1], float(kappa)
+        )
+        denom = bessel_vals[0] + sign * bessel_vals[3] * np.cos(lamda * mu)
+        numer = np.exp(1j * mu) * (
+            bessel_vals[1]
+            + sign
+            * 0.5
+            * (
+                np.exp(1j * lamda * mu) * bessel_vals[4]
+                + np.exp(-1j * lamda * mu) * bessel_vals[2]
+            )
+        )
+        posterior_moment = numer / denom
+
+        return posterior_moment
+
+    @staticmethod
+    def expected_radius(grover_depth: int, mu: float, kappa: float) -> float:
+        """Calculate the expected radius of the next posterior.
+
+        Parameters
+        ----------
+        grover_depth : int
+            Grover depth to estimate radius for
+        mu : float
+            Location parameter for the current von Mises distribution
+        kappa : float
+            Scale parameter for the current von Mises distribution
+        t : int, optional
+            Time step to estimate the radius for, by default current
+            time
+
+        Returns
+        -------
+        float
+            Expected radius for the next step at the given Grover depth
+            and von Mises distribution
+        """
+        lamda = 4 * grover_depth + 2
+        return VonMises.expected_lambda_radius(lamda, mu, kappa)
+
+    @staticmethod
+    def expected_lambda_radius(lamda: int, mu: float, kappa: float) -> float:
+        """Calculate the expected radius of the next step.
+
+        See report for calculations.
+
+        Parameters
+        ----------
+        lamda : int
+            Defines the probability of observing a 1 as
+            0.5(1-cos(lambda * theta))
+        mu : float
+            Location parameter for the current von Mises distribution
+        kappa : float
+            Scale parameter for the current von Mises distribution
+        t : int, optional
+            Time step to calculate the next radius for, by default use
+            the current timestep
+
+        Returns
+        -------
+        float
+            Expected radius of the next step
+        """
+        kappa = float(kappa)
+        lamda = np.array(lamda)
+
+        constant_part = np.square(
+            np.array([1, 0.5, 0.5])
+            * modified_bessel(
+                [np.ones(lamda.shape), lamda + 1, lamda - 1], kappa
+            ).T
+        ).sum(axis=1) + 0.5 * np.cos(2 * lamda * mu) * modified_bessel(
+            [lamda + 1, lamda - 1], kappa
+        ).prod(
+            axis=0
+        )
+        phase_part = (
+            modified_bessel(1, kappa)
+            * modified_bessel([lamda + 1, lamda - 1], kappa).sum(axis=0)
+            * np.cos(lamda * mu)
+        )
+        r_0 = constant_part + phase_part
+        r_1 = constant_part - phase_part
+
+        return 0.5 * (np.sqrt(r_0) + np.sqrt(r_1)) / modified_bessel(0, kappa)
+
+    @staticmethod
+    def eval_grover_radii(
+        max_depth: int, mu: float, kappa: float
+    ) -> np.ndarray:
+        """Evaluate the expected radius up to a maximum Grover depth.
+
+        Parameters
+        ----------
+        max_depth : int
+            Maximum depth to evaluate Grover depth to
+        mu : float
+            Location parameter for the current von Mises distribution
+        kappa : float
+            Scale parameter for the current von Mises distribution
+
+        Returns
+        -------
+        np.ndarray
+            Expected radius for Grover depth values up to the given max
+            depth
+        """
+        return np.ndarray(
+            [
+                VonMises.expected_radius(i_d, mu, kappa)
+                for i_d in range(max_depth)
+            ]
+        )
+
+    @staticmethod
+    def eval_radii(max_depth: int, mu: float, kappa: float) -> np.ndarray:
+        """Evaluate the expected radius up to a maximum lambda.
+
+        Parameters
+        ----------
+        max_depth : int
+            Maximum lambda depth to evaluate to
+        mu : float
+            Location parameter for the current von Mises distribution
+        kappa : float
+            Scale parameter for the current von Mises distribution
+
+        Returns
+        -------
+        np.ndarray
+            Expected radius for values of lambda up to the given max
+            depth
+        """
+        return VonMises.expected_lambda_radius(
+            np.array([i_d for i_d in range(max_depth)]), mu, kappa
+        )
+
+    @staticmethod
+    def get_ber_prob(lamda: int, kappa: float, mu: float) -> float:
+        """Get the marginal Bernoulli probability from a conditional VM.
+
+        Assume that P(X = 1 | Theta = mu) = (1/2)* (1 - cos(lamda mu)).
+        Then if Theta is distributed as VM(mu, kappa), then the
+        returned probability is the marginal probability P(X = 1).
+
+        Parameters
+        ----------
+        lamda : int
+            Scale parameter for conditional Bernoulli distribution
+        kappa : float
+            Scale parameter of prior von-Mises distribution
+        mu : float
+            Location parameter of prior von-Mises distribution
+
+        Returns
+        -------
+        float
+            Marginal probability of observing a 1
+        """
+        return 0.5 * (
+            1
+            - np.cos(lamda * mu)
+            * modified_bessel(lamda, kappa)
+            / modified_bessel(0, kappa)
+        )
 
     @staticmethod
     def get_bessel_ratio(x: float, v: int = 0, N: int = 10) -> float:
