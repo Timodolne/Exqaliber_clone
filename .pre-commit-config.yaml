@@ -31,3 +31,9 @@ repos:
     - id: flakeheaven
       additional_dependencies: [flake8-docstrings]
       exclude: tests
+  - repo: https://github.com/pycqa/pydocstyle
+    rev: 6.1.1  # pick a git hash / tag to point to
+    hooks:
+    - id: pydocstyle
+      additional_dependencies: ["pydocstyle[toml]"]
+      exclude: tests

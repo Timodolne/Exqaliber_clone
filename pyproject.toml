@@ -59,7 +59,7 @@ exclude = '''
 [tool.isort]
 # https://github.com/timothycrosley/isort/
 py_version = 37
-line_length = 79
+line_length = 72
 
 known_typing = ["typing", "types", "typing_extensions", "mypy", "mypy_extensions"]
 sections = ["FUTURE", "TYPING", "STDLIB", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]
@@ -128,9 +128,10 @@ show_missing = true
 max-doc-length = 72
 max-line-length = 79
 format = "grouped"
-docstring-convention = "numpy"
 
 [tool.flakeheaven.plugins]
 pycodestyle = ["+*","-E203","-W503"]
 pyflakes = ["+*"]
-flake8-docstrings = ["+*"]
+
+[tool.pydocstyle]
+convention = "numpy"
