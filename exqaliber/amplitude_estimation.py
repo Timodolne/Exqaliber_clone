@@ -1,14 +1,17 @@
 """Full process for amplitude estimation."""
 from exqaliber.bayesian_updates.bayesian_model import BayesianModel
+from exqaliber.bayesian_updates.distributions.normal import Normal
 from exqaliber.bayesian_updates.distributions.von_mises import VonMises
-from exqaliber.circuit_sampling.classical import ClassicalAmplitudeEstimation
+from exqaliber.circuit_sampling.classical import (
+    ClassicalAmplitudeEstimation,
+)
 from exqaliber.sampling_schedule.fixed_sampling_schedule.lis import (
     LinearIncrementalSequence,
 )
 
 
-def prior_dist(mu: float = 0.2, kappa: float = 0.6):
-    """Generate a prior distribution.
+def prior_von_mises(mu: float = 0.2, kappa: float = 0.6):
+    """Generate a von Mises prior.
 
     Parameters
     ----------
@@ -25,8 +28,21 @@ def prior_dist(mu: float = 0.2, kappa: float = 0.6):
     return VonMises(mu, kappa)
 
 
+def prior_normal(mu: float, var: float):
+    """Generate a normal prior.
+
+    Parameters
+    ----------
+    mu : float
+        Mean of the normal distribution
+    var : float
+        Varinace of the normal distribution
+    """
+    return Normal(mu, var)
+
+
 if __name__ == "__main__":
-    dist = prior_dist()
+    dist = prior_von_mises()
     schedule = LinearIncrementalSequence(10, 10)
     circuit_sampling = ClassicalAmplitudeEstimation(0.2)
     model = BayesianModel(dist)
