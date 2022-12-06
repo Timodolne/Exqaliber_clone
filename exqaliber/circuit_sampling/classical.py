@@ -5,7 +5,9 @@ from exqaliber.circuit_sampling.noise_model.base import (
     NOISE_MODEL,
     BaseNoiseModel,
 )
-from exqaliber.circuit_sampling.noise_model.depolarising import Depolarising
+from exqaliber.circuit_sampling.noise_model.depolarising import (
+    Depolarising,
+)
 from exqaliber.circuit_sampling.noise_model.noiseless import Noiseless
 from exqaliber.sampling_schedule.fixed_sampling_schedule.base import (
     BaseSamplingSchedule,
