@@ -134,6 +134,76 @@ Calculating $\mathbb{E}[R]$ then, is achieved by multiplying by  $\Pi(Y = y)$, s
 		      & + \frac{1}{2 I_0(\kappa) } \sqrt{I_1^2 + \frac{1}{4} \left( I_{\lambda + 1}^{2} + I_{\lambda - 1}^2 \right)  + \frac{1}{2}\cos(2 \lambda \mu) I_{\lambda +1} I_{\lambda - 1} - I_1 \left( I_{\lambda + 1} + I_{\lambda -1 } \right) \cos (\lambda \mu) }
 \end{align*}
 
+\section{Single shot updates - Gaussian}
+
+Now we're going to assume a different prior and posterior:
+
+\begin{itemize}
+	\item $\Pi(\theta) \sim \text{N}(\mu, \sigma^2)$ - prior
+	\item $\Pi(Y=y | \theta) \sim \text{Ber}(\lambda) = \frac{1}{2}(1 + (-1)^{y} \cos(\lambda \theta))$
+\end{itemize}
+Bayes rule, again, states that
+\begin{equation}
+    \Pi'(\theta|Y = y) = \frac{\Pi(\theta) \mathcal{L} (y, \theta)}{\Pi(Y=y)}.
+\end{equation}
+We assume that
+\begin{equation}
+    \Pi(\theta) = \frac{1}{\sqrt{2\pi \sigma^2}} e^{-\frac{(\theta - \mu)^2}{2\sigma^2}},
+\end{equation}
+we know that
+\begin{equation}
+    \mathcal{L} (y, \theta) = \frac{1}{2}(1 + (-1)^{y} \cos(\lambda \theta)),
+\end{equation}
+and by definition
+\begin{equation}
+\label{eq:normalisation_factor}
+    \Pi(Y=y) = \int \mathcal{L}(y, \theta) \Pi(\theta) \text{d}\theta.
+\end{equation}
+
+Let us now define the \textit{bias} to be
+\begin{equation}
+    \Lambda ( \theta) = 2 \mathcal{L} (0, \theta) - 1,
+\end{equation}
+which gives the likelihood as
+\begin{equation}
+    \mathcal{L} (y, \theta) = \frac{1}{2}(1 + (-1)^{y} \Lambda(\theta)).
+\end{equation}
+Recognise that in this case $\Lambda(\theta) = \cos(\lambda \theta)$.
+
+
+Let us define \textit{expected bias} $b$ and the \textit{chi function} $\chi$ as
+\begin{align}
+    b &= \int \Pi(\theta) \Lambda (\theta) \text{d} \theta\\
+    \chi &= \frac{1}{\sigma^2} \int (\theta - \mu)\Pi(\theta) \Lambda (\theta) \text{d} \theta
+\end{align}
+
+Now, putting that in to equation \eqref{eq:normalisation_factor} gives
+\begin{equation}
+    \Pi(Y=y) = \frac{1}{2} \Big[ \int \Pi(\theta) \text{d}\theta + (-1)^y \int \Pi(\theta) \Lambda (\theta) \text{d} \theta \Big].
+\end{equation}
+The first part equals $1$ by definition. The second part is the expected bias, also by definition, i.e.,
+\begin{equation}
+     \Pi(Y=y) = \frac{1}{2} \Big[ 1 + (-1)^y b\Big].
+\end{equation}
+
+The expected bias $b$ is given by
+\begin{align}
+    b   &= \int \Pi(\theta) \Lambda (\theta) \text{d} \theta\\
+        &= \int \frac{1}{\sqrt{2\pi \sigma^2}} e^{-\frac{(\theta - \mu)^2}{2\sigma^2}} \cos(\lambda \theta) \text{d} \theta,
+\end{align}
+which apparently (Koh paper, equation 153 on page 25) is an 'identity':
+\begin{equation}
+    b = e^{-\frac{1}{2}\lambda^2\sigma^2} \cos (\lambda \mu).
+\end{equation}
+
+
+Putting this all together gives for the posterior
+
+\begin{align}
+    \Pi'(\theta|Y = y)  &= \frac{\Pi(\theta) \mathcal{L} (y, \theta)}{\Pi(Y=y)}\\
+    &= \frac{1}{4\sqrt{2\pi \sigma^2}}\frac{e^{-\frac{1}{2}(\frac{\theta - \mu}{\sigma})^2} ( 1 + (-1)^y \cos(\lambda \theta))}{1 + (-1)^y e^{-\frac{1}{2}\lambda^2\sigma^2} \cos (\lambda \mu)}
+\end{align}
+
 \appendix
 
 \chapter{Integrals}
