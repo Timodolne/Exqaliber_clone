@@ -75,7 +75,7 @@ class Normal:
     ) -> Tuple[float, float]:
         """Get the mean and variance of the updated normal distribution.
 
-        Updates the the mean and variance using a normal prior and
+        Updates the mean and variance using a normal prior and
         Bernoulli likelihood.
 
         Parameters
