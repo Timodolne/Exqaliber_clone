@@ -173,7 +173,9 @@ Recognise that in this case $\Lambda(\theta) = \cos(\lambda \theta)$.
 
 Let us define \textit{expected bias} $b$ and the \textit{chi function} $\chi$ as
 \begin{align}
+\label{eq:b}
     b &= \int \Pi(\theta) \Lambda (\theta) \text{d} \theta\\
+\label{eq:chi}
     \chi &= \frac{1}{\sigma^2} \int (\theta - \mu)\Pi(\theta) \Lambda (\theta) \text{d} \theta
 \end{align}
 
@@ -188,9 +190,7 @@ The first part equals $1$ by normalisation. The second part is the expected bias
 
 The expected bias $b$ is given by
 \begin{align}
-\label{eq:b}
     b   &= \int \Pi(\theta) \Lambda (\theta) \text{d} \theta\\
-\label{eq:chi}
         &= \int \frac{1}{\sqrt{2\pi \sigma^2}} e^{-\frac{(\theta - \mu)^2}{2\sigma^2}} \cos(\lambda \theta) \text{d} \theta,
 \end{align}
 which apparently (\cite{Koh2020}, equation 153 on page 25) is an 'identity' for $\sigma > 0$ and $\mu, \lambda \in \mathbb{R}$:
@@ -222,7 +222,7 @@ Theorem 12 (together with equation (113)) of \cite{Koh2020} states that the \tex
 \end{equation}
 with
 \begin{equation}
-    \mathcal{V} = \frac{1}{4}\Bigg[ \sum_{y\in \{0,1\}}\frac{I_1(y)^2}{I_0(d)} - \mu^2\Bigg],
+    \mathcal{V} = \frac{1}{4}\Bigg[ \sum_{y\in \{0,1\}}\frac{I_1(y)^2}{I_0(y)} - \mu^2\Bigg],
 \end{equation}
 and with
 \begin{equation}
@@ -239,7 +239,13 @@ Now by writing the expected bias $b$ and chi function $\chi$, equations \eqref{e
 \end{equation}
 The Gaussian prior has a nice property: differentiating the expected bias w.r.t. the prior mean gives the chi function, i.e.
 \begin{equation}
+\label{eq:chi-diff}
     \chi(\mu, \sigma) = \frac{\partial}{\partial\mu}b(\mu, \sigma),
+\end{equation}
+resulting in
+\begin{equation}
+\label{eq:chi-gaussian}
+    \chi(\mu, \sigma) = - e^{-\frac{1}{2}\lambda^2\sigma^2}\sin(\lambda\mu)
 \end{equation}
 and now the variance reduction factor can be written as
 \begin{equation}
@@ -249,12 +255,65 @@ where $\mathbb{1}_{\Lambda \notin \{\pm1\}}$ denotes the indicator function whic
 
 Combining the above, gives, together with equation \eqref{eq:b-gaussian} for the Gaussian prior:
 \begin{equation}
-    \mathcal{V} = \frac{e^{-\lambda^2\sigma^2} \sin^2(\lambda\mu)}{1-e^{-\lambda^2\sigma^2} \cos^2(\lambda\mu)},
+    \mathcal{V} = \frac{e^{-\lambda^2\sigma^2} \sin^2(\lambda\mu)}{1-e^{-\lambda^2\sigma^2} \cos^2(\lambda\mu)}\mathbb{1}_{\Lambda \notin \{\pm1\}},
 \end{equation}
 and thereby the expected posterior variance is
 \begin{equation}
-    \mathbb{E}_y(\text{Var}_{\theta}(\theta | Y)) = \sigma^2(1-\sigma^2\frac{e^{-\lambda^2\sigma^2} \sin^2(\lambda\mu)}{1-e^{-\lambda^2\sigma^2} \cos^2(\lambda\mu)}).
+    \mathbb{E}_y(\text{Var}_{\theta}(\theta | Y)) = \sigma^2(1-\sigma^2\frac{e^{-\lambda^2\sigma^2} \sin^2(\lambda\mu)}{1-e^{-\lambda^2\sigma^2} \cos^2(\lambda\mu)}\mathbb{1}_{\Lambda \notin \{\pm1\}}).
 \end{equation}
+
+The next quantities of interest are $\mathbb{E}(\theta | Y=y)$ and $\text{Var}(\theta|Y=y)$ for $y\in \{0,1\}$. By definition:
+\begin{equation}
+    \mathbb{E}(\theta | Y=y) = \int \theta \Pi'(\theta|Y=y)\text{d}\theta,
+\end{equation}
+and
+\begin{equation}
+    \text{Var}(\theta|Y=y) = \mathbb{E}(\theta^2 | Y=y) - (\mathbb{E}(\theta | Y=y))^2,
+\end{equation}
+with
+\begin{equation}
+    \mathbb{E}(\theta^2 | Y=y) = \int \theta^2 \Pi'(\theta|Y=y)\text{d}\theta.
+\end{equation}
+
+Starting with $\mathbb{E}(\theta | Y=y)$, we write
+\begin{align}
+    \mathbb{E}(\theta | Y=y) &= \frac{1}{\Pi(Y=y)} \int \theta \Pi(\theta)\mathcal{L}(y, \theta)\text{d}\theta\\
+    &= \frac{1}{\Pi(Y=y)} \int \theta \Pi(\theta)\Big(\frac{1}{2}(1 + (-1)^{y} \cos(\lambda \theta))\Big)\text{d}\theta\\
+    &= \frac{1/2}{\Pi(Y=y)} \Bigg(\int\theta\Pi(\theta)\text{d}\theta + (-1)^y \int\theta\Pi(\theta)\Lambda(\theta)\text{d}\theta\Bigg)\\
+    &= \frac{1/2}{\Pi(Y=y)} \Bigg(\mu + (-1)^y \int\theta\Pi(\theta)\Lambda(\theta)\text{d}\theta\Bigg).
+\end{align}
+Now by equation \eqref{eq:chi},
+\begin{equation}
+    \chi = \frac{1}{\sigma^2}\Bigg( \int_{-\infty}^{\infty} \theta\Pi(\theta)\Lambda(\theta)\text{d}\theta - \mu \int_{-\infty}^{\infty} \Pi(\theta)\Lambda(\theta)\text{d}\theta\Bigg),
+\end{equation}
+and by using the definition for $b$ (equation \eqref{eq:b}):
+\begin{equation}
+    \int_{-\infty}^{\infty} \theta\Pi(\theta)\Lambda(\theta)\text{d}\theta = \sigma^2\chi + \mu b,
+\end{equation}
+which gives:
+\begin{align}
+    \mathbb{E}(\theta | Y=y) &= \frac{1/2(\mu + (-1)^y(\sigma^2\chi + \mu b))}{\Pi(Y=y)}\\
+    &= \frac{\mu + (-1)^y(\sigma^2\chi + \mu b)}{1+(-1)^yb}\\
+\end{align}
+and with equations \eqref{eq:b-gaussian} and \eqref{eq:chi-gaussian} gives:
+\begin{equation}
+    \mathbb{E}(\theta | Y=y) = \frac{\mu + (-1)^ye^{-\frac{1}{2}\lambda^2\sigma^2}\big(\mu\cos(\lambda\mu) - \sigma^2\sin(\lambda\mu)\big)}{1+(-1)^ye^{-\frac{1}{2}\lambda^2\sigma^2}\cos(\lambda\mu)}.
+\end{equation}
+
+% Now for the posterior variance $\text{Var}(\theta|Y=y)$, we only need $\mathbb{E}(\theta^2 | Y=y)$, which is
+% \begin{align}
+%     \mathbb{E}(\theta^2 | Y=y) &= \frac{1}{\Pi(Y=y)} \int \theta^2 \Pi(\theta)\mathcal{L}(y, \theta)\text{d}\theta\\
+%     &= \frac{1}{\Pi(Y=y)} \int \theta^2 \Pi(\theta)\Big(\frac{1}{2}(1 + (-1)^{y} \cos(\lambda \theta))\Big)\text{d}\theta\\
+%     &= \frac{1/2}{\Pi(Y=y)} \Bigg(\int\theta^2\Pi(\theta)\text{d}\theta + (-1)^y \int\theta^2\Pi(\theta)\Lambda(\theta)\text{d}\theta\Bigg),
+% \end{align}
+% and using
+% \begin{equation}
+%     \int\theta^2\Pi(\theta)\text{d}\theta = \sigma^2 + \mu^2,
+% \end{equation}
+% this gives
+% \begin{equation}
+%      \mathbb{E}(\theta^2 | Y=y) = \frac{1/2}{\Pi(Y=y)} \Bigg(\sigma^2 + \mu^2+ (-1)^y \int\theta^2\Pi(\theta)\Lambda(\theta)\text{d}\theta\Bigg).
+% \end{equation}
 
 \appendix
 
