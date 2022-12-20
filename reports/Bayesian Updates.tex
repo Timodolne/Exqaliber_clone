@@ -3,7 +3,7 @@
 
 % Title Page
 \title{Bayesian Updates}
-\usepackage{amsmath,amsthm,amssymb}
+\usepackage{amsmath,amsthm,amssymb,bbold}
 
 
 \begin{document}
@@ -134,8 +134,8 @@ Calculating $\mathbb{E}[R]$ then, is achieved by multiplying by  $\Pi(Y = y)$, s
 		      & + \frac{1}{2 I_0(\kappa) } \sqrt{I_1^2 + \frac{1}{4} \left( I_{\lambda + 1}^{2} + I_{\lambda - 1}^2 \right)  + \frac{1}{2}\cos(2 \lambda \mu) I_{\lambda +1} I_{\lambda - 1} - I_1 \left( I_{\lambda + 1} + I_{\lambda -1 } \right) \cos (\lambda \mu) }
 \end{align*}
 
-\section{Single shot updates - Gaussian}
-
+\section{Gaussian case}
+\subsection{Posterior}
 Now we're going to assume a different prior and posterior:
 
 \begin{itemize}
@@ -156,7 +156,7 @@ we know that
 \end{equation}
 and by definition
 \begin{equation}
-\label{eq:normalisation_factor}
+\label{eq:normalisation-factor}
     \Pi(Y=y) = \int \mathcal{L}(y, \theta) \Pi(\theta) \text{d}\theta.
 \end{equation}
 
@@ -177,7 +177,7 @@ Let us define \textit{expected bias} $b$ and the \textit{chi function} $\chi$ as
     \chi &= \frac{1}{\sigma^2} \int (\theta - \mu)\Pi(\theta) \Lambda (\theta) \text{d} \theta
 \end{align}
 
-Now, putting that in to equation \eqref{eq:normalisation_factor} gives
+Now, putting that in to equation \eqref{eq:normalisation-factor} gives
 \begin{equation}
     \Pi(Y=y) = \frac{1}{2} \Big[ \int \Pi(\theta) \text{d}\theta + (-1)^y \int \Pi(\theta) \Lambda (\theta) \text{d} \theta \Big].
 \end{equation}
@@ -188,12 +188,15 @@ The first part equals $1$ by normalisation. The second part is the expected bias
 
 The expected bias $b$ is given by
 \begin{align}
+\label{eq:b}
     b   &= \int \Pi(\theta) \Lambda (\theta) \text{d} \theta\\
+\label{eq:chi}
         &= \int \frac{1}{\sqrt{2\pi \sigma^2}} e^{-\frac{(\theta - \mu)^2}{2\sigma^2}} \cos(\lambda \theta) \text{d} \theta,
 \end{align}
 which apparently (\cite{Koh2020}, equation 153 on page 25) is an 'identity' for $\sigma > 0$ and $\mu, \lambda \in \mathbb{R}$:
 \begin{equation}
-    b = e^{-\frac{1}{2}\lambda^2\sigma^2} \cos (\lambda \mu).
+\label{eq:b-gaussian}
+    b(\mu, \sigma) = e^{-\frac{1}{2}\lambda^2\sigma^2} \cos (\lambda \mu).
 \end{equation}
 
 
@@ -203,6 +206,55 @@ Putting this all together gives for the posterior:
     \Pi'(\theta|Y = y)  &= \frac{\Pi(\theta) \mathcal{L} (y, \theta)}{\Pi(Y=y)}\\
     &= \frac{1}{\sqrt{2\pi \sigma^2}}\frac{e^{-\frac{1}{2}(\frac{\theta - \mu}{\sigma})^2} ( 1 + (-1)^y \cos(\lambda \theta))}{1 + (-1)^y e^{-\frac{1}{2}\lambda^2\sigma^2} \cos (\lambda \mu)}.
 \end{align}
+
+\subsection{Expected values}
+Now, we're interested in the following quantities:
+\begin{itemize}
+    \item $\mathbb{E}_y(\text{Var}_{\theta}(\theta | Y))$ - The expected posterior variance
+    \item $\mathcal{V}$ - The variance reduction factor
+    \item $\mathbb{E}(\theta | Y=0), \text{Var}(\theta|Y=0)$ - Posterior mean and variance when measure $Y=0$
+    \item $\mathbb{E}(\theta | Y=1), \text{Var}(\theta|Y=1)$ - Posterior mean and variance when measure $Y=1$
+\end{itemize}
+
+Theorem 12 (together with equation (113)) of \cite{Koh2020} states that the \textit{expected posterior variance} is given by
+\begin{equation}
+    \mathbb{E}_y(\text{Var}_{\theta}(\theta | Y)) = \sigma^2(1-\sigma^2\mathcal{V}),
+\end{equation}
+with
+\begin{equation}
+    \mathcal{V} = \frac{1}{4}\Bigg[ \sum_{y\in \{0,1\}}\frac{I_1(y)^2}{I_0(d)} - \mu^2\Bigg],
+\end{equation}
+and with
+\begin{equation}
+    I_k(y) = \int \theta^k \mathcal{L}(y, \theta)\Pi(\theta) \text{d}\theta
+\end{equation}
+the $k$-th moment of the function $\mathcal{L}(y, \cdot)\Pi(\cdot)$.
+
+Now by writing the expected bias $b$ and chi function $\chi$, equations \eqref{eq:b} and \eqref{eq:chi} respectively, in terms of the moments, you can show (equations (132-135) from \cite{Koh2020}) that for a two-outcome likelihood function, the variance reduction factor can be written as
+\begin{equation}
+    \mathcal{V} = \begin{cases}
+        \frac{\chi^2}{1-b^2},   & |b|<1\\
+        0,                      & |b|=1.
+    \end{cases}
+\end{equation}
+The Gaussian prior has a nice property: differentiating the expected bias w.r.t. the prior mean gives the chi function, i.e.
+\begin{equation}
+    \chi(\mu, \sigma) = \frac{\partial}{\partial\mu}b(\mu, \sigma),
+\end{equation}
+and now the variance reduction factor can be written as
+\begin{equation}
+    \mathcal{V} = \mathcal{V}(\mu, \sigma) = \frac{\partial_{\mu}b(\mu, \sigma)^2}{1 - b(\mu, \sigma)^2} \mathbb{1}_{\Lambda \notin \{\pm1\}},
+\end{equation}
+where $\mathbb{1}_{\Lambda \notin \{\pm1\}}$ denotes the indicator function which is equal to 1 when $\Lambda \notin \{\pm1\}$ and $0$ otherwise.
+
+Combining the above, gives, together with equation \eqref{eq:b-gaussian} for the Gaussian prior:
+\begin{equation}
+    \mathcal{V} = \frac{e^{-\lambda^2\sigma^2} \sin^2(\lambda\mu)}{1-e^{-\lambda^2\sigma^2} \cos^2(\lambda\mu)},
+\end{equation}
+and thereby the expected posterior variance is
+\begin{equation}
+    \mathbb{E}_y(\text{Var}_{\theta}(\theta | Y)) = \sigma^2(1-\sigma^2\frac{e^{-\lambda^2\sigma^2} \sin^2(\lambda\mu)}{1-e^{-\lambda^2\sigma^2} \cos^2(\lambda\mu)}).
+\end{equation}
 
 \appendix
 
@@ -216,6 +268,9 @@ The integrals we are interested in computing, are either of the form
 \[
 	I_{2n}(k) = \int_{- \infty}^{\infty} \theta^{2n} \cos (k \theta) e^{ - \theta^2}\text{d}\theta \text{ or } I_{2n + 1} = \int_{- \infty}^{\infty} \theta^{2n + 1} \sin (k \theta) e^{ - \theta^2}\text{d} \theta
 \]
+
+\bibliographystyle{abbrv}
+\bibliography{refs}
 
 
 \end{document}
