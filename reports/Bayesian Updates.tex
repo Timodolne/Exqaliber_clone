@@ -245,7 +245,7 @@ The Gaussian prior has a nice property: differentiating the expected bias w.r.t.
 resulting in
 \begin{equation}
 \label{eq:chi-gaussian}
-    \chi(\mu, \sigma) = - e^{-\frac{1}{2}\lambda^2\sigma^2}\sin(\lambda\mu)
+    \chi(\mu, \sigma) = - \lambda e^{-\frac{1}{2}\lambda^2\sigma^2}\sin(\lambda\mu)
 \end{equation}
 and now the variance reduction factor can be written as
 \begin{equation}
@@ -255,11 +255,11 @@ where $\mathbb{1}_{\Lambda \notin \{\pm1\}}$ denotes the indicator function whic
 
 Combining the above, gives, together with equation \eqref{eq:b-gaussian} for the Gaussian prior:
 \begin{equation}
-    \mathcal{V} = \frac{e^{-\lambda^2\sigma^2} \sin^2(\lambda\mu)}{1-e^{-\lambda^2\sigma^2} \cos^2(\lambda\mu)}\mathbb{1}_{\Lambda \notin \{\pm1\}},
+    \mathcal{V} = \frac{\lambda^2 e^{-\lambda^2\sigma^2} \sin^2(\lambda\mu)}{1-e^{-\lambda^2\sigma^2} \cos^2(\lambda\mu)}\mathbb{1}_{\Lambda \notin \{\pm1\}},
 \end{equation}
 and thereby the expected posterior variance is
 \begin{equation}
-    \mathbb{E}_y(\text{Var}_{\theta}(\theta | Y)) = \sigma^2(1-\sigma^2\frac{e^{-\lambda^2\sigma^2} \sin^2(\lambda\mu)}{1-e^{-\lambda^2\sigma^2} \cos^2(\lambda\mu)}\mathbb{1}_{\Lambda \notin \{\pm1\}}).
+    \mathbb{E}_y(\text{Var}_{\theta}(\theta | Y)) = \sigma^2(1-\sigma^2\frac{\lambda^2 e^{-\lambda^2\sigma^2} \sin^2(\lambda\mu)}{1-e^{-\lambda^2\sigma^2} \cos^2(\lambda\mu)}\mathbb{1}_{\Lambda \notin \{\pm1\}}).
 \end{equation}
 
 The next quantities of interest are $\mathbb{E}(\theta | Y=y)$ and $\text{Var}(\theta|Y=y)$ for $y\in \{0,1\}$. By definition:
@@ -297,46 +297,46 @@ which gives:
 \end{align}
 and with equations \eqref{eq:b-gaussian} and \eqref{eq:chi-gaussian} gives:
 \begin{equation}
-    \mathbb{E}(\theta | Y=y) = \frac{\mu + (-1)^ye^{-\frac{1}{2}\lambda^2\sigma^2}\big(\mu\cos(\lambda\mu) - \sigma^2\sin(\lambda\mu)\big)}{1+(-1)^ye^{-\frac{1}{2}\lambda^2\sigma^2}\cos(\lambda\mu)}.
+    \mathbb{E}(\theta | Y=y) = \frac{\mu + (-1)^ye^{-\frac{1}{2}\lambda^2\sigma^2}\big(\mu\cos(\lambda\mu) - \sigma^2\lambda \sin(\lambda\mu)\big)}{1+(-1)^ye^{-\frac{1}{2}\lambda^2\sigma^2}\cos(\lambda\mu)}.
 \end{equation}
 
-Now for the posterior variance $\text{Var}(\theta|Y=y)$, we only need $\mathbb{E}(\theta^2 | Y=y)$, which is
-\begin{align}
-    \mathbb{E}(\theta^2 | Y=y) &= \frac{1}{\Pi(Y=y)} \int \theta^2 \Pi(\theta)\mathcal{L}(y, \theta)\text{d}\theta\\
-    &= \frac{1}{\Pi(Y=y)} \int \theta^2 \Pi(\theta)\Big(\frac{1}{2}(1 + (-1)^{y} \cos(\lambda \theta))\Big)\text{d}\theta\\
-    &= \frac{1/2}{\Pi(Y=y)} \Bigg(\int\theta^2\Pi(\theta)\text{d}\theta + (-1)^y \int\theta^2\Pi(\theta)\Lambda(\theta)\text{d}\theta\Bigg),
-\end{align}
-and using
-\begin{equation}
-    \int\theta^2\Pi(\theta)\text{d}\theta = \sigma^2 + \mu^2,
-\end{equation}
-this gives
-\begin{equation}
-     \mathbb{E}(\theta^2 | Y=y) = \frac{1/2}{\Pi(Y=y)} \Bigg(\sigma^2 + \mu^2+ (-1)^y \int\theta^2\Pi(\theta)\Lambda(\theta)\text{d}\theta\Bigg).
-\end{equation}
-The last integral can be found with integration by parts. Let
-\begin{align}
-    u &= \theta^2\\
-    v\text{d}\theta &= \Pi(\theta)\Lambda(\theta)\text{d}\theta.
-\end{align}
-Now
-\begin{equation}
-    \int u v\text{d}\theta = u\int v \text{d}\theta  - \int (\frac{\text{d}u}{\text{d}\theta}) (\int v \text{d}\theta)\text{d}\theta,
-\end{equation}
-and
-\begin{equation}
-    \int v \text{d}\theta = \int \Pi(\theta)\Lambda(\theta)\text{d}\theta = b.
-\end{equation}
-This shows that
-\begin{equation}
-    \int\theta^2\Pi(\theta)\Lambda(\theta)\text{d}\theta = \theta^2 b - \int(2\theta)b\text{d}\theta = 0.
-\end{equation}
-
-Now we have that
-\begin{align}
-    \mathbb{E}(\theta^2 | Y=y) &= \frac{\sigma^2 + \mu^2}{1 + (-1)^yb}\\
-    &= \frac{\sigma^2 + \mu^2}{1 + (-1)^ye^{-\frac{1}{2}\lambda^2\sigma^2} \cos (\lambda \mu)}
-\end{align}
+%Now for the posterior variance $\text{Var}(\theta|Y=y)$, we only need $\mathbb{E}(\theta^2 | Y=y)$, which is
+%\begin{align}
+%    \mathbb{E}(\theta^2 | Y=y) &= \frac{1}{\Pi(Y=y)} \int \theta^2 \Pi(\theta)\mathcal{L}(y, \theta)\text{d}\theta\\
+%    &= \frac{1}{\Pi(Y=y)} \int \theta^2 \Pi(\theta)\Big(\frac{1}{2}(1 + (-1)^{y} \cos(\lambda \theta))\Big)\text{d}\theta\\
+%    &= \frac{1/2}{\Pi(Y=y)} \Bigg(\int\theta^2\Pi(\theta)\text{d}\theta + (-1)^y \int\theta^2\Pi(\theta)\Lambda(\theta)\text{d}\theta\Bigg),
+%\end{align}
+%and using
+%\begin{equation}
+%    \int\theta^2\Pi(\theta)\text{d}\theta = \sigma^2 + \mu^2,
+%\end{equation}
+%this gives
+%\begin{equation}
+%     \mathbb{E}(\theta^2 | Y=y) = \frac{1/2}{\Pi(Y=y)} \Bigg(\sigma^2 + \mu^2+ (-1)^y \int\theta^2\Pi(\theta)\Lambda(\theta)\text{d}\theta\Bigg).
+%\end{equation}
+%The last integral can be found with integration by parts. Let
+%\begin{align}
+%    u &= \theta^2\\
+%    v\text{d}\theta &= \Pi(\theta)\Lambda(\theta)\text{d}\theta.
+%\end{align}
+%Now
+%\begin{equation}
+%    \int u v\text{d}\theta = u\int v \text{d}\theta  - \int (\frac{\text{d}u}{\text{d}\theta}) (\int v \text{d}\theta)\text{d}\theta,
+%\end{equation}
+%and
+%\begin{equation}
+%    \int v \text{d}\theta = \int \Pi(\theta)\Lambda(\theta)\text{d}\theta = b.
+%\end{equation}
+%This shows that
+%\begin{equation}
+%    \int\theta^2\Pi(\theta)\Lambda(\theta)\text{d}\theta = \theta^2 b - \int(2\theta)b\text{d}\theta = 0.
+%\end{equation}
+%
+%Now we have that
+%\begin{align}
+%    \mathbb{E}(\theta^2 | Y=y) &= \frac{\sigma^2 + \mu^2}{1 + (-1)^yb}\\
+%    &= \frac{\sigma^2 + \mu^2}{1 + (-1)^ye^{-\frac{1}{2}\lambda^2\sigma^2} \cos (\lambda \mu)}
+%\end{align}
 
 
 
