@@ -157,7 +157,7 @@ we know that
 and by definition
 \begin{equation}
 \label{eq:normalisation-factor}
-    \Pi(Y=y) = \int \mathcal{L}(y, \theta) \Pi(\theta) \text{d}\theta.
+    \Pi(Y=y) = \int_{-\infty}^{\infty} \mathcal{L}(y, \theta) \Pi(\theta) \text{d}\theta.
 \end{equation}
 
 Let us now define the \textit{bias} to be
@@ -174,14 +174,14 @@ Recognise that in this case $\Lambda(\theta) = \cos(\lambda \theta)$.
 Let us define \textit{expected bias} $b$ and the \textit{chi function} $\chi$ as
 \begin{align}
 \label{eq:b}
-    b &= \int \Pi(\theta) \Lambda (\theta) \text{d} \theta\\
+    b &= \int_{-\infty}^{\infty} \Pi(\theta) \Lambda (\theta) \text{d} \theta\\
 \label{eq:chi}
-    \chi &= \frac{1}{\sigma^2} \int (\theta - \mu)\Pi(\theta) \Lambda (\theta) \text{d} \theta
+    \chi &= \frac{1}{\sigma^2} \int_{-\infty}^{\infty} (\theta - \mu)\Pi(\theta) \Lambda (\theta) \text{d} \theta
 \end{align}
 
 Now, putting that in to equation \eqref{eq:normalisation-factor} gives
 \begin{equation}
-    \Pi(Y=y) = \frac{1}{2} \Big[ \int \Pi(\theta) \text{d}\theta + (-1)^y \int \Pi(\theta) \Lambda (\theta) \text{d} \theta \Big].
+    \Pi(Y=y) = \frac{1}{2} \Big[ \int_{-\infty}^{\infty} \Pi(\theta) \text{d}\theta + (-1)^y \int_{-\infty}^{\infty} \Pi(\theta) \Lambda (\theta) \text{d} \theta \Big].
 \end{equation}
 The first part equals $1$ by normalisation. The second part is the expected bias by definition, i.e.,
 \begin{equation}
@@ -190,8 +190,8 @@ The first part equals $1$ by normalisation. The second part is the expected bias
 
 The expected bias $b$ is given by
 \begin{align}
-    b   &= \int \Pi(\theta) \Lambda (\theta) \text{d} \theta\\
-        &= \int \frac{1}{\sqrt{2\pi \sigma^2}} e^{-\frac{(\theta - \mu)^2}{2\sigma^2}} \cos(\lambda \theta) \text{d} \theta,
+    b   &= \int_{-\infty}^{\infty} \Pi(\theta) \Lambda (\theta) \text{d} \theta\\
+        &= \int_{-\infty}^{\infty} \frac{1}{\sqrt{2\pi \sigma^2}} e^{-\frac{(\theta - \mu)^2}{2\sigma^2}} \cos(\lambda \theta) \text{d} \theta,
 \end{align}
 which apparently (\cite{Koh2020}, equation 153 on page 25) is an 'identity' for $\sigma > 0$ and $\mu, \lambda \in \mathbb{R}$:
 \begin{equation}
@@ -226,7 +226,7 @@ with
 \end{equation}
 and with
 \begin{equation}
-    I_k(y) = \int \theta^k \mathcal{L}(y, \theta)\Pi(\theta) \text{d}\theta
+    I_k(y) = \int_{-\infty}^{\infty} \theta^k \mathcal{L}(y, \theta)\Pi(\theta) \text{d}\theta
 \end{equation}
 the $k$-th moment of the function $\mathcal{L}(y, \cdot)\Pi(\cdot)$.
 
@@ -264,7 +264,7 @@ and thereby the expected posterior variance is
 
 The next quantities of interest are $\mathbb{E}(\theta | Y=y)$ and $\text{Var}(\theta|Y=y)$ for $y\in \{0,1\}$. By definition:
 \begin{equation}
-    \mathbb{E}(\theta | Y=y) = \int \theta \Pi'(\theta|Y=y)\text{d}\theta,
+    \mathbb{E}(\theta | Y=y) = \int_{-\infty}^{\infty} \theta \Pi'(\theta|Y=y)\text{d}\theta,
 \end{equation}
 and
 \begin{equation}
@@ -272,15 +272,15 @@ and
 \end{equation}
 with
 \begin{equation}
-    \mathbb{E}(\theta^2 | Y=y) = \int \theta^2 \Pi'(\theta|Y=y)\text{d}\theta.
+    \mathbb{E}(\theta^2 | Y=y) = \int_{-\infty}^{\infty} \theta^2 \Pi'(\theta|Y=y)\text{d}\theta.
 \end{equation}
 
 Starting with $\mathbb{E}(\theta | Y=y)$, we write
 \begin{align}
-    \mathbb{E}(\theta | Y=y) &= \frac{1}{\Pi(Y=y)} \int \theta \Pi(\theta)\mathcal{L}(y, \theta)\text{d}\theta\\
-    &= \frac{1}{\Pi(Y=y)} \int \theta \Pi(\theta)\Big(\frac{1}{2}(1 + (-1)^{y} \cos(\lambda \theta))\Big)\text{d}\theta\\
-    &= \frac{1/2}{\Pi(Y=y)} \Bigg(\int\theta\Pi(\theta)\text{d}\theta + (-1)^y \int\theta\Pi(\theta)\Lambda(\theta)\text{d}\theta\Bigg)\\
-    &= \frac{1/2}{\Pi(Y=y)} \Bigg(\mu + (-1)^y \int\theta\Pi(\theta)\Lambda(\theta)\text{d}\theta\Bigg).
+    \mathbb{E}(\theta | Y=y) &= \frac{1}{\Pi(Y=y)} \int_{-\infty}^{\infty} \theta \Pi(\theta)\mathcal{L}(y, \theta)\text{d}\theta\\
+    &= \frac{1}{\Pi(Y=y)} \int_{-\infty}^{\infty} \theta \Pi(\theta)\Big(\frac{1}{2}(1 + (-1)^{y} \cos(\lambda \theta))\Big)\text{d}\theta\\
+    &= \frac{1/2}{\Pi(Y=y)} \Bigg(\int_{-\infty}^{\infty}\theta\Pi(\theta)\text{d}\theta + (-1)^y \int_{-\infty}^{\infty}\theta\Pi(\theta)\Lambda(\theta)\text{d}\theta\Bigg)\\
+    &= \frac{1/2}{\Pi(Y=y)} \Bigg(\mu + (-1)^y \int_{-\infty}^{\infty}\theta\Pi(\theta)\Lambda(\theta)\text{d}\theta\Bigg).
 \end{align}
 Now by equation \eqref{eq:chi},
 \begin{equation}
@@ -300,44 +300,117 @@ and with equations \eqref{eq:b-gaussian} and \eqref{eq:chi-gaussian} gives:
     \mathbb{E}(\theta | Y=y) = \frac{\mu + (-1)^ye^{-\frac{1}{2}\lambda^2\sigma^2}\big(\mu\cos(\lambda\mu) - \sigma^2\lambda \sin(\lambda\mu)\big)}{1+(-1)^ye^{-\frac{1}{2}\lambda^2\sigma^2}\cos(\lambda\mu)}.
 \end{equation}
 
-%Now for the posterior variance $\text{Var}(\theta|Y=y)$, we only need $\mathbb{E}(\theta^2 | Y=y)$, which is
-%\begin{align}
-%    \mathbb{E}(\theta^2 | Y=y) &= \frac{1}{\Pi(Y=y)} \int \theta^2 \Pi(\theta)\mathcal{L}(y, \theta)\text{d}\theta\\
-%    &= \frac{1}{\Pi(Y=y)} \int \theta^2 \Pi(\theta)\Big(\frac{1}{2}(1 + (-1)^{y} \cos(\lambda \theta))\Big)\text{d}\theta\\
-%    &= \frac{1/2}{\Pi(Y=y)} \Bigg(\int\theta^2\Pi(\theta)\text{d}\theta + (-1)^y \int\theta^2\Pi(\theta)\Lambda(\theta)\text{d}\theta\Bigg),
-%\end{align}
-%and using
-%\begin{equation}
-%    \int\theta^2\Pi(\theta)\text{d}\theta = \sigma^2 + \mu^2,
-%\end{equation}
-%this gives
-%\begin{equation}
-%     \mathbb{E}(\theta^2 | Y=y) = \frac{1/2}{\Pi(Y=y)} \Bigg(\sigma^2 + \mu^2+ (-1)^y \int\theta^2\Pi(\theta)\Lambda(\theta)\text{d}\theta\Bigg).
-%\end{equation}
-%The last integral can be found with integration by parts. Let
-%\begin{align}
-%    u &= \theta^2\\
-%    v\text{d}\theta &= \Pi(\theta)\Lambda(\theta)\text{d}\theta.
-%\end{align}
-%Now
-%\begin{equation}
-%    \int u v\text{d}\theta = u\int v \text{d}\theta  - \int (\frac{\text{d}u}{\text{d}\theta}) (\int v \text{d}\theta)\text{d}\theta,
-%\end{equation}
-%and
-%\begin{equation}
-%    \int v \text{d}\theta = \int \Pi(\theta)\Lambda(\theta)\text{d}\theta = b.
-%\end{equation}
-%This shows that
-%\begin{equation}
-%    \int\theta^2\Pi(\theta)\Lambda(\theta)\text{d}\theta = \theta^2 b - \int(2\theta)b\text{d}\theta = 0.
-%\end{equation}
-%
-%Now we have that
-%\begin{align}
-%    \mathbb{E}(\theta^2 | Y=y) &= \frac{\sigma^2 + \mu^2}{1 + (-1)^yb}\\
-%    &= \frac{\sigma^2 + \mu^2}{1 + (-1)^ye^{-\frac{1}{2}\lambda^2\sigma^2} \cos (\lambda \mu)}
-%\end{align}
+Now for the posterior variance $\text{Var}(\theta|Y=y)$, we only need $\mathbb{E}(\theta^2 | Y=y)$, which is
+\begin{align}
+   \mathbb{E}(\theta^2 | Y=y) &= \frac{1}{\Pi(Y=y)} \int_{-\infty}^{\infty} \theta^2 \Pi(\theta)\mathcal{L}(y, \theta)\text{d}\theta\\
+   &= \frac{1}{\Pi(Y=y)} \int_{-\infty}^{\infty} \theta^2 \Pi(\theta)\Big(\frac{1}{2}(1 + (-1)^{y} \cos(\lambda \theta))\Big)\text{d}\theta\\
+   &= \frac{1/2}{\Pi(Y=y)} \Bigg(\int_{-\infty}^{\infty}\theta^2\Pi(\theta)\text{d}\theta + (-1)^y \int\theta^2\Pi(\theta)\Lambda(\theta)\text{d}\theta\Bigg),
+\end{align}
+and using
+\begin{equation}
+   \int_{-\infty}^{\infty}\theta^2\Pi(\theta)\text{d}\theta = \sigma^2 + \mu^2,
+\end{equation}
+this gives
+\begin{equation}
+\label{eq:second-moment}
+    \mathbb{E}(\theta^2 | Y=y) = \frac{1/2}{\Pi(Y=y)} \Bigg(\sigma^2 + \mu^2+ (-1)^y \underbrace{\int_{-\infty}^{\infty}\theta^2\Pi(\theta)\Lambda(\theta)\text{d}\theta}_{\star}\Bigg).
+\end{equation}
+Let us focus on the last integral, which we define as $\star$:
 
+\begin{equation}
+    \star = \frac{1}{\sqrt{2\pi \sigma^2}}\int_{-\infty}^{\infty}\theta^2e^{-\frac{(\theta-\mu)^2}{2\sigma^2}}\cos(\lambda\theta)\text{d}\theta,
+\end{equation}
+which can be written as
+\begin{equation}
+    \frac{1}{2\sqrt{2\pi \sigma^2}}\int_{-\infty}^{\infty}\theta^2e^{-\frac{(\theta-\mu)^2}{2\sigma^2}} \Big( e^{i\lambda\theta} + e^{-i\lambda\theta} \Big) \text{d}\theta,
+\end{equation}
+and that breaks up the problem in two problems:
+\begin{equation}
+    \frac{1}{2\sqrt{2\pi \sigma^2}} \Big(
+        \underbrace{\int_{-\infty}^{\infty}\theta^2e^{-\frac{(\theta-\mu)^2}{2\sigma^2}} e^{i\lambda\theta}\text{d}\theta}_{A_0} +
+        \underbrace{\int_{-\infty}^{\infty}\theta^2e^{-\frac{(\theta-\mu)^2}{2\sigma^2}}e^{-i\lambda\theta}\text{d}\theta}_{B_0}
+    \Big)
+\end{equation}
+Here, $A_0$ and $B_0$ are very similar, except for the sign of the complex part.
+
+Let us simplify the exponent. The full exponent for $A_0$ is
+\begin{align}
+    &-\frac{(\theta-\mu)^2}{2\sigma^2} + i\lambda\theta\\
+    &=\frac{-1}{2\sigma^2}(\theta^2 - 2\theta\mu + \mu^2 - 2i\lambda\theta\sigma^2)\\
+    &=\frac{-1}{2\sigma^2}(\theta^2 - 2(\mu + i\lambda\sigma^2)\theta + \mu^2)\\
+    &=\frac{-1}{2\sigma^2}\big( (\theta - (\mu + i \lambda \sigma^2))^2 - (\mu^2 + 2\mu i \lambda \sigma^2 - \lambda^2 \sigma^4)+\mu^2\big)\\
+    &=-\frac{(\theta - (\mu + i \lambda \sigma^2))^2}{2\sigma^2} + \lambda \mu i - \frac{1}{2}\lambda^2\sigma^2
+\end{align}
+where in the penultimate line, we completed the square. Analogously, for $B_0$ the exponent is
+\begin{equation}
+    -\frac{(\theta - (\mu - i \lambda \sigma^2))^2}{2\sigma^2} - \lambda \mu i - \frac{1}{2}\lambda^2\sigma^2.
+\end{equation}
+In totally, $\star$ now becomes
+\begin{equation}
+    \frac{1}{2\sqrt{2\pi \sigma^2}} e^{-\frac{1}{2}\lambda^2\sigma^2}
+    \Big(
+        e^{\lambda \mu i}\underbrace{\int_{-\infty}^{\infty}\theta^2e^{-\frac{(\theta - (\mu + i \lambda \sigma^2))^2}{2\sigma^2}} \text{d}\theta}_{A_1} +
+        e^{-\lambda \mu i}\underbrace{\int_{-\infty}^{\infty}\theta^2e^{-\frac{(\theta - (\mu - i \lambda \sigma^2))^2}{2\sigma^2}}\text{d}\theta}_{B_1}
+    \Big).
+\end{equation}
+We can solve $A_1$ and $B_1$ by using substitution:
+\begin{align}
+    u &= \theta - (\mu + i \lambda \sigma^2) & v &= \theta - (\mu - i \lambda \sigma^2)\\
+    \text{d}u &= \text{d}\theta & \text{d}v &= \text{d}\theta\\
+    \theta^2 &= u^2 + 2u(\mu + i \lambda \sigma^2) + (\mu + i \lambda \sigma^2)^2 &
+    \theta^2 &= v^2 + 2v(\mu - i \lambda \sigma^2) + (\mu - i \lambda \sigma^2)^2
+\end{align}
+Now $A_1$ is
+\begin{align}
+    A_1 &= \int_{-\infty}^{\infty}\theta^2e^{-\frac{(\theta - (\mu + i \lambda \sigma^2))^2}{2\sigma^2}} \text{d}\theta\\
+    &= \int_{-\infty}^{\infty}(u^2 + 2u(\mu + i \lambda \sigma^2) + (\mu + i \lambda \sigma^2)^2)e^{-\frac{u^2}{2\sigma^2}} \text{d}\theta\\
+    &=
+    \underbrace{\int_{-\infty}^{\infty}u^2 e^{-\frac{u^2}{2\sigma^2}} \text{d}u}_{=\sqrt{2\pi\sigma^6}} +
+    2(\mu + i \lambda \sigma^2) \underbrace{\int_{-\infty}^{\infty} ue^{-\frac{u^2}{2\sigma^2}} \text{d}u}_{=0} +
+    (\mu + i \lambda \sigma^2)^2 \underbrace{\int_{-\infty}^{\infty}e^{-\frac{u^2}{2\sigma^2}} \text{d}u}_{=\sqrt{2\pi\sigma^2}}\\
+    &= \sqrt{2\pi\sigma^6} + (\mu + i \lambda \sigma^2)^2 \sqrt{2\pi\sigma^2}\\
+    &= \sqrt{2\pi\sigma^2} (\sigma^2 + (\mu + i \lambda \sigma^2)^2)
+\end{align}
+and for $B_1$
+\begin{equation}
+    B_1 = \sqrt{2\pi\sigma^2} (\sigma^2 + (\mu - i \lambda \sigma^2)^2).
+\end{equation}
+The prefactor $\sqrt{2\pi\sigma^2}$ cancels with the prefactor in $\star$ to give
+\begin{equation}
+    \star = \frac{1}{2}e^{-\frac{1}{2}\lambda^2\sigma^2}
+    \Big(
+        e^{\lambda \mu i}(\sigma^2 + (\mu + i \lambda \sigma^2)^2) +
+        e^{-\lambda \mu i}(\sigma^2 + (\mu - i \lambda \sigma^2)^2)
+    \Big).
+\end{equation}
+We can do some accounting to arrive at the final form:
+\begin{align}
+    \star &= \frac{1}{2}e^{-\frac{1}{2}\lambda^2\sigma^2}
+    \Big(
+        e^{\lambda \mu i}(\sigma^2 + \mu^2 - \lambda^2\sigma^4 + 2\mu i \lambda \sigma^2) +
+        e^{-\lambda \mu i}(\sigma^2 + \mu^2 - \lambda^2\sigma^4 - 2\mu i \lambda \sigma^2)
+    \Big)\\
+    &= \frac{1}{2}e^{\frac{1}{2}\lambda^2\sigma^2}
+    \Big(
+        (\sigma^2 + \mu^2 - \lambda^2\sigma^4)(\underbrace{e^{\lambda \mu i} + e^{-\lambda \mu i}}_{=2\cos{\lambda \mu}})
+        + 2\lambda \mu \sigma^2(\underbrace{i e^{\lambda \mu i} - ie^{-\lambda \mu i}}_{=2\sin{\lambda \mu}})
+    \Big)\\
+    &= \sigma^2 e^{-\frac{1}{2}\lambda^2\sigma^2}\Big((1 + \frac{\mu^2}{\sigma^2} - \lambda^2\sigma^2)\cos{\lambda \mu} + 2\lambda \mu \sin{\lambda \mu}\Big).
+\end{align}
+
+And with equation \eqref{eq:b-gaussian} and \eqref{eq:chi-gaussian}, we can also write it as
+\begin{equation}
+    \star = \sigma^2\Big( (1 + \frac{\mu^2}{\sigma^2} - \lambda^2\sigma^2)b -2\mu \chi\Big)
+\end{equation}
+
+Plugging this back in equation \eqref{eq:second-moment} gives for the second moment,
+\begin{equation}
+    \mathbb{E}(\theta^2 | Y=y) = \frac{\sigma^2 + \mu^2+ (-1)^y \sigma^2\Big( (1 + \frac{\mu^2}{\sigma^2} - \lambda^2\sigma^2)b -2\mu \chi\Big)}{1+(-1)^yb},
+\end{equation}
+or when fully expanded:
+\begin{equation}
+    \mathbb{E}(\theta^2 | Y=y) = \frac{\sigma^2 + \mu^2+ (-1)^y \sigma^2 e^{-\frac{1}{2}\lambda^2\sigma^2}\Big((1 + \frac{\mu^2}{\sigma^2} - \lambda^2\sigma^2)\cos{\lambda \mu} + 2\lambda \mu \sin{\lambda \mu}\Big)}{1+(-1)^ye^{-\frac{1}{2}\lambda^2\sigma^2}\cos(\lambda\mu)}.
+\end{equation}
 
 
 \appendix
