@@ -70,7 +70,7 @@ class Normal:
     """
 
     @staticmethod
-    def get_expected_bias(self, lamda: int, mu: float, sigma: float) -> float:
+    def get_expected_bias(lamda: int, mu: float, sigma: float) -> float:
         """Get the expected bias the updated normal distribution.
 
         Parameters
@@ -90,7 +90,7 @@ class Normal:
         return np.exp(-0.5 * lamda**2 * sigma**2) * np.cos(lamda * mu)
 
     @staticmethod
-    def get_chi(self, lamda: int, mu: float, sigma: float) -> float:
+    def get_chi(lamda: int, mu: float, sigma: float) -> float:
         """Get the expected bias the updated normal distribution.
 
         Parameters
@@ -225,3 +225,58 @@ class Normal:
         posterior_var = second_moment - posterior_mu**2
 
         return posterior_mu, posterior_var
+
+    @staticmethod
+    def get_variance_reduction_factor(
+        lamda: int, mu: float, sigma: float
+    ) -> float:
+        """Get the variance reduction factor for given lambda.
+
+        Parameters
+        ----------
+        lamda : int
+            Defines p(1) = 0.5*(1 - cos(lamda * mu))
+        mu : float
+            Location parameter of the current normal distribution
+        sigma : float
+            Scale parameter of the current normal distribution
+
+        Returns
+        -------
+        float
+            Variance reduction factor
+        """
+        b = Normal.get_expected_bias(lamda, mu, sigma)
+        chi = Normal.get_chi(lamda, mu, sigma)
+
+        if np.abs(b - 1) < 1e-8:
+            return 0
+        else:
+            return chi**2 / (1 - b**2)
+
+    @staticmethod
+    def eval_lambdas(
+        lambdas: np.ndarray, mu: float, sigma: float
+    ) -> np.ndarray:
+        """Get the variance reduction factor for lambdas.
+
+        Parameters
+        ----------
+        lamda : int
+            Defines p(1) = 0.5*(1 - cos(lamda * mu))
+        mu : float
+            Location parameter of the current normal distribution
+        sigma : float
+            Scale parameter of the current normal distribution
+
+        Returns
+        -------
+        np.ndarray
+            Variance reduction factor for given lambdas
+        """
+        return np.array(
+            [
+                Normal.get_variance_reduction_factor(lamda, mu, sigma)
+                for lamda in lambdas
+            ]
+        )
