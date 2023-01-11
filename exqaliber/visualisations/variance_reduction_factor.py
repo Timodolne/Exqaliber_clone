@@ -23,10 +23,10 @@ def graph_variance_reduction(
         Scale parameter of the current normal distribution
     """
     lambdas = np.array([i + 1 for i in range(max_lambda)], dtype=int)
-    variances = Normal.eval_lambdas(lambdas, mu, sigma)
+    variance_reduction_factors = Normal.eval_lambdas(lambdas, mu, sigma)
 
     df = pd.DataFrame(
-        np.array((lambdas, variances)).T,
+        np.array((lambdas, variance_reduction_factors)).T,
         columns=["Lambda", "Variance Reduction Factor"],
     )
     df["Evaluation"] = np.array(["Exact"] * max_lambda)
