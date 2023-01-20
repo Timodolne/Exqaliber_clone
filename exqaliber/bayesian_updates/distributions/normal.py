@@ -63,7 +63,7 @@ class Normal:
             (-\inf, +\inf)
 
         """
-        return np.random.normal(self.__mu, self.__var, size=n)
+        return np.random.normal(self.mean, self.standard_deviation, size=n)
 
     """
     Update method given a Bernoulli measurement.
