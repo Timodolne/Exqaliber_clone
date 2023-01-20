@@ -149,7 +149,7 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
             AlgorithmError: if min_ratio is smaller or equal to 1
         """
         lamda = int(1 / prior_distribution.standard_deviation)
-        return np.max([1, int((lamda - 1) / 2)])
+        return np.max([0, int((lamda - 1) / 2)])
 
     def construct_circuit(
         self, estimation_problem: EstimationProblem, k: int = 0
@@ -218,9 +218,6 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
             ValueError: A quantum instance or Sampler must be provided.
             AlgorithmError: Sampler job run error.
         """
-        if self._sampler is None:
-            raise ValueError("A sampler must be provided.")
-
         # initialize memory variables
         powers = [0]  # list of powers k: Q^k, (called 'k' in paper)
         # a priori knowledge of theta / 2 / pi
@@ -230,7 +227,7 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
         ]  # a priori knowledge of the confidence interval of the estimate
         num_oracle_queries = 0
         num_one_shots = []
-        prior_distributions = [Normal(0.5, 0.5)]
+        prior_distributions = [Normal(self._prior_mean, self._prior_variance)]
 
         # initiliaze starting variables
         # TODO find some way of making this a variable
@@ -332,6 +329,7 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
                 lamda = 4 * k + 2
                 p = 0.5 * (1 - np.cos(lamda * self._true_theta))
                 measurement_outcome = np.random.binomial(1, p)
+                num_oracle_queries += k
 
             prior = prior_distributions[-1]
 
@@ -382,7 +380,7 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
 
         result = ExqaliberAmplitudeEstimationResult()
         result.alpha = self._alpha
-        result.post_processing = estimation_problem.post_processing
+        # result.post_processing = estimation_problem.post_processing
         result.num_oracle_queries = num_oracle_queries
 
         result.estimation = estimation
