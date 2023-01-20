@@ -16,47 +16,52 @@ from exqaliber.bayesian_updates.distributions.normal import Normal
 class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
     r"""The Iterative Amplitude Estimation algorithm.
 
-    This class implements the Exqaliber Quantum Amplitude Estimation (EQAE) algorithm, developed
-    by Capgemini Quantum Lab and Cambridge Consultants. The output of the algorithm is an estimate that,
-    with at least probability :math:`1 - \alpha`, differs by epsilon to the target value, where
-    both alpha and epsilon can be specified.
+    This class implements the Exqaliber Quantum Amplitude Estimation
+    (EQAE) algorithm, developed by Capgemini Quantum Lab and Cambridge
+    Consultants. The output of the algorithm is an estimate that, with
+    at least probability :math:`1 - \alpha`, differs by epsilon to the
+    target value, where both alpha and epsilon can be specified.
 
-    It is based on Iterative Quantum Amplitude Estimation [1], but updates the Grover
-    depth with a Bayes update rul. EQAE iteratively applies Grover iterations, selected
-    by maximum variance reduction, to find an estimate for the target amplitude.
+    It is based on Iterative Quantum Amplitude Estimation [1], but
+    updates the Grover depth with a Bayes update rul. EQAE iteratively
+    applies Grover iterations, selected by maximum variance reduction,
+    to find an estimate for the target amplitude.
 
-    References:
+    References
+    ----------
         [1]: Grinko, D., Gacon, J., Zoufal, C., & Woerner, S. (2019).
              Iterative Quantum Amplitude Estimation.
              `arXiv:1912.05559 <https://arxiv.org/abs/1912.05559>`_.
         [2]: Brassard, G., Hoyer, P., Mosca, M., & Tapp, A. (2000).
-             Quantum Amplitude Amplification and Estimation.
-             `arXiv:quant-ph/0005055 <http://arxiv.org/abs/quant-ph/0005055>`_.
+            Quantum Amplitude Amplification and Estimation.
+            `arXiv:quant-ph/0005055
+            <http://arxiv.org/abs/quant-ph/0005055>`_.
     """
 
     def __init__(
         self,
         epsilon_target: float,
         alpha: float,
-        confint_method: str = "beta",
         sampler: BaseSampler | None = None,
         **kwargs,
     ) -> None:
         r"""
-        The output of the algorithm is an estimate for the amplitude `a`, that with at least
-        probability 1 - alpha has an error of epsilon.
-        TODO update docstring
+        TODO update docstring.
 
-        Args:
-            epsilon_target: Target precision for estimation target `a`, has values between 0 and 0.5
-            alpha: Confidence level, the target probability is 1 - alpha, has values between 0 and 1
-            confint_method: Statistical method used to estimate the confidence intervals in
-                each iteration, can be 'chernoff' for the Chernoff intervals or 'beta' for the
-                Clopper-Pearson intervals (default)
-            sampler: A sampler primitive to evaluate the circuits.
+        epsilon_target: float
+            Target precision for estimation target `a`, has values
+            between 0 and 0.5
+        alpha: float
+            Confidence level, the target probability is 1 - alpha, has
+            values between 0 and 1
+        sampler: BaseSampler
+            A sampler primitive to evaluate the circuits.
 
-        Raises:
-            AlgorithmError: if the method to compute the confidence intervals is not supported
+        Raises
+        ------
+            AlgorithmError:
+                if the method to compute the confidence
+                intervals is not supported
             ValueError: If the target epsilon is not in (0, 0.5]
             ValueError: If alpha is not in (0, 1)
             ValueError: If confint_method is not supported
@@ -72,25 +77,23 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
                 f"The confidence level alpha must be in (0, 1), but is {alpha}"
             )
 
-        if confint_method not in {"chernoff", "beta"}:
-            raise ValueError(
-                f"The confidence interval method must be chernoff or beta, but is {confint_method}."
-            )
-
         super().__init__()
 
         # store parameters
         self._epsilon = epsilon_target
         self._alpha = alpha
-        self._confint_method = confint_method
         self._sampler = sampler
         self._true_theta = kwargs.get("true_theta")
+
+        self._prior_mean = kwargs.get("prior_mean", 0.5)
+        self._prior_variance = kwargs.get("prior_variance", 0.5)
 
     @property
     def sampler(self) -> BaseSampler | None:
         """Get the sampler primitive.
 
-        Returns:
+        Returns
+        -------
             The sampler primitive to evaluate the circuits.
         """
         return self._sampler
@@ -99,17 +102,20 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
     def sampler(self, sampler: BaseSampler) -> None:
         """Set sampler primitive.
 
-        Args:
+        Args
+        ----
             sampler: A sampler primitive to evaluate the circuits.
         """
         self._sampler = sampler
 
     @property
     def epsilon_target(self) -> float:
-        """Returns the target precision ``epsilon_target`` of the algorithm.
+        """Return the target precision of the algorithm.
 
-        Returns:
-            The target precision (which is half the width of the confidence interval).
+        Returns
+        -------
+            The target precision (which is half the width of the
+            confidence interval).
         """
         return self._epsilon
 
@@ -117,7 +123,8 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
     def epsilon_target(self, epsilon: float) -> None:
         """Set the target precision of the algorithm.
 
-        Args:
+        Args
+        ----
             epsilon: Target precision for estimation target `a`.
         """
         self._epsilon = epsilon
@@ -126,35 +133,44 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
         self,
         prior_distribution: Normal,
     ) -> int:
-        """Find the largest integer k_next, such that the interval (4 * k_next + 2)*theta_interval
-        lies completely in [0, pi] or [pi, 2pi], for theta_interval = (theta_lower, theta_upper).
+        """Find the next value of k for the Grover iterator power.
 
-        Args:
+        Args
+        ----
             prior_distribution: prior distributions
 
-        Returns:
-            The next power k, and boolean flag for the extrapolated interval.
+        Returns
+        -------
+            The next power k, and boolean flag for the extrapolated
+            interval.
 
-        Raises:
+        Raises
+        ------
             AlgorithmError: if min_ratio is smaller or equal to 1
         """
         lamda = int(1 / prior_distribution.standard_deviation)
-        return np.max([1, int((lamda - 1) / 2)])
+        return np.max([0, int((lamda - 1) / 2)])
 
     def construct_circuit(
         self, estimation_problem: EstimationProblem, k: int = 0
     ) -> QuantumCircuit:
-        r"""Construct the circuit :math:`\mathcal{Q}^k \mathcal{A} |0\rangle`.
+        r"""Construct the amplitude estimation circuit.
 
-        The A operator is the unitary specifying the QAE problem and Q the associated Grover
-        operator.
+        :math:`\mathcal{Q}^k \mathcal{A} |0\rangle`.
 
-        Args:
-            estimation_problem: The estimation problem for which to construct the QAE circuit.
-            k: The power of the Q operator.
+        The A operator is the unitary specifying the QAE problem and
+        Q the associated Grover operator.
 
-        Returns:
-            The circuit implementing :math:`\mathcal{Q}^k \mathcal{A} |0\rangle`.
+        estimation_problem:
+            The estimation problem for which to construct the QAE
+            circuit.
+        k:
+            The power of the Q operator.
+
+        Returns
+        -------
+            The circuit implementing
+            :math:`\mathcal{Q}^k \mathcal{A} |0\rangle`.
         """
         num_qubits = max(
             estimation_problem.state_preparation.num_qubits,
@@ -176,8 +192,9 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
             )
 
         # add measurement
-        # real hardware can currently not handle operations after measurements, which might
-        # happen if the circuit gets transpiled, hence we're adding a safeguard-barrier
+        # real hardware can currently not handle operations after
+        # measurements, which might happen if the circuit gets
+        # transpiled, hence we're adding a safeguard-barrier
         circuit.barrier()
         circuit.measure(estimation_problem.objective_qubits, c[:])
 
@@ -188,28 +205,29 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
     ) -> "ExqaliberAmplitudeEstimationResult":
         """Run the amplitude estimation algorithm on provided estimation problem.
 
-        Args:
+        Args
+        ----
             estimation_problem: The estimation problem.
 
-        Returns:
+        Returns
+        -------
             An amplitude estimation results object.
 
-        Raises:
+        Raises
+        ------
             ValueError: A quantum instance or Sampler must be provided.
             AlgorithmError: Sampler job run error.
         """
-        if self._sampler is None:
-            raise ValueError("A sampler must be provided.")
-
         # initialize memory variables
         powers = [0]  # list of powers k: Q^k, (called 'k' in paper)
-        theta_intervals = [[0, 1.0]]  # a priori knowledge of theta / 2 / pi
+        # a priori knowledge of theta / 2 / pi
+        theta_intervals = [[0, 1.0]]
         a_intervals = [
             [0.0, 1.0]
         ]  # a priori knowledge of the confidence interval of the estimate
         num_oracle_queries = 0
         num_one_shots = []
-        prior_distributions = [Normal(0.5, 0.5)]
+        prior_distributions = [Normal(self._prior_mean, self._prior_variance)]
 
         # initiliaze starting variables
         # TODO find some way of making this a variable
@@ -280,7 +298,8 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
                     for k, v in ret.quasi_dists[0].items()
                 }
 
-                # calculate the probability of measuring '1', 'prob' is a_i in the paper
+                # calculate the probability of measuring '1',
+                # 'prob' is a_i in the paper
                 num_qubits = circuit.num_qubits - circuit.num_ancillas
                 # type: ignore
                 one_counts, prob = self._good_state_probability(
@@ -292,7 +311,8 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
                 # track number of Q-oracle calls
                 num_oracle_queries += shots * k
 
-                # if on the previous iterations we have K_{i-1} == K_i, we sum these samples up
+                # if on the previous iterations we have K_{i-1} == K_i,
+                # we sum these samples up
                 j = 1  # number of times we stayed fixed at the same K
                 round_shots = shots
                 round_one_counts = one_counts
@@ -309,6 +329,7 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
                 lamda = 4 * k + 2
                 p = 0.5 * (1 - np.cos(lamda * self._true_theta))
                 measurement_outcome = np.random.binomial(1, p)
+                num_oracle_queries += k
 
             prior = prior_distributions[-1]
 
@@ -323,12 +344,8 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
 
             # TODO confidence interval calculations
             # # compute a_min_i, a_max_i
-            # if self._confint_method == "chernoff":
-            #     a_i_min, a_i_max = _chernoff_confint(prob, round_shots, max_rounds, self._alpha)
-            # else:  # 'beta'
-            #     a_i_min, a_i_max = _clopper_pearson_confint(
-            #         round_one_counts, round_shots, self._alpha / max_rounds
-            #     )
+            # a_i_min, a_i_max = _chernoff_confint(prob, round_shots,
+            # max_rounds, self._alpha)
 
             # # compute theta_min_i, theta_max_i
             # if upper_half_circle:
@@ -340,8 +357,12 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
 
             # # compute theta_u, theta_l of this iteration
             # scaling = 4 * k + 2  # current K_i factor
-            # theta_u = (int(scaling * theta_intervals[-1][1]) + theta_max_i) / scaling
-            # theta_l = (int(scaling * theta_intervals[-1][0]) + theta_min_i) / scaling
+            # theta_u = (
+            #   int(scaling * theta_intervals[-1][1]) + theta_max_i)
+            #    / scaling
+            # theta_l = (
+            #   int(scaling * theta_intervals[-1][0]) + theta_min_i)
+            # / scaling
             # theta_intervals.append([theta_l, theta_u])
             #
             # # compute a_u_i, a_l_i
@@ -359,10 +380,11 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
 
         result = ExqaliberAmplitudeEstimationResult()
         result.alpha = self._alpha
-        result.post_processing = estimation_problem.post_processing
+        # result.post_processing = estimation_problem.post_processing
         result.num_oracle_queries = num_oracle_queries
 
         result.estimation = estimation
+        result.variance = prior_distributions[-1].variance
         # result.epsilon_estimated = (confidence_interval[1] - confidence_interval[0]) / 2
         # result.confidence_interval = confidence_interval
 
@@ -398,6 +420,16 @@ class ExqaliberAmplitudeEstimationResult(AmplitudeEstimatorResult):
         self._theta_intervals = None
         self._powers = None
         self._confidence_interval_processed = None
+        self._variance = None
+
+    @property
+    def variance(self) -> float:
+        return self._variance
+
+    @variance.setter
+    def variance(self, value: float) -> None:
+        r"""Return the variance of the final estimate."""
+        self._variance = value
 
     @property
     def alpha(self) -> float:
@@ -485,20 +517,27 @@ class ExqaliberAmplitudeEstimationResult(AmplitudeEstimatorResult):
 def _chernoff_confint(
     value: float, max_rounds: int, alpha: float
 ) -> tuple[float, float]:
-    """Compute the Chernoff confidence interval for `shots` i.i.d. Bernoulli trials.
+    """Compute the Chernoff confidence interval for `shots`.
+
+    Uses i.i.d. Bernoulli trials.
 
     The confidence interval is
 
-        [value - eps, value + eps], where eps = sqrt(3 * log(2 * max_rounds/ alpha) / shots)
+        [value - eps, value + eps], where
+        eps = sqrt(3 * log(2 * max_rounds/ alpha) / shots)
 
     but at most [0, 1].
 
-    Args:
-        value: The current estimate.
-        max_rounds: The maximum number of rounds, used to compute epsilon_a.
-        alpha: The confidence level, used to compute epsilon_a.
 
-    Returns:
+    value:
+        The current estimate.
+    max_rounds:
+        The maximum number of rounds, used to compute epsilon_a.
+    alpha:
+        The confidence level, used to compute epsilon_a.
+
+    Returns
+    -------
         The Chernoff confidence interval.
     """
     eps = np.sqrt(3 * np.log(2 * max_rounds / alpha))
@@ -508,9 +547,17 @@ def _chernoff_confint(
 
 
 if __name__ == "__main__":
-    ae = ExqaliberAmplitudeEstimation(0.01, 0.01, "beta", None, true_theta=0.1)
+
+    EXPERIMENT = {
+        "true_theta": 0.1,
+        "prior_mean": 0.2,
+        "prior_variance": 0.001,
+    }
+
+    ae = ExqaliberAmplitudeEstimation(0.01, 0.01, **EXPERIMENT)
     estimation_problem = None
 
     result = ae.estimate(estimation_problem)
 
-    print(result)
+    print(f"Executed {len(result.powers)} rounds")
+    print(f"Finished with variance of {result.variance}")
