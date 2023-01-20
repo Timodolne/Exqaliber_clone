@@ -384,8 +384,8 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
         result.num_oracle_queries = num_oracle_queries
 
         result.estimation = estimation
-        # result.epsilon_estimated = (confidence_interval[1] -
-        # confidence_interval[0]) / 2
+        result.variance = prior_distributions[-1].variance
+        # result.epsilon_estimated = (confidence_interval[1] - confidence_interval[0]) / 2
         # result.confidence_interval = confidence_interval
 
         if estimation_problem is not None:
@@ -420,6 +420,16 @@ class ExqaliberAmplitudeEstimationResult(AmplitudeEstimatorResult):
         self._theta_intervals = None
         self._powers = None
         self._confidence_interval_processed = None
+        self._variance = None
+
+    @property
+    def variance(self) -> float:
+        return self._variance
+
+    @variance.setter
+    def variance(self, value: float) -> None:
+        r"""Return the variance of the final estimate."""
+        self._variance = value
 
     @property
     def alpha(self) -> float:
@@ -549,4 +559,5 @@ if __name__ == "__main__":
 
     result = ae.estimate(estimation_problem)
 
-    print(result)
+    print(f"Executed {len(result.powers)} rounds")
+    print(f"Finished with variance of {result.variance}")
