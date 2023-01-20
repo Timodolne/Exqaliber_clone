@@ -63,19 +63,64 @@ class Normal:
             (-\inf, +\inf)
 
         """
-        return np.random.normal(self.mu, self.variance, size=n)
+        return np.random.normal(self.__mu, self.__var, size=n)
 
     """
     Update method given a Bernoulli measurement.
     """
 
     @staticmethod
-    def update(
-        measurement: int, lamda: int, mu: float, kappa: float
-    ) -> Tuple[float, float]:
-        """Get the mean and variance of the updated normal distribution.
+    def get_expected_bias(lamda: int, mu: float, sigma: float) -> float:
+        """Get the expected bias the updated normal distribution.
 
-        Updates the the mean and variance using a normal prior and
+        Parameters
+        ----------
+        lamda : int
+            Defines p(1) = 0.5*(1 - cos(lamda * mu))
+        mu : float
+            Location parameter of the current normal distribution
+        sigma : float
+            Scale parameter of the current normal distribution
+
+        Returns
+        -------
+        float
+            Expected bias
+        """
+        return np.exp(-0.5 * lamda**2 * sigma**2) * np.cos(lamda * mu)
+
+    @staticmethod
+    def get_chi(lamda: int, mu: float, sigma: float) -> float:
+        """Get the expected bias the updated normal distribution.
+
+        Parameters
+        ----------
+        lamda : int
+            Defines p(1) = 0.5*(1 - cos(lamda * mu))
+        mu : float
+            Location parameter of the current normal distribution
+        sigma : float
+            Scale parameter of the current normal distribution
+
+        Returns
+        -------
+        float
+            Expected bias
+        """
+        return (
+            (-1)
+            * lamda
+            * np.exp(-0.5 * lamda**2 * sigma**2)
+            * np.sin(lamda * mu)
+        )
+
+    @staticmethod
+    def get_first_moment_posterior(
+        measurement: int, lamda: int, mu: float, sigma: float
+    ) -> float:
+        """Get 1st moment of posterior normal dist, given measurement.
+
+        Calculates the first moment using a normal prior and
         Bernoulli likelihood.
 
         Parameters
@@ -86,7 +131,84 @@ class Normal:
             Defines p(1) = 0.5*(1 - cos(lamda * mu))
         mu : float
             Location parameter of the current normal distribution
-        kappa : float
+        sigma : float
+            Scale parameter of the current normal distribution
+
+        Returns
+        -------
+        float
+            First moment of the posterior
+        """
+        sign = (-1) ** measurement
+        b = Normal.get_expected_bias(lamda, mu, sigma)
+        chi = Normal.get_chi(lamda, mu, sigma)
+
+        denom = 1 + sign * b
+        numer = mu + sign * (sigma**2 * chi + mu * b)
+
+        return numer / denom
+
+    @staticmethod
+    def get_second_moment_posterior(
+        measurement: int, lamda: int, mu: float, sigma: float
+    ):
+        """Get 2nd moment of posterior normal dist, given measurement.
+
+        Calculates the second moment using a normal prior and
+        Bernoulli likelihood.
+
+        Parameters
+        ----------
+        measurement : int, {0,1}
+            Bernoulli measurement outcome
+        lamda : int
+            Defines p(1) = 0.5*(1 - cos(lamda * mu))
+        mu : float
+            Location parameter of the current normal distribution
+        sigma : float
+            Scale parameter of the current normal distribution
+
+        Returns
+        -------
+        float
+            Second moment of the posterior
+        """
+        sign = (-1) ** measurement
+        b = Normal.get_expected_bias(lamda, mu, sigma)
+        chi = Normal.get_chi(lamda, mu, sigma)
+
+        denom = 1 + sign * b
+        numer = (
+            sigma**2
+            + mu
+            + sign
+            * sigma**2
+            * (
+                (1 + mu**2 / sigma**2 - lamda**2 * sigma**2) * b
+                - 2 * mu * chi
+            )
+        )
+
+        return numer / denom
+
+    @staticmethod
+    def update(
+        measurement: int, lamda: int, mu: float, sigma: float
+    ) -> Tuple[float, float]:
+        """Get the mean and variance of the updated normal distribution.
+
+        Updates the mean and variance using a normal prior and
+        Bernoulli likelihood.
+
+        Parameters
+        ----------
+        measurement : int, {0,1}
+            Bernoulli measurement outcome
+        lamda : int
+            Defines p(1) = 0.5*(1 - cos(lamda * mu))
+        mu : float
+            Location parameter of the current normal distribution
+        sigma : float
             Scale parameter of the current normal distribution
 
         Returns
@@ -94,4 +216,67 @@ class Normal:
         Tuple[float, float]
             Mean and variance of the new distribution
         """
-        raise NotImplementedError()
+        posterior_mu = Normal.get_first_moment_posterior(
+            measurement, lamda, mu, sigma
+        )
+        second_moment = Normal.get_second_moment_posterior(
+            measurement, lamda, mu, sigma
+        )
+        posterior_var = second_moment - posterior_mu**2
+
+        return posterior_mu, posterior_var
+
+    @staticmethod
+    def get_variance_reduction_factor(
+        lamda: int, mu: float, sigma: float
+    ) -> float:
+        """Get the variance reduction factor for given lambda.
+
+        Parameters
+        ----------
+        lamda : int
+            Defines p(1) = 0.5*(1 - cos(lamda * mu))
+        mu : float
+            Location parameter of the current normal distribution
+        sigma : float
+            Scale parameter of the current normal distribution
+
+        Returns
+        -------
+        float
+            Variance reduction factor
+        """
+        b = Normal.get_expected_bias(lamda, mu, sigma)
+        chi = Normal.get_chi(lamda, mu, sigma)
+
+        if np.abs(b - 1) < 1e-8:
+            return 0
+        else:
+            return chi**2 / (1 - b**2)
+
+    @staticmethod
+    def eval_lambdas(
+        lambdas: np.ndarray, mu: float, sigma: float
+    ) -> np.ndarray:
+        """Get the variance reduction factor for lambdas.
+
+        Parameters
+        ----------
+        lamda : int
+            Defines p(1) = 0.5*(1 - cos(lamda * mu))
+        mu : float
+            Location parameter of the current normal distribution
+        sigma : float
+            Scale parameter of the current normal distribution
+
+        Returns
+        -------
+        np.ndarray
+            Variance reduction factor for given lambdas
+        """
+        return np.array(
+            [
+                Normal.get_variance_reduction_factor(lamda, mu, sigma)
+                for lamda in lambdas
+            ]
+        )
