@@ -335,9 +335,10 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
 
             # Update current belief
             mu, var = Normal.update(
-                measurement_outcome, lamda, prior.mean, prior.variance
+                measurement_outcome, lamda, prior.mean, prior.standard_deviation
             )
             posterior = Normal(mu, var)
+            # TODO decide what should go in .update, std or var
 
             # Save belief
             prior_distributions.append(posterior)
@@ -550,8 +551,8 @@ if __name__ == "__main__":
 
     EXPERIMENT = {
         "true_theta": 0.1,
-        "prior_mean": 0.2,
-        "prior_variance": 0.001,
+        "prior_mean": 0.1,
+        "prior_variance": 0.01,
     }
 
     ae = ExqaliberAmplitudeEstimation(0.01, 0.01, **EXPERIMENT)
