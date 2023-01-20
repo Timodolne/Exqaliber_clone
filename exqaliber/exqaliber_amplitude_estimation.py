@@ -85,6 +85,9 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
         self._sampler = sampler
         self._true_theta = kwargs.get("true_theta")
 
+        self._prior_mean = kwargs.get("prior_mean", 0.5)
+        self._prior_variance = kwargs.get("prior_variance", 0.5)
+
     @property
     def sampler(self) -> BaseSampler | None:
         """Get the sampler primitive.
@@ -536,7 +539,14 @@ def _chernoff_confint(
 
 
 if __name__ == "__main__":
-    ae = ExqaliberAmplitudeEstimation(0.01, 0.01, true_theta=0.1)
+
+    EXPERIMENT = {
+        "true_theta": 0.1,
+        "prior_mean": 0.2,
+        "prior_variance": 0.001,
+    }
+
+    ae = ExqaliberAmplitudeEstimation(0.01, 0.01, **EXPERIMENT)
     estimation_problem = None
 
     result = ae.estimate(estimation_problem)
