@@ -180,11 +180,11 @@ class Normal:
         denom = 1 + sign * b
         numer = (
             sigma**2
-            + mu
+            + mu**2
             + sign
             * sigma**2
             * (
-                (1 + mu**2 / sigma**2 - lamda**2 * sigma**2) * b
+                (1 + (mu**2 / sigma**2) - (lamda**2 * sigma**2)) * b
                 - 2 * mu * chi
             )
         )
