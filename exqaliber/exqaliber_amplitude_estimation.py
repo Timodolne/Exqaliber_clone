@@ -396,6 +396,7 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
 
         result.estimation = estimation
         result.variance = prior_distributions[-1].variance
+        result.distributions = prior_distributions
         # result.epsilon_estimated =
         # (confidence_interval[1] - confidence_interval[0]) / 2
         # result.confidence_interval = confidence_interval
@@ -525,6 +526,16 @@ class ExqaliberAmplitudeEstimationResult(AmplitudeEstimatorResult):
     ) -> None:
         """Set the post-processed confidence interval."""
         self._confidence_interval_processed = value
+
+    @property
+    def distributions(self) -> list[Normal]:
+        """Return the full list of distributions."""
+        return self._distributions
+
+    @distributions.setter
+    def distributions(self, distributions: list[Normal]) -> None:
+        """Set the list of distributions."""
+        self._distributions = distributions
 
 
 def _chernoff_confint(
