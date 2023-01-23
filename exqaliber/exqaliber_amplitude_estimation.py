@@ -1,11 +1,16 @@
 """The Exqaliber Quantum Amplitude Estimation Algorithm."""
 
+from typing import cast
+
 import numpy as np
 from qiskit import ClassicalRegister, QuantumCircuit
 from qiskit.algorithms.amplitude_estimators import (
     AmplitudeEstimator,
     AmplitudeEstimatorResult,
     EstimationProblem,
+)
+from qiskit.algorithms.amplitude_estimators.ae_utils import (
+    _probabilities_from_sampler_result,
 )
 from qiskit.algorithms.exceptions import AlgorithmError
 from qiskit.primitives import BaseSampler
@@ -69,7 +74,8 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
         # validate ranges of input arguments
         if not 0 < epsilon_target <= 0.5:
             raise ValueError(
-                f"The target epsilon must be in (0, 0.5], but is {epsilon_target}."
+                f"The target epsilon must be in (0, 0.5],"
+                f"but is {epsilon_target}."
             )
 
         if not 0 < alpha < 1:
@@ -203,7 +209,7 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
     def estimate(
         self, estimation_problem: EstimationProblem
     ) -> "ExqaliberAmplitudeEstimationResult":
-        """Run the amplitude estimation algorithm on provided estimation problem.
+        """Run amplitude estimation algorithm on estimation problem.
 
         Args
         ----
@@ -235,7 +241,8 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
 
         num_iterations = 0  # keep track of the number of iterations
 
-        # do while loop, keep in mind that we scaled theta mod 2pi such that it lies in [0,1]
+        # do while loop, keep in mind that we scaled theta mod 2pi
+        # such that it lies in [0,1]
         while prior_distributions[-1].variance > var_tolerance:
             num_iterations += 1
 
@@ -335,7 +342,10 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
 
             # Update current belief
             mu, var = Normal.update(
-                measurement_outcome, lamda, prior.mean, prior.standard_deviation
+                measurement_outcome,
+                lamda,
+                prior.mean,
+                prior.standard_deviation,
             )
             posterior = Normal(mu, var)
             # TODO decide what should go in .update, std or var
@@ -353,8 +363,8 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
             #     theta_min_i = np.arccos(1 - 2 * a_i_min) / 2 / np.pi
             #     theta_max_i = np.arccos(1 - 2 * a_i_max) / 2 / np.pi
             # else:
-            #     theta_min_i = 1 - np.arccos(1 - 2 * a_i_max) / 2 / np.pi
-            #     theta_max_i = 1 - np.arccos(1 - 2 * a_i_min) / 2 / np.pi
+            #     theta_min_i = 1-np.arccos(1 - 2 * a_i_max) / 2 / np.pi
+            #     theta_max_i = 1-np.arccos(1 - 2 * a_i_min) / 2 / np.pi
 
             # # compute theta_u, theta_l of this iteration
             # scaling = 4 * k + 2  # current K_i factor
@@ -386,23 +396,24 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
 
         result.estimation = estimation
         result.variance = prior_distributions[-1].variance
-        # result.epsilon_estimated = (confidence_interval[1] - confidence_interval[0]) / 2
+        # result.epsilon_estimated =
+        # (confidence_interval[1] - confidence_interval[0]) / 2
         # result.confidence_interval = confidence_interval
 
-        if estimation_problem is not None:
-            result.estimation_processed = estimation_problem.post_processing(
-                estimation
-            )
-            confidence_interval = tuple(
-                estimation_problem.post_processing(x)
-                for x in confidence_interval
-            )
-            result.confidence_interval_processed = confidence_interval
-            result.epsilon_estimated_processed = (
-                confidence_interval[1] - confidence_interval[0]
-            ) / 2
-            result.estimate_intervals = a_intervals
-            result.theta_intervals = theta_intervals
+        # if estimation_problem is not None:
+        #     result.estimation_processed = (
+        #         estimation_problem.post_processing(estimation)
+        #     )
+        #     confidence_interval = tuple(
+        #         estimation_problem.post_processing(x)
+        #         for x in confidence_interval
+        #     )
+        #     result.confidence_interval_processed = confidence_interval
+        #     result.epsilon_estimated_processed = (
+        #         confidence_interval[1] - confidence_interval[0]
+        #     ) / 2
+        #     result.estimate_intervals = a_intervals
+        #     result.theta_intervals = theta_intervals
         result.powers = powers
 
         return result
@@ -425,11 +436,12 @@ class ExqaliberAmplitudeEstimationResult(AmplitudeEstimatorResult):
 
     @property
     def variance(self) -> float:
+        r"""Return the variance of the final estimate."""
         return self._variance
 
     @variance.setter
     def variance(self, value: float) -> None:
-        r"""Return the variance of the final estimate."""
+        r"""Set the variance of the final estimate."""
         self._variance = value
 
     @property
@@ -454,7 +466,7 @@ class ExqaliberAmplitudeEstimationResult(AmplitudeEstimatorResult):
 
     @property
     def epsilon_estimated(self) -> float:
-        """Return the estimated half-width of the confidence interval."""
+        """Return the estimated epsilon."""
         return self._epsilon_estimated
 
     @epsilon_estimated.setter
@@ -464,37 +476,37 @@ class ExqaliberAmplitudeEstimationResult(AmplitudeEstimatorResult):
 
     @property
     def epsilon_estimated_processed(self) -> float:
-        """Return the post-processed estimated half-width of the confidence interval."""
+        """Return the post-processed epsilon."""
         return self._epsilon_estimated_processed
 
     @epsilon_estimated_processed.setter
     def epsilon_estimated_processed(self, value: float) -> None:
-        """Set the post-processed estimated half-width of the confidence interval."""
+        """Set the post-processed epsilon."""
         self._epsilon_estimated_processed = value
 
     @property
     def estimate_intervals(self) -> list[list[float]]:
-        """Return the confidence intervals for the estimate in each iteration."""
+        """Return conf intervals for the estimate per iteration."""
         return self._estimate_intervals
 
     @estimate_intervals.setter
     def estimate_intervals(self, value: list[list[float]]) -> None:
-        """Set the confidence intervals for the estimate in each iteration."""
+        """Set conf intervals for the estimate per iteration."""
         self._estimate_intervals = value
 
     @property
     def theta_intervals(self) -> list[list[float]]:
-        """Return the confidence intervals for the angles in each iteration."""
+        """Return conf intervals for the angles in each iteration."""
         return self._theta_intervals
 
     @theta_intervals.setter
     def theta_intervals(self, value: list[list[float]]) -> None:
-        """Set the confidence intervals for the angles in each iteration."""
+        """Set conf intervals for the angles in each iteration."""
         self._theta_intervals = value
 
     @property
     def powers(self) -> list[int]:
-        """Return the powers of the Grover operator in each iteration."""
+        """Return powers of the Grover operator in each iteration."""
         return self._powers
 
     @powers.setter
