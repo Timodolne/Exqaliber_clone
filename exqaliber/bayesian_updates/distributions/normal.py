@@ -87,7 +87,9 @@ class Normal:
         float
             Expected bias
         """
-        return np.exp(-0.5 * lamda**2 * sigma**2) * np.cos(lamda * mu)
+        exp = np.exp(-0.5 * lamda**2 * sigma**2)
+        trig = np.cos(lamda * mu)
+        return exp * trig
 
     @staticmethod
     def get_chi(lamda: int, mu: float, sigma: float) -> float:
@@ -107,12 +109,9 @@ class Normal:
         float
             Expected bias
         """
-        return (
-            (-1)
-            * lamda
-            * np.exp(-0.5 * lamda**2 * sigma**2)
-            * np.sin(lamda * mu)
-        )
+        exp = (-1) * lamda * np.exp(-0.5 * lamda**2 * sigma**2)
+        trig = np.sin(lamda * mu)
+        return exp * trig
 
     @staticmethod
     def get_first_moment_posterior(
@@ -182,10 +181,9 @@ class Normal:
             sigma**2
             + mu**2
             + sign
-            * sigma**2
             * (
-                (1 + (mu**2 / sigma**2) - (lamda**2 * sigma**2)) * b
-                - 2 * mu * chi
+                (sigma**2 + mu**2 - lamda**2 * sigma**4) * b
+                + 2 * mu * chi * sigma**2
             )
         )
 
