@@ -90,6 +90,7 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
         self._alpha = alpha
         self._sampler = sampler
         self._true_theta = kwargs.get("true_theta")
+        self._method = kwargs.get("method")
 
         self._prior_mean = kwargs.get("prior_mean", 0.5)
         self._prior_variance = kwargs.get("prior_variance", 0.5)
@@ -136,14 +137,14 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
         self._epsilon = epsilon
 
     def _find_next_k(
-        self,
-        prior_distribution: Normal,
+        self, prior_distribution: Normal, method: str = "naive"
     ) -> int:
         """Find the next value of k for the Grover iterator power.
 
         Args
         ----
             prior_distribution: prior distributions
+            method: method for finding next lambda
 
         Returns
         -------
@@ -154,7 +155,21 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
         ------
             AlgorithmError: if min_ratio is smaller or equal to 1
         """
-        lamda = int(1 / prior_distribution.standard_deviation)
+        analytical_lamda = int(1 / prior_distribution.standard_deviation)
+        match method:
+            case "naive":
+                lamda = analytical_lamda
+            case "greedy":
+                lamdas = np.arange(0, np.max([2 * analytical_lamda, 200]))
+                variance_reduction_factors = Normal.eval_lambdas(
+                    lamdas,
+                    prior_distribution.mean,
+                    prior_distribution.standard_deviation,
+                )
+                lamda = np.argmax(variance_reduction_factors)
+            case _:
+                lamda = analytical_lamda
+
         return np.max([0, int((lamda - 1) / 2)])
 
     def construct_circuit(
@@ -237,7 +252,7 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
 
         # initiliaze starting variables
         # TODO find some way of making this a variable
-        var_tolerance = 0.001
+        var_tolerance = 0.000001
 
         num_iterations = 0  # keep track of the number of iterations
 
@@ -247,9 +262,7 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
             num_iterations += 1
 
             # get the next k
-            k = self._find_next_k(
-                prior_distributions[-1],
-            )
+            k = self._find_next_k(prior_distributions[-1], method=self._method)
 
             # store the variables
             powers.append(k)
@@ -573,9 +586,10 @@ def _chernoff_confint(
 if __name__ == "__main__":
 
     EXPERIMENT = {
-        "true_theta": 0.1,
-        "prior_mean": 0.1,
-        "prior_variance": 0.01,
+        "true_theta": 0.4,
+        "prior_mean": 0.38,
+        "prior_variance": 0.03,
+        "method": "greedy",
     }
 
     ae = ExqaliberAmplitudeEstimation(0.01, 0.01, **EXPERIMENT)
