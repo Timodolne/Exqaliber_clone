@@ -598,4 +598,10 @@ if __name__ == "__main__":
     result = ae.estimate(estimation_problem)
 
     print(f"Executed {len(result.powers)} rounds")
-    print(f"Finished with variance of {result.variance}")
+    print(
+        f"Finished with variance of {result.variance:.6f} "
+        f"and mean {result.estimation:.6f}, "
+        f"(true theta: {EXPERIMENT['true_theta']})."
+    )
+
+    print("Done.")
