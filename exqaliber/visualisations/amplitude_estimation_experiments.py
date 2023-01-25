@@ -10,8 +10,8 @@ from exqaliber.exqaliber_amplitude_estimation import (
 
 if __name__ == "__main__":
     EXPERIMENT = {
-        "true_theta": 0.4,
-        "prior_mean": 0.38,
+        "true_theta": 0.3,
+        "prior_mean": 0.32,
         "prior_variance": 0.03,
         "method": "greedy",
     }
@@ -134,6 +134,47 @@ if __name__ == "__main__":
 
         anim.save("animation.mp4", fps=30, extra_args=["-vcodec", "libx264"])
 
-        plt.show()
+        # plt.show()
+
+    fig, axs = plt.subplots(1, 2, figsize=(10, 5))
+
+    # Variance plot
+    x = range(n_iter)
+    y = [dist.standard_deviation for dist in distributions]
+    axs[0].plot(x, y)
+
+    axs[0].set_xlim(0, n_iter)
+    axs[0].set_ylim(0, max(y) * 1.05)
+
+    axs[0].set_xlabel("Iteration")
+    axs[0].set_ylabel(r"$\sigma^2$")
+
+    # Mean plot
+    y = [dist.mean for dist in distributions]
+    axs[1].plot(x, y, label=r"$\mu$")
+    axs[1].hlines(
+        y=EXPERIMENT["prior_mean"],
+        xmin=0,
+        xmax=n_iter,
+        label=r"Prior $\theta$",
+        linestyles="dotted",
+    )
+    axs[1].hlines(
+        y=EXPERIMENT["true_theta"],
+        xmin=0,
+        xmax=n_iter,
+        label=r"True $\theta$",
+        linestyles="--",
+    )
+
+    axs[1].set_xlim(0, n_iter)
+    axs[1].set_ylim(0, 1)
+
+    axs[1].set_xlabel("Iteration")
+    axs[1].set_ylabel(r"$\mu$")
+
+    axs[1].legend()
+
+    plt.show()
 
     print("Done.")
