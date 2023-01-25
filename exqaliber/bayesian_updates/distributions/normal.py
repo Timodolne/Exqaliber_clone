@@ -260,7 +260,7 @@ class Normal:
 
         Parameters
         ----------
-        lamda : int
+        lambdas : np.ndarray
             Defines p(1) = 0.5*(1 - cos(lamda * mu))
         mu : float
             Location parameter of the current normal distribution
