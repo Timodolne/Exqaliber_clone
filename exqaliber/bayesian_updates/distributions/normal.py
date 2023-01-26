@@ -7,15 +7,15 @@ import numpy as np
 class Normal:
     """Normal distribution."""
 
-    def __init__(self, mu: float, var: float) -> None:
+    def __init__(self, mu: float, sigma: float) -> None:
 
-        if var <= 0:
-            raise ValueError("Variance must be positive")
+        if sigma <= 0:
+            raise ValueError("Standard deviation must be positive")
 
         self.__mu = mu
-        self.__var = var
+        self.__sigma = sigma
 
-        self.__parameters = {"mu": mu, "variance": var}
+        self.__parameters = {"mu": mu, "sigma": sigma}
 
     """
     Parameters / Getters for the base distribution
@@ -27,14 +27,14 @@ class Normal:
         return self.__mu
 
     @property
-    def variance(self) -> float:
-        """Get the variance of the normal distribution."""
-        return self.__var
-
-    @property
     def standard_deviation(self) -> float:
         """Get the standard deviation of the normal distribution."""
-        return np.sqrt(self.variance)
+        return self.__sigma
+
+    @property
+    def variance(self) -> float:
+        """Get the variance of the normal distribution."""
+        return self.standard_deviation**2
 
     def get_parameters(self) -> dict[str, float | np.ndarray]:
         r"""Get the parameters that uniquely define the distribution.
@@ -193,9 +193,9 @@ class Normal:
     def update(
         measurement: int, lamda: int, mu: float, sigma: float
     ) -> Tuple[float, float]:
-        """Get the mean and variance of the updated normal distribution.
+        """Get the mean and std of the updated normal distribution.
 
-        Updates the mean and variance using a normal prior and
+        Updates the mean and standard deviation using a normal prior and
         Bernoulli likelihood.
 
         Parameters
@@ -212,7 +212,7 @@ class Normal:
         Returns
         -------
         Tuple[float, float]
-            Mean and variance of the new distribution
+            Mean and standard deviation of the new distribution
         """
         posterior_mu = Normal.get_first_moment_posterior(
             measurement, lamda, mu, sigma
@@ -221,8 +221,9 @@ class Normal:
             measurement, lamda, mu, sigma
         )
         posterior_var = second_moment - posterior_mu**2
+        posterior_sigma = np.sqrt(posterior_var)
 
-        return posterior_mu, posterior_var
+        return posterior_mu, posterior_sigma
 
     @staticmethod
     def get_variance_reduction_factor(
