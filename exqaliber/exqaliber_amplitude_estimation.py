@@ -408,7 +408,7 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
         result.num_oracle_queries = num_oracle_queries
 
         result.estimation = estimation
-        result.variance = prior_distributions[-1].variance
+        result.standard_deviation = prior_distributions[-1].standard_deviation
         result.distributions = prior_distributions
         # result.epsilon_estimated =
         # (confidence_interval[1] - confidence_interval[0]) / 2
