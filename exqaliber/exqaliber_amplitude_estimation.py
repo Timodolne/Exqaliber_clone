@@ -170,7 +170,7 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
             case _:
                 lamda = analytical_lamda
 
-        return np.max([0, int((lamda - 1) / 2)])
+        return np.max([0, int((lamda - 2) / 4)])
 
     def construct_circuit(
         self, estimation_problem: EstimationProblem, k: int = 0
