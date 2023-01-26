@@ -93,7 +93,7 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
         self._method = kwargs.get("method")
 
         self._prior_mean = kwargs.get("prior_mean", 0.5)
-        self._prior_variance = kwargs.get("prior_variance", 0.5)
+        self._prior_std = kwargs.get("prior_std", 0.5)
 
     @property
     def sampler(self) -> BaseSampler | None:
@@ -248,17 +248,17 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
         ]  # a priori knowledge of the confidence interval of the estimate
         num_oracle_queries = 0
         num_one_shots = []
-        prior_distributions = [Normal(self._prior_mean, self._prior_variance)]
+        prior_distributions = [Normal(self._prior_mean, self._prior_std)]
 
         # initiliaze starting variables
         # TODO find some way of making this a variable
-        var_tolerance = 0.000001
+        sigma_tolerance = 1e-4
 
         num_iterations = 0  # keep track of the number of iterations
 
         # do while loop, keep in mind that we scaled theta mod 2pi
         # such that it lies in [0,1]
-        while prior_distributions[-1].variance > var_tolerance:
+        while prior_distributions[-1].standard_deviation > sigma_tolerance:
             num_iterations += 1
 
             # get the next k
@@ -354,13 +354,13 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
             prior = prior_distributions[-1]
 
             # Update current belief
-            mu, var = Normal.update(
+            mu, sigma = Normal.update(
                 measurement_outcome,
                 lamda,
                 prior.mean,
                 prior.standard_deviation,
             )
-            posterior = Normal(mu, var)
+            posterior = Normal(mu, sigma)
             # TODO decide what should go in .update, std or var
 
             # Save belief
@@ -588,7 +588,7 @@ if __name__ == "__main__":
     EXPERIMENT = {
         "true_theta": 0.4,
         "prior_mean": 0.38,
-        "prior_variance": 0.03,
+        "prior_std": 0.03,
         "method": "greedy",
     }
 
