@@ -12,6 +12,8 @@ from exqaliber.exqaliber_amplitude_estimation import (
 
 def animate_exqaliber_amplitude_estimation(
     result: ExqaliberAmplitudeEstimationResult,
+    experiment: dict,
+    save: str = False,
 ):
     """Animate the algorithm convergence over iterations."""
     distributions = result.distributions
@@ -111,12 +113,30 @@ def animate_exqaliber_amplitude_estimation(
         blit=False,
     )
 
-    anim.save("animation.mp4", fps=30, extra_args=["-vcodec", "libx264"])
+    # Plot title
+    mu_hat_str = r"$\hat{\mu}$"
+    sigma_hat_str = r"$\hat{\sigma}^2$"
+    title = (
+        rf"Experiment: $\theta$: {experiment['true_theta']}, "
+        rf"{mu_hat_str}: {experiment['prior_mean']}, "
+        rf"{sigma_hat_str}: {experiment['prior_std']}. "
+        rf"Method: {experiment['method']}"
+    )
+    fig.suptitle(title)
+
+    plt.tight_layout()
+
+    if save:
+        anim.save(save, fps=10, extra_args=["-vcodec", "libx264"])
 
     plt.show()
 
 
-def convergence_plot(result: ExqaliberAmplitudeEstimationResult, experiment):
+def convergence_plot(
+    result: ExqaliberAmplitudeEstimationResult,
+    experiment: dict,
+    save: str = False,
+):
     """Plot the convergence of the algorithm."""
     distributions = result.distributions
     fig, axs = plt.subplots(1, 3, figsize=(15, 5))
@@ -189,6 +209,10 @@ def convergence_plot(result: ExqaliberAmplitudeEstimationResult, experiment):
     fig.suptitle(title)
 
     plt.tight_layout()
+
+    if save:
+        plt.savefig(save)
+
     plt.show()
 
 
@@ -214,8 +238,10 @@ if __name__ == "__main__":
         f"(true theta: {EXPERIMENT['true_theta']})."
     )
 
-    animate_exqaliber_amplitude_estimation(result)
+    animate_exqaliber_amplitude_estimation(
+        result, experiment=EXPERIMENT, save="animation.mp4"
+    )
 
-    convergence_plot(result, experiment=EXPERIMENT)
+    convergence_plot(result, experiment=EXPERIMENT, save="convergence.png")
 
     print("Done.")
