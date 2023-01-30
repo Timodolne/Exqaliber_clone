@@ -224,6 +224,7 @@ if __name__ == "__main__":
         "prior_std": 0.5,
         "method": "greedy",
     }
+    save = False
 
     ae = ExqaliberAmplitudeEstimation(0.01, 0.01, **EXPERIMENT)
     estimation_problem = None
@@ -238,10 +239,12 @@ if __name__ == "__main__":
         f"(true theta: {EXPERIMENT['true_theta']})."
     )
 
+    filename = "animation.mp4" if save else False
     animate_exqaliber_amplitude_estimation(
-        result, experiment=EXPERIMENT, save="animation.mp4"
+        result, experiment=EXPERIMENT, save=filename
     )
 
-    convergence_plot(result, experiment=EXPERIMENT, save="convergence.png")
+    filename = "convergence.png" if save else False
+    convergence_plot(result, experiment=EXPERIMENT, save=filename)
 
     print("Done.")
