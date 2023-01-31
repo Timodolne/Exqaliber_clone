@@ -1,10 +1,13 @@
 """Graph the behaviour of Exqaliber Amplitude Estimation."""
+import pickle
+import sys
 from fractions import Fraction
 
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import animation
 from scipy.stats import norm
+from tqdm import tqdm
 
 from exqaliber.exqaliber_amplitude_estimation import (
     ExqaliberAmplitudeEstimation,
@@ -40,9 +43,11 @@ def animate_exqaliber_amplitude_estimation(
     result: ExqaliberAmplitudeEstimationResult,
     experiment: dict,
     save: str = False,
+    show: bool = True,
 ):
     """Animate the algorithm convergence over iterations."""
     distributions = result.distributions
+    n_iter = len(result.powers)
 
     # First set up figure, axis, and plot element we want to animate
     fig, axs = plt.subplots(2, 1, figsize=(5, 10))
@@ -155,16 +160,21 @@ def animate_exqaliber_amplitude_estimation(
     if save:
         anim.save(save, fps=10, extra_args=["-vcodec", "libx264"])
 
-    plt.show()
+    if show:
+        plt.show()
 
 
 def convergence_plot(
     result: ExqaliberAmplitudeEstimationResult,
     experiment: dict,
     save: str = False,
+    show: bool = True,
 ):
     """Plot the convergence of the algorithm."""
     distributions = result.distributions
+    n_iter = len(result.powers)
+
+    # create figure
     fig, axs = plt.subplots(1, 3, figsize=(15, 5))
 
     # Variance plot
@@ -239,38 +249,186 @@ def convergence_plot(
     if save:
         plt.savefig(save)
 
-    plt.show()
+    if show:
+        plt.show()
+
+
+def circular_histogram(
+    results_multiple_thetas: list,
+    theta_range: np.ndarray,
+    experiment: dict,
+    save: bool = False,
+    show: bool = True,
+):
+    """Plot the circular histogram of nb of queries."""
+    # get queries
+    queries = np.array(
+        [
+            [res.num_oracle_queries for res in result]
+            for result in results_multiple_thetas
+        ]
+    )
+    mean_queries = queries.mean(axis=1)
+    nb_reps = len(queries[0])
+
+    # figure
+    plt.figure(figsize=(10, 10), dpi=150)
+    ax = plt.subplot(projection="polar")
+
+    width = 2 * np.pi / resolution
+    ax.bar(theta_range, mean_queries, width=width)
+
+    # Plot title
+    mu_hat_str = r"$\hat{\mu}$"
+    sigma_hat_str = r"$\hat{\sigma}^2$"
+    title = (
+        f"Mean number (over {nb_reps} samples) of iterations"
+        "before convergence.\n"
+        rf"Experiment: {mu_hat_str}: "
+        rf"{format_with_pi(experiment['prior_mean'])}, "
+        rf"{sigma_hat_str}: {format_with_pi(experiment['prior_std'])}. "
+        rf"Method: {experiment['method']}"
+    )
+    plt.title(title)
+
+    plt.tight_layout()
+
+    if save:
+        plt.savefig(save)
+
+    if show:
+        plt.show()
+
+
+def run_experiment_one_theta(theta, experiment):
+    """Run Exqaliber AE for one theta."""
+    # set experiment
+    experiment["true_theta"] = theta
+
+    # do the experiment
+    ae = ExqaliberAmplitudeEstimation(0.01, 0.01, **EXPERIMENT)
+    result_one_theta = ae.estimate(None)
+
+    print(f"Executed {len(result_one_theta.powers)} rounds")
+    print(
+        f"Finished with variance of {result_one_theta.variance:.6f} "
+        f"and mean {result_one_theta.estimation:.6f}, "
+        f"(true theta: {EXPERIMENT['true_theta']})."
+    )
+
+    return result_one_theta
+
+
+def run_experiment_multiple_thetas(theta_range, experiment):
+    """Create results for Exqaliber AE for multiple input thetas."""
+    # recording
+    results_multiple_thetas = []
+
+    for theta in tqdm(theta_range, desc="theta", position=0, file=sys.stdout):
+        results_theta = []
+        experiment["true_theta"] = theta
+
+        for i in tqdm(
+            range(reps),
+            desc=" repetitions",
+            position=1,
+            file=sys.stdout,
+            leave=False,
+        ):
+            # tqdm.write(f'Starting repetition: {i: 2d}.\n', end='')
+            ae = ExqaliberAmplitudeEstimation(0.01, 0.01, **EXPERIMENT)
+
+            result = ae.estimate(None)
+
+            results_theta.append(result)
+
+        results_multiple_thetas.append(results_theta)
+
+    return results_multiple_thetas
 
 
 if __name__ == "__main__":
 
+    format_with_pi(np.pi)
+
+    # saving and running parameters
+    run_or_load = "load"
+    save_results = True
+    show_results = True
+    one_theta_experiment = False
+    sweep_experiment = True
+
+    # parameters all experiments
+    prior_mean = np.pi / 4
+    prior_std = 0.5
+    method = "greedy"
     EXPERIMENT = {
-        "true_theta": 1.6,
-        "prior_mean": 0.5,
-        "prior_std": 0.5,
-        "method": "greedy",
+        "prior_mean": prior_mean,
+        "prior_std": prior_std,
+        "method": method,
     }
-    save = False
 
-    ae = ExqaliberAmplitudeEstimation(0.01, 0.01, **EXPERIMENT)
-    estimation_problem = None
+    # parameters one run experiment
+    true_theta = 1.0
+    do_animation_plot = True
+    do_convergence_plot = True
 
-    result = ae.estimate(estimation_problem)
-    n_iter = len(result.powers)
+    # parameters theta sweep
+    reps = 50
+    resolution = 120
+    theta_range = np.linspace(0, 2 * np.pi, resolution)
+    do_circular_histogram = True
 
-    print(f"Executed {len(result.powers)} rounds")
-    print(
-        f"Finished with variance of {result.variance:.6f} "
-        f"and mean {result.estimation:.6f}, "
-        f"(true theta: {EXPERIMENT['true_theta']})."
-    )
+    if one_theta_experiment:
+        result_one_theta = run_experiment_one_theta(true_theta, EXPERIMENT)
 
-    filename = "animation.mp4" if save else False
-    animate_exqaliber_amplitude_estimation(
-        result, experiment=EXPERIMENT, save=filename
-    )
+        if do_animation_plot:
+            filename = "results/animation.mp4" if save_results else False
+            animate_exqaliber_amplitude_estimation(
+                result_one_theta,
+                experiment=EXPERIMENT,
+                save=filename,
+                show=show_results,
+            )
 
-    filename = "convergence.png" if save else False
-    convergence_plot(result, experiment=EXPERIMENT, save=filename)
+        if do_convergence_plot:
+            filename = "results/convergence.png" if save_results else False
+            convergence_plot(
+                result_one_theta,
+                experiment=EXPERIMENT,
+                save=filename,
+                show=show_results,
+            )
+
+    if sweep_experiment:
+        if run_or_load == "run":
+            results_multiple_thetas = run_experiment_multiple_thetas(
+                theta_range, experiment=EXPERIMENT
+            )
+
+            # save results
+            with open("results/results_multiple_thetas.pkl", "wb") as f:
+                pickle.dump(results_multiple_thetas, f)
+            with open("results/theta_range.pkl", "wb") as f:
+                pickle.dump(theta_range, f)
+
+        elif run_or_load == "load":
+            # load results
+            with open("results/results_multiple_thetas.pkl", "rb") as f:
+                results_multiple_thetas = pickle.load(f)
+            with open("results/theta_range.pkl", "rb") as f:
+                theta_range = pickle.load(f)
+
+        if do_circular_histogram:
+            filename = (
+                "results/circular_histogram.png" if save_results else False
+            )
+            circular_histogram(
+                results_multiple_thetas,
+                theta_range,
+                experiment=EXPERIMENT,
+                save=filename,
+                show=show_results,
+            )
 
     print("Done.")
