@@ -56,8 +56,8 @@ def animate_exqaliber_amplitude_estimation(
         linestyles="--",
     )
 
-    xmin = -1
-    xmax = 1
+    xmin = -np.pi
+    xmax = np.pi
     axs[0].set_xlim(xmin, xmax)
     axs[1].set_xlim(xmin, xmax)
     axs[1].set_ylim(0, 15)
@@ -172,7 +172,7 @@ def convergence_plot(
     )
 
     axs[1].set_xlim(0, n_iter)
-    axs[1].set_ylim(0, 1)
+    axs[1].set_ylim(-np.pi, np.pi)
 
     axs[1].set_xlabel("Iteration")
     axs[1].set_ylabel(r"$\mu$")
@@ -219,11 +219,12 @@ def convergence_plot(
 if __name__ == "__main__":
 
     EXPERIMENT = {
-        "true_theta": 0.4,
-        "prior_mean": 0.38,
+        "true_theta": 1.6,
+        "prior_mean": 0.5,
         "prior_std": 0.5,
         "method": "greedy",
     }
+    save = False
 
     ae = ExqaliberAmplitudeEstimation(0.01, 0.01, **EXPERIMENT)
     estimation_problem = None
@@ -238,10 +239,12 @@ if __name__ == "__main__":
         f"(true theta: {EXPERIMENT['true_theta']})."
     )
 
+    filename = "animation.mp4" if save else False
     animate_exqaliber_amplitude_estimation(
-        result, experiment=EXPERIMENT, save="animation.mp4"
+        result, experiment=EXPERIMENT, save=filename
     )
 
-    convergence_plot(result, experiment=EXPERIMENT, save="convergence.png")
+    filename = "convergence.png" if save else False
+    convergence_plot(result, experiment=EXPERIMENT, save=filename)
 
     print("Done.")
