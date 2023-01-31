@@ -1,4 +1,6 @@
 """Graph the behaviour of Exqaliber Amplitude Estimation."""
+from fractions import Fraction
+
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import animation
@@ -8,6 +10,30 @@ from exqaliber.exqaliber_amplitude_estimation import (
     ExqaliberAmplitudeEstimation,
     ExqaliberAmplitudeEstimationResult,
 )
+
+
+def format_with_pi(
+    x: float, max_denominator: int = 100, format_string: str = ""
+):
+    """Format a number as a fraction of pi when possible."""
+    frac = Fraction(x / np.pi).limit_denominator(max_denominator)
+
+    # check if the fraction matches
+    if np.abs(x - frac * np.pi) < 1e-8:
+        # whole fraction
+        if frac.numerator == 1:
+            if frac.denominator == 1:
+                return r"$\pi$"
+            return rf"$\pi/{frac.denominator}$"
+        # multiple of pi
+        elif frac.denominator == 1:
+            return rf"${frac.numerator}\pi$"
+        # combined fraction
+        else:
+            return rf"${frac.numerator}\pi/{frac.denominator}$"
+    # not a fraction of pi
+    else:
+        return f"{x:{format_string}}"
 
 
 def animate_exqaliber_amplitude_estimation(
@@ -117,9 +143,9 @@ def animate_exqaliber_amplitude_estimation(
     mu_hat_str = r"$\hat{\mu}$"
     sigma_hat_str = r"$\hat{\sigma}^2$"
     title = (
-        rf"Experiment: $\theta$: {experiment['true_theta']}, "
-        rf"{mu_hat_str}: {experiment['prior_mean']}, "
-        rf"{sigma_hat_str}: {experiment['prior_std']}. "
+        rf"Experiment: $\theta$: {format_with_pi(experiment['true_theta'])}, "
+        rf"{mu_hat_str}: {format_with_pi(experiment['prior_mean'])}, "
+        rf"{sigma_hat_str}: {format_with_pi(experiment['prior_std'])}. "
         rf"Method: {experiment['method']}"
     )
     fig.suptitle(title)
@@ -201,9 +227,9 @@ def convergence_plot(
     mu_hat_str = r"$\hat{\mu}$"
     sigma_hat_str = r"$\hat{\sigma}^2$"
     title = (
-        rf"Experiment: $\theta$: {experiment['true_theta']}, "
-        rf"{mu_hat_str}: {experiment['prior_mean']}, "
-        rf"{sigma_hat_str}: {experiment['prior_std']}. "
+        rf"Experiment: $\theta$: {format_with_pi(experiment['true_theta'])}, "
+        rf"{mu_hat_str}: {format_with_pi(experiment['prior_mean'])}, "
+        rf"{sigma_hat_str}: {format_with_pi(experiment['prior_std'])}. "
         rf"Method: {experiment['method']}"
     )
     fig.suptitle(title)
