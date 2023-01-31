@@ -16,9 +16,14 @@ from exqaliber.exqaliber_amplitude_estimation import (
 
 
 def format_with_pi(
-    x: float, max_denominator: int = 100, format_string: str = ""
+    x: float,
+    tick_number: int = 0,
+    max_denominator: int = 100,
+    format_string: str = "",
 ):
     """Format a number as a fraction of pi when possible."""
+    if x < 1e-8:
+        return f"{x:{format_string}}"
     frac = Fraction(x / np.pi).limit_denominator(max_denominator)
 
     # check if the fraction matches
@@ -300,6 +305,69 @@ def circular_histogram(
         plt.show()
 
 
+def accuracy_plot_linear(
+    results_multiple_thetas: list,
+    theta_range: np.ndarray,
+    experiment: dict,
+    save: bool = False,
+    show: bool = True,
+):
+    """Plot accuracy of estimation and theta."""
+    estimations = np.array(
+        [
+            [res.estimation for res in result]
+            for result in results_multiple_thetas
+        ]
+    )
+    mean_estimations = estimations.mean(axis=1)
+    nb_reps = len(estimations[0])
+
+    # figure
+    plt.figure(dpi=150)
+    ax = plt.subplot()
+
+    ax.plot(theta_range, mean_estimations)
+
+    # X-axis
+    ax.set_xlabel(r"$\theta$")
+    ax.set_xlim(min(theta_range), max(theta_range))
+
+    ax.xaxis.set_major_locator(plt.MultipleLocator(np.pi / 2))
+    ax.xaxis.set_minor_locator(plt.MultipleLocator(np.pi / 4))
+    ax.xaxis.set_major_formatter(plt.FuncFormatter(format_with_pi))
+
+    # Y-axis
+    ax.set_ylabel(r"Estimated $\mu$")
+    ax.set_ylim(0, np.pi / 2)
+
+    ax.yaxis.set_major_locator(plt.MultipleLocator(np.pi / 4))
+    ax.yaxis.set_minor_locator(plt.MultipleLocator(np.pi / 8))
+    ax.yaxis.set_major_formatter(plt.FuncFormatter(format_with_pi))
+
+    ax.grid(True)
+
+    # Plot title
+    mu_hat_str = r"$\hat{\mu}$"
+    sigma_hat_str = r"$\hat{\sigma}^2$"
+    title = (
+        f"Mean estimation (over {nb_reps} samples) of "
+        r"$\theta$ vs. actual $\theta$."
+        f"\nExperiment: {mu_hat_str}: "
+        rf"{format_with_pi(experiment['prior_mean'])}, "
+        rf"{sigma_hat_str}: {format_with_pi(experiment['prior_std'])}. "
+        rf"Method: {experiment['method']}"
+    )
+    plt.title(title)
+
+    plt.tight_layout()
+
+    if save:
+        plt.savefig(save)
+
+    if show:
+        plt.show()
+
+
 def run_experiment_one_theta(theta, experiment):
     """Run Exqaliber AE for one theta."""
     # set experiment
@@ -376,8 +444,9 @@ if __name__ == "__main__":
     # parameters theta sweep
     reps = 50
     resolution = 120
-    theta_range = np.linspace(0, 2 * np.pi, resolution)
-    do_circular_histogram = True
+    theta_range = np.linspace(0, 2 * np.pi, resolution, endpoint=False)
+    do_circular_histogram = False
+    do_accuracy_plot_linear = False
 
     if one_theta_experiment:
         result_one_theta = run_experiment_one_theta(true_theta, EXPERIMENT)
@@ -424,6 +493,16 @@ if __name__ == "__main__":
                 "results/circular_histogram.png" if save_results else False
             )
             circular_histogram(
+                results_multiple_thetas,
+                theta_range,
+                experiment=EXPERIMENT,
+                save=filename,
+                show=show_results,
+            )
+
+        if do_accuracy_plot_linear:
+            filename = "results/accuracy_linear.png" if save_results else False
+            accuracy_plot_linear(
                 results_multiple_thetas,
                 theta_range,
                 experiment=EXPERIMENT,
