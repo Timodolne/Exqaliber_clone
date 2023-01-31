@@ -7,15 +7,15 @@ import numpy as np
 class Normal:
     """Normal distribution."""
 
-    def __init__(self, mu: float, var: float) -> None:
+    def __init__(self, mu: float, sigma: float) -> None:
 
-        if var <= 0:
-            raise ValueError("Variance must be positive")
+        if sigma <= 0:
+            raise ValueError("Standard deviation must be positive")
 
         self.__mu = mu
-        self.__var = var
+        self.__sigma = sigma
 
-        self.__parameters = {"mu": mu, "variance": var}
+        self.__parameters = {"mu": mu, "sigma": sigma}
 
     """
     Parameters / Getters for the base distribution
@@ -27,14 +27,14 @@ class Normal:
         return self.__mu
 
     @property
-    def variance(self) -> float:
-        """Get the variance of the normal distribution."""
-        return self.__var
-
-    @property
     def standard_deviation(self) -> float:
         """Get the standard deviation of the normal distribution."""
-        return np.sqrt(self.variance)
+        return self.__sigma
+
+    @property
+    def variance(self) -> float:
+        """Get the variance of the normal distribution."""
+        return self.standard_deviation**2
 
     def get_parameters(self) -> dict[str, float | np.ndarray]:
         r"""Get the parameters that uniquely define the distribution.
@@ -87,7 +87,9 @@ class Normal:
         float
             Expected bias
         """
-        return np.exp(-0.5 * lamda**2 * sigma**2) * np.cos(lamda * mu)
+        exp = np.exp(-0.5 * lamda**2 * sigma**2)
+        trig = np.cos(lamda * mu)
+        return exp * trig
 
     @staticmethod
     def get_chi(lamda: int, mu: float, sigma: float) -> float:
@@ -107,12 +109,9 @@ class Normal:
         float
             Expected bias
         """
-        return (
-            (-1)
-            * lamda
-            * np.exp(-0.5 * lamda**2 * sigma**2)
-            * np.sin(lamda * mu)
-        )
+        exp = (-1) * lamda * np.exp(-0.5 * lamda**2 * sigma**2)
+        trig = np.sin(lamda * mu)
+        return exp * trig
 
     @staticmethod
     def get_first_moment_posterior(
@@ -180,12 +179,11 @@ class Normal:
         denom = 1 + sign * b
         numer = (
             sigma**2
-            + mu
+            + mu**2
             + sign
-            * sigma**2
             * (
-                (1 + mu**2 / sigma**2 - lamda**2 * sigma**2) * b
-                - 2 * mu * chi
+                (sigma**2 + mu**2 - lamda**2 * sigma**4) * b
+                + 2 * mu * chi * sigma**2
             )
         )
 
@@ -195,9 +193,9 @@ class Normal:
     def update(
         measurement: int, lamda: int, mu: float, sigma: float
     ) -> Tuple[float, float]:
-        """Get the mean and variance of the updated normal distribution.
+        """Get the mean and std of the updated normal distribution.
 
-        Updates the mean and variance using a normal prior and
+        Updates the mean and standard deviation using a normal prior and
         Bernoulli likelihood.
 
         Parameters
@@ -214,7 +212,7 @@ class Normal:
         Returns
         -------
         Tuple[float, float]
-            Mean and variance of the new distribution
+            Mean and standard deviation of the new distribution
         """
         posterior_mu = Normal.get_first_moment_posterior(
             measurement, lamda, mu, sigma
@@ -223,8 +221,9 @@ class Normal:
             measurement, lamda, mu, sigma
         )
         posterior_var = second_moment - posterior_mu**2
+        posterior_sigma = np.sqrt(posterior_var)
 
-        return posterior_mu, posterior_var
+        return posterior_mu, posterior_sigma
 
     @staticmethod
     def get_variance_reduction_factor(
@@ -262,7 +261,7 @@ class Normal:
 
         Parameters
         ----------
-        lamda : int
+        lambdas : np.ndarray
             Defines p(1) = 0.5*(1 - cos(lamda * mu))
         mu : float
             Location parameter of the current normal distribution
