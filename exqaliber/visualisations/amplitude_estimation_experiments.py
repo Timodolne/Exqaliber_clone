@@ -445,8 +445,8 @@ if __name__ == "__main__":
     reps = 50
     resolution = 120
     theta_range = np.linspace(0, 2 * np.pi, resolution, endpoint=False)
-    do_circular_histogram = False
-    do_accuracy_plot_linear = False
+    do_circular_histogram = True
+    do_accuracy_plot_linear = True
 
     if one_theta_experiment:
         result_one_theta = run_experiment_one_theta(true_theta, EXPERIMENT)
