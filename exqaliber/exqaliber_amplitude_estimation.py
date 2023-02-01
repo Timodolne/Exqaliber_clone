@@ -170,7 +170,7 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
             case _:
                 lamda = analytical_lamda
 
-        return np.max([0, int((lamda - 2) / 4)])
+        return np.max([0, int((lamda - 1) / 2)])
 
     def construct_circuit(
         self, estimation_problem: EstimationProblem, k: int = 0
@@ -346,7 +346,7 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
                         round_one_counts += num_one_shots[-j]
 
             else:  # Cheat sampling
-                lamda = 4 * k + 2
+                lamda = 2 * k + 1
                 p = 0.5 * (1 - np.cos(lamda * self._true_theta))
                 measurement_outcome = np.random.binomial(1, p)
                 num_oracle_queries += k
