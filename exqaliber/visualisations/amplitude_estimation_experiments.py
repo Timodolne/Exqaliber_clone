@@ -45,6 +45,20 @@ def format_with_pi(
         return f"{x:{format_string}}"
 
 
+def experiment_string(experiment):
+    """Create a string for plot titles."""
+    mu_hat_str = r"$\hat{\mu}$"
+    sigma_hat_str = r"$\hat{\sigma}^2$"
+    title = (
+        rf"$\theta$: {format_with_pi(experiment['true_theta'])}, "
+        rf"{mu_hat_str}: {format_with_pi(experiment['prior_mean'])}, "
+        rf"{sigma_hat_str}: {format_with_pi(experiment['prior_std'])}. "
+        rf"$\epsilon$ target: {experiment['epsilon']}. "
+        rf"Method: {experiment['method']}"
+    )
+    return title
+
+
 def animate_exqaliber_amplitude_estimation(
     result: ExqaliberAmplitudeEstimationResult,
     experiment: dict,
@@ -119,8 +133,8 @@ def animate_exqaliber_amplitude_estimation(
         y = rv.pdf(x)
 
         means = [dist.mean for dist in distributions[:frame]]
-        ymin = frame
-        ymax = frame - n_iter
+        ymin = frame - 1
+        ymax = frame - n_iter - 1
         axs[0].set_ylim(ymin, ymax)
 
         # Hide negative ticks
@@ -151,14 +165,7 @@ def animate_exqaliber_amplitude_estimation(
     )
 
     # Plot title
-    mu_hat_str = r"$\hat{\mu}$"
-    sigma_hat_str = r"$\hat{\sigma}^2$"
-    title = (
-        rf"Experiment: $\theta$: {format_with_pi(experiment['true_theta'])}, "
-        rf"{mu_hat_str}: {format_with_pi(experiment['prior_mean'])}, "
-        rf"{sigma_hat_str}: {format_with_pi(experiment['prior_std'])}. "
-        rf"Method: {experiment['method']}"
-    )
+    title = f"Convergence animation.\n{experiment_string(experiment)}"
     fig.suptitle(title)
 
     plt.tight_layout()
@@ -240,14 +247,7 @@ def convergence_plot(
     axs[2].set_title(r"Oracle calls $k$")
 
     # Plot title
-    mu_hat_str = r"$\hat{\mu}$"
-    sigma_hat_str = r"$\hat{\sigma}^2$"
-    title = (
-        rf"Experiment: $\theta$: {format_with_pi(experiment['true_theta'])}, "
-        rf"{mu_hat_str}: {format_with_pi(experiment['prior_mean'])}, "
-        rf"{sigma_hat_str}: {format_with_pi(experiment['prior_std'])}. "
-        rf"Method: {experiment['method']}"
-    )
+    title = f"Convergence.\n{experiment_string(experiment)}"
     fig.suptitle(title)
 
     plt.tight_layout()
