@@ -374,14 +374,14 @@ def run_experiment_one_theta(theta, experiment):
     experiment["true_theta"] = theta
 
     # do the experiment
-    ae = ExqaliberAmplitudeEstimation(0.01, 0.01, **EXPERIMENT)
+    ae = ExqaliberAmplitudeEstimation(**experiment)
     result_one_theta = ae.estimate(None)
 
     print(f"Executed {len(result_one_theta.powers)} rounds")
     print(
         f"Finished with variance of {result_one_theta.variance:.6f} "
         f"and mean {result_one_theta.estimation:.6f}, "
-        f"(true theta: {EXPERIMENT['true_theta']})."
+        f"(true theta: {experiment['true_theta']})."
     )
 
     return result_one_theta
@@ -417,8 +417,6 @@ def run_experiment_multiple_thetas(theta_range, experiment):
 
 if __name__ == "__main__":
 
-    format_with_pi(np.pi)
-
     # saving and running parameters
     run_or_load = "run"
     save_results = True
@@ -427,10 +425,12 @@ if __name__ == "__main__":
     sweep_experiment = False
 
     # parameters all experiments
-    prior_mean = np.pi / 4
-    prior_std = 0.5
+    epsilon_target = 1e-3
+    prior_mean = np.pi / 2
+    prior_std = 1
     method = "greedy"
     EXPERIMENT = {
+        "epsilon": epsilon_target,
         "prior_mean": prior_mean,
         "prior_std": prior_std,
         "method": method,

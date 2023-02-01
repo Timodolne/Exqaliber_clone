@@ -43,7 +43,7 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
 
     def __init__(
         self,
-        epsilon_target: float = 0.01,
+        epsilon_target: float = 0.001,
         alpha: float = 0.01,
         sampler: BaseSampler | None = None,
         **kwargs,
@@ -52,7 +52,7 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
         TODO update docstring.
 
         epsilon_target: float
-            Target precision for estimation target `a`, has values
+            Target precision for estimation target `theta`, has values
             between 0 and 0.5
         alpha: float
             Confidence level, the target probability is 1 - alpha, has
@@ -244,7 +244,7 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
         sigma_tolerance = self.epsilon_target / norm.ppf(1 - self._alpha / 2)
 
         # initialize memory variables
-        powers = []  # list of powers k: Q^k, (called 'k' in paper)
+        powers = [0]  # list of powers k: Q^k, (called 'k' in paper)
         num_oracle_queries = 0
         theta_min_0, theta_max_0 = prior.confidence_interval(self._alpha)
         theta_intervals = [[theta_min_0, theta_max_0]]
@@ -576,8 +576,8 @@ if __name__ == "__main__":
 
     EXPERIMENT = {
         "true_theta": 0.4,
-        "prior_mean": 0.38,
-        "prior_std": 0.03,
+        "prior_mean": np.pi / 2,
+        "prior_std": 0.5,
         "method": "greedy",
     }
 
