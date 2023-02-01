@@ -9,12 +9,9 @@ from qiskit.algorithms.amplitude_estimators import (
     AmplitudeEstimatorResult,
     EstimationProblem,
 )
-
-# from qiskit.algorithms.amplitude_estimators.ae_utils import (
-#     _probabilities_from_sampler_result,
-# )
 from qiskit.algorithms.exceptions import AlgorithmError
 from qiskit.primitives import BaseSampler
+from scipy.stats import norm
 
 from exqaliber.bayesian_updates.distributions.normal import Normal
 
@@ -46,8 +43,8 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
 
     def __init__(
         self,
-        epsilon_target: float,
-        alpha: float,
+        epsilon_target: float = 0.01,
+        alpha: float = 0.01,
         sampler: BaseSampler | None = None,
         **kwargs,
     ) -> None:
@@ -241,25 +238,17 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
             AlgorithmError: Sampler job run error.
         """
         # initialize memory variables
-        powers = [0]  # list of powers k: Q^k, (called 'k' in paper)
-        # a priori knowledge of theta / 2 / pi
-        # theta_intervals = [[0, 1.0]]
-        # a_intervals = [
-        #     [0.0, 1.0]
-        # ]
-        # a priori knowledge of the confidence interval of the estimate
+        powers = []  # list of powers k: Q^k, (called 'k' in paper)
         num_oracle_queries = 0
-        # num_one_shots = []
-        prior_distributions = [Normal(self._prior_mean, self._prior_std)]
 
         # initiliaze starting variables
-        # TODO find some way of making this a variable
-        sigma_tolerance = 1e-4
-
+        prior = Normal(self._prior_mean, self._prior_std)
+        prior_distributions = [prior]
         num_iterations = 0  # keep track of the number of iterations
 
-        # do while loop, keep in mind that we scaled theta mod 2pi
-        # such that it lies in [0,1]
+        sigma_tolerance = self.epsilon_target / norm.ppf(1 - self._alpha / 2)
+
+        # do while loop. Theta between 0 and pi.
         while prior_distributions[-1].standard_deviation > sigma_tolerance:
             num_iterations += 1
 
