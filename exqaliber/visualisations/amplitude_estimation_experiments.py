@@ -420,11 +420,11 @@ if __name__ == "__main__":
     format_with_pi(np.pi)
 
     # saving and running parameters
-    run_or_load = "load"
+    run_or_load = "run"
     save_results = True
     show_results = True
-    one_theta_experiment = False
-    sweep_experiment = True
+    one_theta_experiment = True
+    sweep_experiment = False
 
     # parameters all experiments
     prior_mean = np.pi / 4
