@@ -237,16 +237,17 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
             ValueError: A quantum instance or Sampler must be provided.
             AlgorithmError: Sampler job run error.
         """
-        # initialize memory variables
-        powers = []  # list of powers k: Q^k, (called 'k' in paper)
-        num_oracle_queries = 0
-
         # initiliaze starting variables
         prior = Normal(self._prior_mean, self._prior_std)
         prior_distributions = [prior]
         num_iterations = 0  # keep track of the number of iterations
-
         sigma_tolerance = self.epsilon_target / norm.ppf(1 - self._alpha / 2)
+
+        # initialize memory variables
+        powers = []  # list of powers k: Q^k, (called 'k' in paper)
+        num_oracle_queries = 0
+        theta_min_0, theta_max_0 = prior.confidence_interval(self._alpha)
+        theta_intervals = [[theta_min_0, theta_max_0]]
 
         # do while loop. Theta between 0 and pi.
         while prior_distributions[-1].standard_deviation > sigma_tolerance:
@@ -370,53 +371,32 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
             # Save belief
             prior_distributions.append(posterior)
 
-            # TODO confidence interval calculations
-            # # compute a_min_i, a_max_i
-            # a_i_min, a_i_max = _chernoff_confint(prob, round_shots,
-            # max_rounds, self._alpha)
+            # compute theta_min_i, theta_max_i
+            theta_min_i, theta_max_i = posterior.confidence_interval(
+                self._alpha
+            )
 
-            # # compute theta_min_i, theta_max_i
-            # if upper_half_circle:
-            #     theta_min_i = np.arccos(1 - 2 * a_i_min) / 2 / np.pi
-            #     theta_max_i = np.arccos(1 - 2 * a_i_max) / 2 / np.pi
-            # else:
-            #     theta_min_i = 1-np.arccos(1 - 2 * a_i_max) / 2 / np.pi
-            #     theta_max_i = 1-np.arccos(1 - 2 * a_i_min) / 2 / np.pi
+            theta_intervals.append([theta_min_i, theta_max_i])
 
-            # # compute theta_u, theta_l of this iteration
-            # scaling = 4 * k + 2  # current K_i factor
-            # theta_u = (
-            #   int(scaling * theta_intervals[-1][1]) + theta_max_i)
-            #    / scaling
-            # theta_l = (
-            #   int(scaling * theta_intervals[-1][0]) + theta_min_i)
-            # / scaling
-            # theta_intervals.append([theta_l, theta_u])
-            #
-            # # compute a_u_i, a_l_i
-            # a_u = np.sin(2 * np.pi * theta_u) ** 2
-            # a_l = np.sin(2 * np.pi * theta_l) ** 2
-            # a_u = cast(float, a_u)
-            # a_l = cast(float, a_l)
-            # a_intervals.append([a_l, a_u])
-
-        # # get the latest confidence interval for the estimate of a
-        # confidence_interval = tuple(a_intervals[-1])
+        # get the latest confidence interval for the estimate of theta
+        confidence_interval = tuple(theta_intervals[-1])
 
         # the final estimate is the mean of the confidence interval
         estimation = prior_distributions[-1].mean
 
         result = ExqaliberAmplitudeEstimationResult()
         result.alpha = self._alpha
+        result.epsilon_target = self.epsilon_target
         # result.post_processing = estimation_problem.post_processing
         result.num_oracle_queries = num_oracle_queries
 
         result.estimation = estimation
         result.standard_deviation = prior_distributions[-1].standard_deviation
         result.distributions = prior_distributions
-        # result.epsilon_estimated =
-        # (confidence_interval[1] - confidence_interval[0]) / 2
-        # result.confidence_interval = confidence_interval
+        result.epsilon_estimated = (
+            confidence_interval[1] - confidence_interval[0]
+        ) / 2
+        result.confidence_interval = confidence_interval
 
         # if estimation_problem is not None:
         #     result.estimation_processed = (
@@ -611,6 +591,10 @@ if __name__ == "__main__":
         f"Finished with standard deviation of {result.standard_deviation:.6f} "
         f"and mean {result.estimation:.6f}, "
         f"(true theta: {EXPERIMENT['true_theta']})."
+    )
+    print(
+        f"Finished with epsilon {result.epsilon_estimated:.6f} and estimate "
+        f"{result.estimation:.6f}. Target epsilon was {result.epsilon_target}."
     )
 
     print("Done.")
