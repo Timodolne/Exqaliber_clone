@@ -1,7 +1,6 @@
 """Graph the behaviour of Exqaliber Amplitude Estimation."""
 import multiprocessing
 import pickle
-import sys
 from fractions import Fraction
 
 import matplotlib.pyplot as plt
@@ -422,12 +421,18 @@ def run_experiment_multiple_thetas(theta_range, experiment):
     # recording
     results_multiple_thetas = []
 
-    for theta in tqdm(theta_range, desc="theta", position=0, file=sys.stdout):
+    for theta in tqdm(theta_range, desc="theta", position=0):
         experiment["true_theta"] = theta
 
         with multiprocessing.Pool() as pool:
             results_theta = list(
-                pool.imap(run_single_experiment, [EXPERIMENT] * reps)
+                tqdm(
+                    pool.imap(run_single_experiment, [EXPERIMENT] * reps),
+                    total=reps,
+                    position=1,
+                    leave=False,
+                    desc=" iteration",
+                )
             )
 
         results_multiple_thetas.append(results_theta)
