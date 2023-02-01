@@ -1,4 +1,5 @@
 """Graph the behaviour of Exqaliber Amplitude Estimation."""
+import multiprocessing
 import pickle
 import sys
 from fractions import Fraction
@@ -387,28 +388,26 @@ def run_experiment_one_theta(theta, experiment):
     return result_one_theta
 
 
+def run_single_experiment(experiment):
+    """Run one experiment (wrapper for multiprocessing)."""
+    ae = ExqaliberAmplitudeEstimation(**experiment)
+    result = ae.estimate(None)
+
+    return result
+
+
 def run_experiment_multiple_thetas(theta_range, experiment):
     """Create results for Exqaliber AE for multiple input thetas."""
     # recording
     results_multiple_thetas = []
 
     for theta in tqdm(theta_range, desc="theta", position=0, file=sys.stdout):
-        results_theta = []
         experiment["true_theta"] = theta
 
-        for i in tqdm(
-            range(reps),
-            desc=" repetitions",
-            position=1,
-            file=sys.stdout,
-            leave=False,
-        ):
-            # tqdm.write(f'Starting repetition: {i: 2d}.\n', end='')
-            ae = ExqaliberAmplitudeEstimation(0.01, 0.01, **EXPERIMENT)
-
-            result = ae.estimate(None)
-
-            results_theta.append(result)
+        with multiprocessing.Pool() as pool:
+            results_theta = list(
+                pool.imap(run_single_experiment, [EXPERIMENT] * reps)
+            )
 
         results_multiple_thetas.append(results_theta)
 
