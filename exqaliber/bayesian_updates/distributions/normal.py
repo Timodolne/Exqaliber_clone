@@ -2,6 +2,7 @@
 from typing import Tuple
 
 import numpy as np
+from scipy.stats import norm
 
 
 class Normal:
@@ -279,3 +280,10 @@ class Normal:
                 for lamda in lambdas
             ]
         )
+
+    def confidence_interval(self, alpha):
+        """Return (1-alpha)% confidence interval."""
+        theta_min = norm.ppf(alpha / 2, self.mean, self.standard_deviation)
+        theta_max = norm.ppf(1 - alpha / 2, self.mean, self.standard_deviation)
+
+        return theta_min, theta_max
