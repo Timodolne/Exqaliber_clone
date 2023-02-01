@@ -269,6 +269,12 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
             # store the variables
             powers.append(k)
 
+            # set lambda
+            lamda = 2 * k + 1
+
+            # Record oracle queries
+            num_oracle_queries += lamda
+
             if estimation_problem is not None:
                 # run measurements for Q^k A|0> circuit
                 circuit = self.construct_circuit(estimation_problem, k)
@@ -280,7 +286,6 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
                         "The job was not completed successfully. "
                     ) from exc
 
-                lamda = 2 * k + 1
                 measurement_outcome = max(ret.quasi_dists[0], key=lambda x: x)
 
                 # shots = ret.metadata[0].get("shots")
@@ -359,10 +364,8 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
                 # num_oracle_queries += k
 
             else:  # Cheat sampling
-                lamda = 2 * k + 1
                 p = 0.5 * (1 - np.cos(lamda * self._true_theta))
                 measurement_outcome = np.random.binomial(1, p)
-                num_oracle_queries += k
 
             prior = prior_distributions[-1]
 

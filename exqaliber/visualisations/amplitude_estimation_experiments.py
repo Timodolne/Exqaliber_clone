@@ -228,7 +228,7 @@ def convergence_plot(
 
     text_x = (1 / 10) * max(x)
     text_y = (5 / 6) * max(y)
-    text = f"Total {sum(y)} oracle calls"
+    text = f"Total {result.num_oracle_queries} oracle calls"
     axs[2].text(text_x, text_y, text)
 
     axs[2].set_xlim(0, n_iter)
