@@ -64,7 +64,7 @@ Thus,
 \[
 \Pi(Y_t = y_t | \theta) =  \frac{1}{2}(1 + (-1)^{y_t} \cos((4d_t + 2) \hat{\mu}_{t-1})).
 \]
-For convenience, let $\lambda_t = 4d_t + 2$.
+For convenience, let $\tilde{\lambda}_t = 4d_t + 2$ and $\lambda = 2d + 1 = \frac{1}{2}\tilde{\lambda}$.
 
 To simplify some of the computations, we're going to assert that the posterior follows a Von-Mises distribution after every update, so we calculate the new values $\hat{\mu}_t, \hat{\kappa}_t$ and generate our approximate posterior
 \[
@@ -75,33 +75,33 @@ For simplicity, we're going to consider the first step of the update, which make
 
 \begin{itemize}
 	\item $\Pi(\theta) \sim \text{VM}(\mu, \kappa)$ - prior
-	\item $\Pi(Y | \theta) \sim \text{Ber}(\frac{1}{2}(1 - \cos(\lambda \theta)))$
+	\item $\Pi(Y | \theta) \sim \text{Ber}(\frac{1}{2}(1 - \cos(\tilde{\lambda} \theta)))$
 \end{itemize}
 
 This gives us:
 \begin{align*}
 	\Pi(Y = y) &= \int_{-\pi}^{\pi} \Pi(Y = y | \theta) \Pi\left( \theta \right) \text{d}\theta \\
-		   &= \frac{1}{2 \pi I_0(\kappa)} \int_{- \pi}^{\pi} \frac{1}{2} (1 + (-1)^y \cos(\lambda \theta)) \exp(\kappa \cos(\theta - \mu)) \text{d} \theta \\
+		   &= \frac{1}{2 \pi I_0(\kappa)} \int_{- \pi}^{\pi} \frac{1}{2} (1 + (-1)^y \cos(\tilde{\lambda} \theta)) \exp(\kappa \cos(\theta - \mu)) \text{d} \theta \\
 	&= \frac{1}{2 \pi I_0(\kappa)} \left( \int_{- \pi}^{\pi} \frac{1}{2} \exp(\kappa \cos(\theta - \mu)) \text{d} \theta \right. \\
-	 &\left. + (-1)^y \int_{- \pi}^{\pi} \frac{1}{2} \cos(\lambda \theta) \exp(\kappa \cos(\theta - \mu)) \text{d} \theta  \right) \\
-	 &= \frac{1}{4 \pi I_0\left( \kappa \right) }\left( 2\pi I_0\left( \kappa \right)  + (-1)^{y} \int_{-\pi}^{\pi}\frac{e^{i \lambda \theta} + e^{-i \lambda \theta}}{2}\exp\left( \kappa \cos \left( \theta - \mu \right)  \right) \text{d}\theta \right) \\
-	&= \frac{1}{2}\left(1 + (-1)^y \cos(\lambda \mu) \frac{I_\lambda(\kappa)}{I_0(\kappa)}\right)  \\
+	 &\left. + (-1)^y \int_{- \pi}^{\pi} \frac{1}{2} \cos(\tilde{\lambda} \theta) \exp(\kappa \cos(\theta - \mu)) \text{d} \theta  \right) \\
+	 &= \frac{1}{4 \pi I_0\left( \kappa \right) }\left( 2\pi I_0\left( \kappa \right)  + (-1)^{y} \int_{-\pi}^{\pi}\frac{e^{i \tilde{\lambda} \theta} + e^{-i \tilde{\lambda} \theta}}{2}\exp\left( \kappa \cos \left( \theta - \mu \right)  \right) \text{d}\theta \right) \\
+	&= \frac{1}{2}\left(1 + (-1)^y \cos(\tilde{\lambda} \mu) \frac{I_{\tilde{\lambda}}(\kappa)}{I_0(\kappa)}\right)  \\
 \end{align*}
 where in the penultimate line, we use the expression for the $n$th circular moment.
 Putting this all together, and letting
 
 \[
-C(y, \lambda, \mu, \kappa) = \frac{\frac{1}{2} \frac{1}{2 \pi I_0(\kappa)}}{\frac{1}{2} (1 + (-1)^y \cos(\lambda \mu) \frac{I_\lambda(\kappa)}{I_0(\kappa)} )} = \frac{1}{ 2 \pi(I_0(\kappa) + (-1)^y \cos(\lambda \mu) I_\lambda(\kappa))}
+C(y, \tilde{\lambda}, \mu, \kappa) = \frac{\frac{1}{2} \frac{1}{2 \pi I_0(\kappa)}}{\frac{1}{2} (1 + (-1)^y \cos(\tilde{\lambda} \mu) \frac{I_{\tilde{\lambda}}(\kappa)}{I_0(\kappa)} )} = \frac{1}{ 2 \pi(I_0(\kappa) + (-1)^y \cos(\tilde{\lambda} \mu) I_{\tilde{\lambda}}(\kappa))}
 \]
 gives
 
 \begin{align*}
-	\mathbb{E}[e^{i \theta} | Y = y] &= C(y, \lambda,\mu, \kappa) \int_{- \pi}^{\pi} e^{i \theta} (1 + (-1)^y \cos(\lambda \theta)) \exp(\kappa \cos(\theta - \mu)) \text{d} \theta \\
-& =	C(y, \lambda,\mu, \kappa) \left(  \int_{- \pi}^{\pi} e^{i \theta} \exp(\kappa \cos(\theta - \mu)) \text{d} \theta \right. \\
- & \quad + (-1)^y  \left. \int_{- \pi}^{\pi} e^{i \theta} \cos(\lambda \theta)   \exp(\kappa \cos(\theta - \mu)) \text{d} \theta \right)\\
- &= C(y, \lambda,\mu, \kappa) \left( \vphantom{\int_{-\pi}^\pi} 2 \pi I_1(\kappa) e^{i \mu} \right. \\
- &\quad \left.+ (-1)^y  \int_{-\pi}^{\pi} e^{i \theta} \left( \frac{e^{i \lambda \theta} + e^{- i \lambda \theta}}{2}\right)  \exp(\kappa \cos(\theta - \mu)) \text{d} \theta \right) \\
- &= 2 \pi C(y, \lambda,\mu, \kappa) \left( I_1(\kappa) e^{i \mu} + \frac{(-1)^y}{2} \left(I_{\lambda + 1}(\kappa)e^{i(\lambda + 1) \mu}  + I_{\lambda - 1}(\kappa) e^{-i(\lambda - 1)\mu}\right) \right)
+	\mathbb{E}[e^{i \theta} | Y = y] &= C(y, \tilde{\lambda},\mu, \kappa) \int_{- \pi}^{\pi} e^{i \theta} (1 + (-1)^y \cos(\tilde{\lambda} \theta)) \exp(\kappa \cos(\theta - \mu)) \text{d} \theta \\
+& =	C(y, \tilde{\lambda},\mu, \kappa) \left(  \int_{- \pi}^{\pi} e^{i \theta} \exp(\kappa \cos(\theta - \mu)) \text{d} \theta \right. \\
+ & \quad + (-1)^y  \left. \int_{- \pi}^{\pi} e^{i \theta} \cos(\tilde{\lambda} \theta)   \exp(\kappa \cos(\theta - \mu)) \text{d} \theta \right)\\
+ &= C(y, \tilde{\lambda},\mu, \kappa) \left( \vphantom{\int_{-\pi}^\pi} 2 \pi I_1(\kappa) e^{i \mu} \right. \\
+ &\quad \left.+ (-1)^y  \int_{-\pi}^{\pi} e^{i \theta} \left( \frac{e^{i \tilde{\lambda} \theta} + e^{- i \tilde{\lambda} \theta}}{2}\right)  \exp(\kappa \cos(\theta - \mu)) \text{d} \theta \right) \\
+ &= 2 \pi C(y, \tilde{\lambda},\mu, \kappa) \left( I_1(\kappa) e^{i \mu} + \frac{(-1)^y}{2} \left(I_{\tilde{\lambda} + 1}(\kappa)e^{i(\tilde{\lambda} + 1) \mu}  + I_{\tilde{\lambda} - 1}(\kappa) e^{-i(\tilde{\lambda} - 1)\mu}\right) \right)
 \end{align*}
 where in the penultimate line, we use the fact that
 \[
@@ -110,7 +110,7 @@ where in the penultimate line, we use the fact that
 
 This gives us that
 \[
-\mathbb{E}[e^{i \theta} | Y = y] = \frac{ I_1(\kappa) e^{i \mu} + \frac{(-1)^y}{2} \left(I_{\lambda + 1}(\kappa)e^{i(\lambda + 1) \mu}  + I_{\lambda - 1}(\kappa) e^{-i(\lambda - 1)\mu}\right)}{I_0(\kappa) + (-1)^y \cos(\lambda \mu) I_\lambda(\kappa)}.
+\mathbb{E}[e^{i \theta} | Y = y] = \frac{ I_1(\kappa) e^{i \mu} + \frac{(-1)^y}{2} \left(I_{\tilde{\lambda} + 1}(\kappa)e^{i(\tilde{\lambda} + 1) \mu}  + I_{\tilde{\lambda} - 1}(\kappa) e^{-i(\tilde{\lambda} - 1)\mu}\right)}{I_0(\kappa) + (-1)^y \cos(\tilde{\lambda} \mu) I_{\tilde{\lambda}}(\kappa)}.
 \]
 
 If we then take expectations over $Y$ (i.e. multiply by $\Pi(Y = y))$ and sum) this gives us
@@ -120,9 +120,9 @@ If we then take expectations over $Y$ (i.e. multiply by $\Pi(Y = y))$ and sum) t
 \]
 So, we can infer that we do not expect the angular parameter $\mu$ to move. To infer something about $\kappa$, we need to consider $\mathbb{E}[R]$. As before, let's consider $\mathbb{E}[R | Y = y]$. From the above, we can deduce that
  \begin{align*}
-	 \mathbb{E}[R | Y = y]^{2} &= \frac{\left( I_1 + \frac{(-1)^{y}}{2}\left( e^{i \lambda \mu}I_{\lambda + 1}+ e^{- i \lambda \mu}I_{\lambda -1} \right)  \right) \left( I_1 + \frac{(-1)^{y}}{2}\left( e^{-i \lambda \mu}I_{\lambda + 1} + e^{i \lambda \mu} I_{\lambda -1 } \right)  \right) }{\left( I_0 + (-1)^{y}\cos(\lambda \mu) I_{\lambda} \right)^{2} } \\
-				   &= \frac{I_1^{2} + \frac{1}{4}\left( I_{\lambda + 1}^2 + I_{\lambda - 1}^2 \right) +\frac{1}{2} \cos\left( 2 \lambda \mu \right)  I_{\lambda +1}I_{\lambda - 1} + (-1)^{y} I_1\left( I_{\lambda + 1} + I_{\lambda - 1} \right) \cos \lambda \mu}{\left( I_0 + (-1)^{y}\cos (\lambda \mu) I_{\lambda} \right) ^2} \\
-				   &= \frac{N_y^2}{\left( I_0 + (-1)^{y}\cos(\lambda \mu) I_{\lambda} \right) ^2},
+	 \mathbb{E}[R | Y = y]^{2} &= \frac{\left( I_1 + \frac{(-1)^{y}}{2}\left( e^{i \tilde{\lambda} \mu}I_{\tilde{\lambda} + 1}+ e^{- i \tilde{\lambda} \mu}I_{\tilde{\lambda} -1} \right)  \right) \left( I_1 + \frac{(-1)^{y}}{2}\left( e^{-i \tilde{\lambda} \mu}I_{\tilde{\lambda} + 1} + e^{i \tilde{\lambda} \mu} I_{\tilde{\lambda} -1 } \right)  \right) }{\left( I_0 + (-1)^{y}\cos(\tilde{\lambda} \mu) I_{\tilde{\lambda}} \right)^{2} } \\
+				   &= \frac{I_1^{2} + \frac{1}{4}\left( I_{\tilde{\lambda} + 1}^2 + I_{\tilde{\lambda} - 1}^2 \right) +\frac{1}{2} \cos\left( 2 \tilde{\lambda} \mu \right)  I_{\tilde{\lambda} +1}I_{\tilde{\lambda} - 1} + (-1)^{y} I_1\left( I_{\tilde{\lambda} + 1} + I_{\tilde{\lambda} - 1} \right) \cos \tilde{\lambda} \mu}{\left( I_0 + (-1)^{y}\cos (\tilde{\lambda} \mu) I_{\tilde{\lambda}} \right) ^2} \\
+				   &= \frac{N_y^2}{\left( I_0 + (-1)^{y}\cos(\tilde{\lambda} \mu) I_{\tilde{\lambda}} \right) ^2},
 \end{align*}
 where for brevity, we have suppressed the argument $\kappa$ for each of the Bessel functions $I_{\nu}$.
 
@@ -130,8 +130,8 @@ Calculating $\mathbb{E}[R]$ then, is achieved by multiplying by  $\Pi(Y = y)$, s
 
 \begin{align*}
 	\mathbb{E}[R] &= \frac{N_0 + N_1}{2 I_0(\kappa)} \\
-		      &= \frac{1}{2 I_0(\kappa) } \sqrt{I_1^2 + \frac{1}{4} \left( I_{\lambda + 1}^{2} + I_{\lambda - 1}^2 \right)  + \frac{1}{2}\cos(2 \lambda \mu) I_{\lambda +1} I_{\lambda - 1} + I_1 \left( I_{\lambda + 1} + I_{\lambda -1 } \right) \cos (\lambda \mu) } \\
-		      & + \frac{1}{2 I_0(\kappa) } \sqrt{I_1^2 + \frac{1}{4} \left( I_{\lambda + 1}^{2} + I_{\lambda - 1}^2 \right)  + \frac{1}{2}\cos(2 \lambda \mu) I_{\lambda +1} I_{\lambda - 1} - I_1 \left( I_{\lambda + 1} + I_{\lambda -1 } \right) \cos (\lambda \mu) }
+q		      &= \frac{1}{2 I_0(\kappa) } \sqrt{I_1^2 + \frac{1}{4} \left( I_{\tilde{\lambda} + 1}^{2} + I_{\tilde{\lambda} - 1}^2 \right)  + \frac{1}{2}\cos(2 \tilde{\lambda} \mu) I_{\tilde{\lambda} +1} I_{\tilde{\lambda} - 1} + I_1 \left( I_{\tilde{\lambda} + 1} + I_{\tilde{\lambda} -1 } \right) \cos (\tilde{\lambda} \mu) } \\
+		      & + \frac{1}{2 I_0(\kappa) } \sqrt{I_1^2 + \frac{1}{4} \left( I_{\tilde{\lambda} + 1}^{2} + I_{\tilde{\lambda} - 1}^2 \right)  + \frac{1}{2}\cos(2 \tilde{\lambda} \mu) I_{\tilde{\lambda} +1} I_{\tilde{\lambda} - 1} - I_1 \left( I_{\tilde{\lambda} + 1} + I_{\tilde{\lambda} -1 } \right) \cos (\tilde{\lambda} \mu) }
 \end{align*}
 
 \section{Gaussian case}
