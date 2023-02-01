@@ -91,6 +91,8 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
         self._method = kwargs.get("method")
 
         self._prior_mean = kwargs.get("prior_mean", 0.5)
+        if self._prior_mean == "true_theta":
+            self._prior_mean = self._true_theta
         self._prior_std = kwargs.get("prior_std", 0.5)
 
     @property

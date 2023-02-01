@@ -45,17 +45,31 @@ def format_with_pi(
         return f"{x:{format_string}}"
 
 
-def experiment_string(experiment):
+def experiment_string(experiment, sweep=False):
     """Create a string for plot titles."""
     mu_hat_str = r"$\hat{\mu}$"
     sigma_hat_str = r"$\hat{\sigma}^2$"
-    title = (
-        rf"$\theta$: {format_with_pi(experiment['true_theta'])}, "
-        rf"{mu_hat_str}: {format_with_pi(experiment['prior_mean'])}, "
-        rf"{sigma_hat_str}: {format_with_pi(experiment['prior_std'])}. "
-        rf"$\epsilon$ target: {experiment['epsilon']}. "
-        rf"Method: {experiment['method']}"
-    )
+    if experiment["prior_mean"] == "true_theta":
+        prior_mean_str = r"$\theta$"
+    else:
+        prior_mean_str = format_with_pi(experiment["prior_mean"])
+
+    if not sweep:
+        title = (
+            rf"$\theta= ${format_with_pi(experiment['true_theta'])}, "
+            rf"{mu_hat_str}$= ${prior_mean_str}, "
+            rf"{sigma_hat_str}$= ${format_with_pi(experiment['prior_std'])}. "
+            rf"$\epsilon = ${experiment['epsilon']}. "
+            rf"Method: {experiment['method']}"
+        )
+    else:
+        title = (
+            rf"{mu_hat_str}$= ${prior_mean_str}, "
+            rf"{sigma_hat_str}$= ${format_with_pi(experiment['prior_std'])}. "
+            rf"$\epsilon = ${experiment['epsilon']}. "
+            rf"Method: {experiment['method']}"
+        )
+
     return title
 
 
@@ -83,31 +97,37 @@ def animate_exqaliber_amplitude_estimation(
 
     # Plot true and prior theta
     axs[0].vlines(
-        x=EXPERIMENT["true_theta"],
+        x=experiment["true_theta"],
         ymin=-n_iter,
         ymax=n_iter,
         label=r"True $\theta$",
-    )
-    axs[1].vlines(
-        x=EXPERIMENT["true_theta"], ymin=0, ymax=15, label=r"True $\theta$"
-    )
-
-    axs[0].vlines(
-        x=EXPERIMENT["prior_mean"],
-        ymin=-n_iter,
-        ymax=n_iter,
-        label=r"Prior $\theta$",
         linestyles="--",
     )
     axs[1].vlines(
-        x=EXPERIMENT["prior_mean"],
+        x=experiment["true_theta"],
         ymin=0,
         ymax=15,
-        label=r"Prior $\theta$",
+        label=r"True $\theta$",
         linestyles="--",
     )
 
-    xmin = -np.pi
+    if experiment["prior_mean"] != "true_theta":
+        axs[0].vlines(
+            x=experiment["prior_mean"],
+            ymin=-n_iter,
+            ymax=n_iter,
+            label=r"Prior $\theta$",
+            linestyles="--",
+        )
+        axs[1].vlines(
+            x=experiment["prior_mean"],
+            ymin=0,
+            ymax=15,
+            label=r"Prior $\theta$",
+            linestyles="--",
+        )
+
+    xmin = 0
     xmax = np.pi
     axs[0].set_xlim(xmin, xmax)
     axs[1].set_xlim(xmin, xmax)
@@ -205,13 +225,14 @@ def convergence_plot(
     # Mean plot
     y = [dist.mean for dist in distributions]
     axs[1].plot(x, y, label=r"$\mu$")
-    axs[1].hlines(
-        y=experiment["prior_mean"],
-        xmin=0,
-        xmax=n_iter,
-        label=r"Prior $\theta$",
-        linestyles="dotted",
-    )
+    if experiment["prior_mean"] != "true_theta":
+        axs[1].hlines(
+            y=experiment["prior_mean"],
+            xmin=0,
+            xmax=n_iter,
+            label=r"Prior $\theta$",
+            linestyles="dotted",
+        )
     axs[1].hlines(
         y=experiment["true_theta"],
         xmin=0,
@@ -425,7 +446,8 @@ if __name__ == "__main__":
 
     # parameters all experiments
     epsilon_target = 1e-3
-    prior_mean = np.pi / 2
+    # prior_mean = np.pi / 2
+    prior_mean = "true_theta"
     prior_std = 1
     method = "greedy"
     EXPERIMENT = {
