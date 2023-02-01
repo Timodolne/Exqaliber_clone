@@ -1,6 +1,6 @@
 """The Exqaliber Quantum Amplitude Estimation Algorithm."""
 
-from typing import cast
+# from typing import cast
 
 import numpy as np
 from qiskit import ClassicalRegister, QuantumCircuit
@@ -9,9 +9,10 @@ from qiskit.algorithms.amplitude_estimators import (
     AmplitudeEstimatorResult,
     EstimationProblem,
 )
-from qiskit.algorithms.amplitude_estimators.ae_utils import (
-    _probabilities_from_sampler_result,
-)
+
+# from qiskit.algorithms.amplitude_estimators.ae_utils import (
+#     _probabilities_from_sampler_result,
+# )
 from qiskit.algorithms.exceptions import AlgorithmError
 from qiskit.primitives import BaseSampler
 
@@ -242,12 +243,13 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
         # initialize memory variables
         powers = [0]  # list of powers k: Q^k, (called 'k' in paper)
         # a priori knowledge of theta / 2 / pi
-        theta_intervals = [[0, 1.0]]
-        a_intervals = [
-            [0.0, 1.0]
-        ]  # a priori knowledge of the confidence interval of the estimate
+        # theta_intervals = [[0, 1.0]]
+        # a_intervals = [
+        #     [0.0, 1.0]
+        # ]
+        # a priori knowledge of the confidence interval of the estimate
         num_oracle_queries = 0
-        num_one_shots = []
+        # num_one_shots = []
         prior_distributions = [Normal(self._prior_mean, self._prior_std)]
 
         # initiliaze starting variables
@@ -278,72 +280,83 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
                         "The job was not completed successfully. "
                     ) from exc
 
-                shots = ret.metadata[0].get("shots")
-                if shots is None:
-                    raise NotImplementedError
-                    circuit = self.construct_circuit(
-                        estimation_problem, k=0, measurement=True
-                    )
-                    try:
-                        job = self._sampler.run([circuit])
-                        ret = job.result()
-                    except Exception as exc:
-                        raise AlgorithmError(
-                            "The job was not completed successfully. "
-                        ) from exc
+                lamda = 2 * k + 1
+                measurement_outcome = max(ret.quasi_dists[0], key=lambda x: x)
 
-                    # calculate the probability of measuring '1'
-                    prob = _probabilities_from_sampler_result(
-                        circuit.num_qubits, ret, estimation_problem
-                    )
-                    prob = cast(
-                        float, prob
-                    )  # tell MyPy it's a float and not Tuple[int, float ]
-
-                    a_confidence_interval = [prob, prob]  # type: list[float]
-                    a_intervals.append(a_confidence_interval)
-
-                    theta_i_interval = [
-                        np.arccos(1 - 2 * a_i) / 2 / np.pi
-                        for a_i in a_confidence_interval
-                    ]
-                    theta_intervals.append(theta_i_interval)
-                    num_oracle_queries = (
-                        0  # no Q-oracle call, only a single one to A
-                    )
-                    break
-
-                counts = {
-                    np.binary_repr(k, circuit.num_qubits): round(v * shots)
-                    for k, v in ret.quasi_dists[0].items()
-                }
-
-                # calculate the probability of measuring '1',
-                # 'prob' is a_i in the paper
-                num_qubits = circuit.num_qubits - circuit.num_ancillas
-                # type: ignore
-                one_counts, prob = self._good_state_probability(
-                    estimation_problem, counts, num_qubits
-                )
-
-                num_one_shots.append(one_counts)
-
-                # track number of Q-oracle calls
-                num_oracle_queries += shots * k
-
-                # if on the previous iterations we have K_{i-1} == K_i,
-                # we sum these samples up
-                j = 1  # number of times we stayed fixed at the same K
-                round_shots = shots
-                round_one_counts = one_counts
-                if num_iterations > 1:
-                    while (
-                        powers[num_iterations - j] == powers[num_iterations]
-                        and num_iterations >= j + 1
-                    ):
-                        j = j + 1
-                        round_shots += shots
-                        round_one_counts += num_one_shots[-j]
+                # shots = ret.metadata[0].get("shots")
+                # if shots is None:
+                #     raise NotImplementedError
+                #     circuit = self.construct_circuit(
+                #         estimation_problem, k=0, measurement=True
+                #     )
+                #     try:
+                #         job = self._sampler.run([circuit])
+                #         ret = job.result()
+                #     except Exception as exc:
+                #         raise AlgorithmError(
+                #             "The job was not completed successfully. "
+                #         ) from exc
+                #
+                #     # calculate the probability of measuring '1'
+                #     prob = _probabilities_from_sampler_result(
+                #         circuit.num_qubits, ret, estimation_problem
+                #     )
+                #     # tell MyPy it's a float and not Tuple[int, float]
+                #     prob = cast(
+                #         float, prob
+                #     )
+                #     # type: list[float]
+                #     a_confidence_interval = [prob, prob]
+                #     a_intervals.append(a_confidence_interval)
+                #
+                #     theta_i_interval = [
+                #         np.arccos(1 - 2 * a_i) / 2 / np.pi
+                #         for a_i in a_confidence_interval
+                #     ]
+                #     theta_intervals.append(theta_i_interval)
+                #     num_oracle_queries = (
+                #         0  # no Q-oracle call, only a single one to A
+                #     )
+                #     break
+                #
+                # counts = {
+                #     (
+                #         np.binary_repr(k, circuit.num_qubits):
+                #         round(v * shots)
+                #     )
+                #     for k, v in ret.quasi_dists[0].items()
+                # }
+                #
+                # # calculate the probability of measuring '1',
+                # # 'prob' is a_i in the paper
+                # num_qubits = circuit.num_qubits - circuit.num_ancillas
+                # # type: ignore
+                # one_counts, prob = self._good_state_probability(
+                #     estimation_problem, counts, num_qubits
+                # )
+                #
+                # num_one_shots.append(one_counts)
+                #
+                # # track number of Q-oracle calls
+                # num_oracle_queries += shots * k
+                #
+                # # if on the previous iterations we have K_{i-1}==K_i,
+                # # we sum these samples up
+                # j = 1  # number of times we stayed fixed at the same K
+                # round_shots = shots
+                # round_one_counts = one_counts
+                # if num_iterations > 1:
+                #     while (
+                #         (
+                #             powers[num_iterations - j] ==
+                #             powers[num_iterations]
+                #         )
+                #         and num_iterations >= j + 1
+                #     ):
+                #         j = j + 1
+                #         round_shots += shots
+                #         round_one_counts += num_one_shots[-j]
+                # num_oracle_queries += k
 
             else:  # Cheat sampling
                 lamda = 2 * k + 1
@@ -361,7 +374,6 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
                 prior.standard_deviation,
             )
             posterior = Normal(mu, sigma)
-            # TODO decide what should go in .update, std or var
 
             # Save belief
             prior_distributions.append(posterior)
