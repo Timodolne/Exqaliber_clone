@@ -280,7 +280,7 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
                         "The job was not completed successfully. "
                     ) from exc
 
-                lamda = 4 * k + 2
+                lamda = 2 * k + 1
                 measurement_outcome = max(ret.quasi_dists[0], key=lambda x: x)
 
                 # shots = ret.metadata[0].get("shots")
@@ -419,11 +419,7 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
         # result.post_processing = estimation_problem.post_processing
         result.num_oracle_queries = num_oracle_queries
 
-        if estimation_problem is not None:
-            result.estimation = 2 * estimation
-            # TODO work out factor 2
-        else:
-            result.estimation = estimation
+        result.estimation = estimation
         result.standard_deviation = prior_distributions[-1].standard_deviation
         result.distributions = prior_distributions
         # result.epsilon_estimated =
