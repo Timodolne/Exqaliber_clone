@@ -242,7 +242,7 @@ def convergence_plot(
     )
 
     axs[1].set_xlim(0, n_iter)
-    axs[1].set_ylim(-np.pi, np.pi)
+    axs[1].set_ylim(0, np.pi)
 
     axs[1].set_xlabel("Iteration")
     axs[1].set_ylabel(r"$\mu$")
