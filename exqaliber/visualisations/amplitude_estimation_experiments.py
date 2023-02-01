@@ -471,6 +471,8 @@ if __name__ == "__main__":
     reps = 50
     resolution = 120
     theta_range = np.linspace(0, np.pi, resolution, endpoint=False)
+    # remove theta == 0.0
+    theta_range = theta_range[1:]
     do_circular_histogram = True
     do_accuracy_plot_linear = True
 
