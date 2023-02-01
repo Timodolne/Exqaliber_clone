@@ -338,7 +338,7 @@ def accuracy_plot_linear(
 
     # Y-axis
     ax.set_ylabel(r"Estimated $\mu$")
-    ax.set_ylim(0, np.pi / 2)
+    ax.set_ylim(0, np.pi)
 
     ax.yaxis.set_major_locator(plt.MultipleLocator(np.pi / 4))
     ax.yaxis.set_minor_locator(plt.MultipleLocator(np.pi / 8))
@@ -444,7 +444,7 @@ if __name__ == "__main__":
     # parameters theta sweep
     reps = 50
     resolution = 120
-    theta_range = np.linspace(0, 2 * np.pi, resolution, endpoint=False)
+    theta_range = np.linspace(0, np.pi, resolution, endpoint=False)
     do_circular_histogram = True
     do_accuracy_plot_linear = True
 
