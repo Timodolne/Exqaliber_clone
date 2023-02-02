@@ -9,8 +9,9 @@
 \begin{document}
 \maketitle
 \chapter{Preliminaries}
-
-\section{Circular Distributions}
+\section{Sequential amplitude estimation}
+General sequential amplitude estimation algorithms.
+\section{Circular distributions}
 I'm anticipating that I might need to put more words into this later on, so am leaving space for them here.
 
 \subsection{Von Mises distribution}
@@ -38,6 +39,9 @@ In general, this can be seen via
 				    &= \frac{I_{|n|}(\kappa)}{I_0(\kappa)} e^{i n \mu}. \\
 \end{align*}
 Note that we remove the $\sin$ integral by using the fact that the integral of an odd function over a symmetric, periodic interval is $0$.
+
+\section{Confidence intervals}
+Needed for termination conditions in the update process or replace with equivalent background required.
 \chapter{Problem Statement}
 \section{Setup}
 Goal: Given a single measurement of a Bernoulli random variable and a Von-Mises prior distribution, calculate the posterior distribution and approximate to a Von-Mises distribution.
@@ -393,23 +397,23 @@ We can do some accounting to arrive at the final form:
     &= \frac{1}{2}e^{\frac{1}{2}\lambda^2\sigma^2}
     \Big(
         (\sigma^2 + \mu^2 - \lambda^2\sigma^4)(\underbrace{e^{\lambda \mu i} + e^{-\lambda \mu i}}_{=2\cos{\lambda \mu}})
-        + 2\lambda \mu \sigma^2(\underbrace{i e^{\lambda \mu i} - ie^{-\lambda \mu i}}_{=2\sin{\lambda \mu}})
+        + 2\lambda \mu \sigma^2(\underbrace{i e^{\lambda \mu i} - ie^{-\lambda \mu i}}_{=-2\sin{\lambda \mu}})
     \Big)\\
-    &= \sigma^2 e^{-\frac{1}{2}\lambda^2\sigma^2}\Big((1 + \frac{\mu^2}{\sigma^2} - \lambda^2\sigma^2)\cos{\lambda \mu} + 2\lambda \mu \sin{\lambda \mu}\Big).
+    &= \sigma^2 e^{-\frac{1}{2}\lambda^2\sigma^2}\Big((1 + \frac{\mu^2}{\sigma^2} - \lambda^2\sigma^2)\cos{\lambda \mu} - 2\lambda \mu \sin{\lambda \mu}\Big).
 \end{align}
 
 And with equation \eqref{eq:b-gaussian} and \eqref{eq:chi-gaussian}, we can also write it as
 \begin{equation}
-    \star = \sigma^2\Big( (1 + \frac{\mu^2}{\sigma^2} - \lambda^2\sigma^2)b -2\mu \chi\Big)
+    \star = \sigma^2\Big( (1 + \frac{\mu^2}{\sigma^2} - \lambda^2\sigma^2)b +2\mu \chi\Big)
 \end{equation}
 
 Plugging this back in equation \eqref{eq:second-moment} gives for the second moment,
 \begin{equation}
-    \mathbb{E}(\theta^2 | Y=y) = \frac{\sigma^2 + \mu^2+ (-1)^y \sigma^2\Big( (1 + \frac{\mu^2}{\sigma^2} - \lambda^2\sigma^2)b -2\mu \chi\Big)}{1+(-1)^yb},
+    \mathbb{E}(\theta^2 | Y=y) = \frac{\sigma^2 + \mu^2+ (-1)^y \sigma^2\Big( (1 + \frac{\mu^2}{\sigma^2} - \lambda^2\sigma^2)b +2\mu \chi\Big)}{1+(-1)^yb},
 \end{equation}
 or when fully expanded:
 \begin{equation}
-    \mathbb{E}(\theta^2 | Y=y) = \frac{\sigma^2 + \mu^2+ (-1)^y \sigma^2 e^{-\frac{1}{2}\lambda^2\sigma^2}\Big((1 + \frac{\mu^2}{\sigma^2} - \lambda^2\sigma^2)\cos{\lambda \mu} + 2\lambda \mu \sin{\lambda \mu}\Big)}{1+(-1)^ye^{-\frac{1}{2}\lambda^2\sigma^2}\cos(\lambda\mu)}.
+    \mathbb{E}(\theta^2 | Y=y) = \frac{\sigma^2 + \mu^2+ (-1)^y \sigma^2 e^{-\frac{1}{2}\lambda^2\sigma^2}\Big((1 + \frac{\mu^2}{\sigma^2} - \lambda^2\sigma^2)\cos{\lambda \mu} - 2\lambda \mu \sin{\lambda \mu}\Big)}{1+(-1)^ye^{-\frac{1}{2}\lambda^2\sigma^2}\cos(\lambda\mu)}.
 \end{equation}
 
 
@@ -428,6 +432,7 @@ The integrals we are interested in computing, are either of the form
 
 \bibliographystyle{abbrv}
 \bibliography{refs}
+
 
 
 \end{document}
