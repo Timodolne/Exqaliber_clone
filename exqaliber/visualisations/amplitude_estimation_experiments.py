@@ -533,7 +533,7 @@ if __name__ == "__main__":
     theta_range[0] = 2 * np.pi
     do_circular_histogram = False
     do_accuracy_plot_linear = False
-    # do_error_plot = True
+    do_error_plot = True
 
     if one_theta_experiment:
         result_one_theta = run_experiment_one_theta(true_theta, EXPERIMENT)
@@ -596,6 +596,20 @@ if __name__ == "__main__":
                 f"{results_dir}/accuracy_linear.png" if save_results else False
             )
             accuracy_plot_linear(
+                results_multiple_thetas,
+                theta_range,
+                experiment=EXPERIMENT,
+                save=filename,
+                show=show_results,
+            )
+
+        if do_error_plot:
+            filename = (
+                f"{results_dir}/error_in_estimate.png"
+                if save_results
+                else False
+            )
+            error_in_estimate_2d_hist(
                 results_multiple_thetas,
                 theta_range,
                 experiment=EXPERIMENT,
