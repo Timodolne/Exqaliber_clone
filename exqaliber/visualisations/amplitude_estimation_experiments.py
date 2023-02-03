@@ -296,6 +296,8 @@ def circular_histogram(
     )
     mean_queries = queries.mean(axis=1)
     nb_reps = len(queries[0])
+    theta_range = theta_range % (2*np.pi)
+    thetas_repeated = np.vstack([theta_range] * nb_reps).T
 
     # figure
     plt.figure(figsize=(10, 10), dpi=150)
@@ -335,18 +337,18 @@ def accuracy_plot_linear(
             for result in results_multiple_thetas
         ]
     )
-    mean_estimations = estimations.mean(axis=1)
+    mean_estimations = estimations.mean(axis=1) % (2*np.pi)
     nb_reps = len(estimations[0])
 
     # figure
     plt.figure(dpi=150)
     ax = plt.subplot()
 
-    ax.plot(theta_range, mean_estimations)
+    ax.plot((theta_range % (2*np.pi)), mean_estimations)
 
     # X-axis
     ax.set_xlabel(r"$\theta$")
-    ax.set_xlim(min(theta_range), max(theta_range))
+    ax.set_xlim(0, np.pi)
 
     ax.xaxis.set_major_locator(plt.MultipleLocator(np.pi / 2))
     ax.xaxis.set_minor_locator(plt.MultipleLocator(np.pi / 4))
@@ -441,7 +443,7 @@ if __name__ == "__main__":
 
     # parameters all experiments
     epsilon_target = 1e-3
-    # prior_mean = np.pi / 2
+    # prior_mean = np.pi/2
     prior_mean = "true_theta"
     prior_std = 1
     method = "greedy"
@@ -453,18 +455,19 @@ if __name__ == "__main__":
     }
 
     # parameters one run experiment
-    true_theta = 1.0
-    do_animation_plot = True
+    true_theta = 0.00416
+    do_animation_plot = False
     do_convergence_plot = True
 
     # parameters theta sweep
-    reps = 50
-    resolution = 120
-    theta_range = np.linspace(0, np.pi, resolution, endpoint=False)
-    # remove theta == 0.0
-    theta_range = theta_range[1:]
-    do_circular_histogram = True
-    do_accuracy_plot_linear = True
+    reps = 500
+    resolution = 96
+    theta_range = np.linspace(0, np.pi, resolution, endpoint=True)
+    # replace theta == 0.0 with 2pi
+    theta_range[0] = 2*np.pi
+    do_circular_histogram = False
+    do_accuracy_plot_linear = False
+    # do_error_plot = True
 
     if one_theta_experiment:
         result_one_theta = run_experiment_one_theta(true_theta, EXPERIMENT)
