@@ -305,15 +305,10 @@ def circular_histogram(
     ax.bar(theta_range, mean_queries, width=width)
 
     # Plot title
-    mu_hat_str = r"$\hat{\mu}$"
-    sigma_hat_str = r"$\hat{\sigma}^2$"
     title = (
-        f"Mean number (over {nb_reps} samples) of iterations"
+        f"Number of iterations "
         "before convergence.\n"
-        rf"Experiment: {mu_hat_str}: "
-        rf"{format_with_pi(experiment['prior_mean'])}, "
-        rf"{sigma_hat_str}: {format_with_pi(experiment['prior_std'])}. "
-        rf"Method: {experiment['method']}"
+        f"{experiment_string(experiment, True)}"
     )
     plt.title(title)
 
@@ -368,15 +363,10 @@ def accuracy_plot_linear(
     ax.grid(True)
 
     # Plot title
-    mu_hat_str = r"$\hat{\mu}$"
-    sigma_hat_str = r"$\hat{\sigma}^2$"
     title = (
         f"Mean estimation (over {nb_reps} samples) of "
         r"$\theta$ vs. actual $\theta$."
-        f"\nExperiment: {mu_hat_str}: "
-        rf"{format_with_pi(experiment['prior_mean'])}, "
-        rf"{sigma_hat_str}: {format_with_pi(experiment['prior_std'])}. "
-        rf"Method: {experiment['method']}"
+        f"\n{experiment_string(experiment, True)}"
     )
     plt.title(title)
 
