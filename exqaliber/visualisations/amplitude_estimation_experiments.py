@@ -54,7 +54,7 @@ def experiment_string(experiment, sweep=False):
         prior_mean_str = format_with_pi(experiment["prior_mean"])
 
     if not sweep:
-        title = (
+        experiment = (
             rf"$\theta= ${format_with_pi(experiment['true_theta'])}, "
             rf"{mu_hat_str}$= ${prior_mean_str}, "
             rf"{sigma_hat_str}$= ${format_with_pi(experiment['prior_std'])}. "
@@ -62,14 +62,14 @@ def experiment_string(experiment, sweep=False):
             rf"Method: {experiment['method']}"
         )
     else:
-        title = (
+        experiment = (
             rf"{mu_hat_str}$= ${prior_mean_str}, "
             rf"{sigma_hat_str}$= ${format_with_pi(experiment['prior_std'])}. "
             rf"$\epsilon = ${experiment['epsilon']}. "
             rf"Method: {experiment['method']}"
         )
 
-    return title
+    return experiment
 
 
 def animate_exqaliber_amplitude_estimation(
