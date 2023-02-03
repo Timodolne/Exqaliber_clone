@@ -1,5 +1,6 @@
 """Graph the behaviour of Exqaliber Amplitude Estimation."""
 import multiprocessing
+import os.path
 import pickle
 from fractions import Fraction
 
@@ -296,15 +297,34 @@ def circular_histogram(
     )
     mean_queries = queries.mean(axis=1)
     nb_reps = len(queries[0])
-    theta_range = theta_range % (2*np.pi)
+    theta_range = theta_range % (2 * np.pi)
     thetas_repeated = np.vstack([theta_range] * nb_reps).T
 
     # figure
-    plt.figure(figsize=(10, 10), dpi=150)
+    fig = plt.figure(figsize=(7, 7), dpi=100)
     ax = plt.subplot(projection="polar")
 
-    width = 2 * np.pi / resolution
-    ax.bar(theta_range, mean_queries, width=width)
+    # data
+    width = np.pi / (resolution + 1)
+    max_magnitude_y = int(np.ceil(np.log10(max(mean_queries))))
+    max_y = 10 ** (max_magnitude_y)
+    min_magnitude_y = int(np.floor(np.log10(min(mean_queries))))
+
+    x_bins = np.arange(-width / 2, np.pi + width / 2, width)
+    y_bins = np.logspace(
+        min_magnitude_y, max_magnitude_y, 2 * max_magnitude_y + 1
+    )
+    bins = [x_bins, y_bins]
+
+    h = ax.hist2d(
+        thetas_repeated.flatten(), queries.flatten(), bins=bins, cmin=1
+    )
+
+    # axis
+    ax.set_xlim(0, np.pi)
+    ax.set_rlim(1, max_y)
+    ax.set_rscale("symlog")
+    ax.grid(True)
 
     # Plot title
     title = (
@@ -314,10 +334,12 @@ def circular_histogram(
     )
     plt.title(title)
 
+    fig.colorbar(h[3], ax=ax, location="bottom")
+
     plt.tight_layout()
 
     if save:
-        plt.savefig(save)
+        plt.savefig(save, dpi=300)
 
     if show:
         plt.show()
@@ -337,21 +359,21 @@ def accuracy_plot_linear(
             for result in results_multiple_thetas
         ]
     )
-    mean_estimations = estimations.mean(axis=1) % (2*np.pi)
+    mean_estimations = estimations.mean(axis=1) % (2 * np.pi)
     nb_reps = len(estimations[0])
 
     # figure
     plt.figure(dpi=150)
     ax = plt.subplot()
 
-    ax.plot((theta_range % (2*np.pi)), mean_estimations)
+    ax.plot((theta_range % (2 * np.pi)), mean_estimations)
 
     # X-axis
     ax.set_xlabel(r"$\theta$")
     ax.set_xlim(0, np.pi)
 
-    ax.xaxis.set_major_locator(plt.MultipleLocator(np.pi / 2))
-    ax.xaxis.set_minor_locator(plt.MultipleLocator(np.pi / 4))
+    ax.xaxis.set_major_locator(plt.MultipleLocator(np.pi / 4))
+    ax.xaxis.set_minor_locator(plt.MultipleLocator(np.pi / 8))
     ax.xaxis.set_major_formatter(plt.FuncFormatter(format_with_pi))
 
     # Y-axis
@@ -371,6 +393,50 @@ def accuracy_plot_linear(
         f"\n{experiment_string(experiment, True)}"
     )
     plt.title(title)
+
+    plt.tight_layout()
+
+    if save:
+        plt.savefig(save)
+
+    if show:
+        plt.show()
+
+
+def error_in_estimate_2d_hist(
+    results_multiple_thetas: list,
+    theta_range: np.ndarray,
+    experiment: dict,
+    save: bool = False,
+    show: bool = True,
+):
+    """Plot the error in the estimate."""
+    estimations = np.array(
+        [
+            [res.estimation for res in result]
+            for result in results_multiple_thetas
+        ]
+    )
+    estimations = estimations % (2 * np.pi)
+    median_estimations = np.median(estimations, axis=1)
+    thetas = theta_range % (2 * np.pi)
+
+    nb_reps = len(estimations[0])
+
+    thetas_repeated = np.vstack([thetas] * nb_reps).T
+    errors = estimations - thetas_repeated
+    median_errors = median_estimations - thetas
+
+    # build figure
+    fig, axs = plt.subplots(2, 1, figsize=(5, 10))
+
+    axs[0].scatter(thetas_repeated, errors)
+    axs[0].plot(thetas, median_errors)
+
+    axs[0].set_ylim(-experiment["epsilon"], experiment["epsilon"])
+
+    axs[1].scatter(thetas_repeated, errors)
+    axs[1].plot(thetas, median_errors)
 
     plt.tight_layout()
 
@@ -419,7 +485,7 @@ def run_experiment_multiple_thetas(theta_range, experiment):
         with multiprocessing.Pool() as pool:
             results_theta = list(
                 tqdm(
-                    pool.imap(run_single_experiment, [EXPERIMENT] * reps),
+                    pool.imap(run_single_experiment, [experiment] * reps),
                     total=reps,
                     position=1,
                     leave=False,
@@ -436,10 +502,10 @@ if __name__ == "__main__":
 
     # saving and running parameters
     run_or_load = "run"
-    save_results = True
+    save_results = False
     show_results = True
-    one_theta_experiment = True
-    sweep_experiment = False
+    one_theta_experiment = False
+    sweep_experiment = True
 
     # parameters all experiments
     epsilon_target = 1e-3
@@ -464,7 +530,7 @@ if __name__ == "__main__":
     resolution = 96
     theta_range = np.linspace(0, np.pi, resolution, endpoint=True)
     # replace theta == 0.0 with 2pi
-    theta_range[0] = 2*np.pi
+    theta_range[0] = 2 * np.pi
     do_circular_histogram = False
     do_accuracy_plot_linear = False
     # do_error_plot = True
@@ -491,27 +557,31 @@ if __name__ == "__main__":
             )
 
     if sweep_experiment:
+        results_dir = f"results/{resolution}x{reps}"
         if run_or_load == "run":
             results_multiple_thetas = run_experiment_multiple_thetas(
                 theta_range, experiment=EXPERIMENT
             )
-
+            if not os.path.exists(results_dir):
+                os.mkdir(results_dir)
             # save results
-            with open("results/results_multiple_thetas.pkl", "wb") as f:
-                pickle.dump(results_multiple_thetas, f)
-            with open("results/theta_range.pkl", "wb") as f:
-                pickle.dump(theta_range, f)
+            with open(f"{results_dir}/results_multiple_thetas.pkl", "wb") as f:
+                pickle.dump(results_multiple_thetas, f, protocol=-1)
+            with open(f"{results_dir}/theta_range.pkl", "wb") as f:
+                pickle.dump(theta_range, f, protocol=-1)
 
         elif run_or_load == "load":
             # load results
-            with open("results/results_multiple_thetas.pkl", "rb") as f:
+            with open(f"{results_dir}/results_multiple_thetas.pkl", "rb") as f:
                 results_multiple_thetas = pickle.load(f)
-            with open("results/theta_range.pkl", "rb") as f:
+            with open(f"{results_dir}/theta_range.pkl", "rb") as f:
                 theta_range = pickle.load(f)
 
         if do_circular_histogram:
             filename = (
-                "results/circular_histogram.png" if save_results else False
+                f"{results_dir}/circular_histogram.png"
+                if save_results
+                else False
             )
             circular_histogram(
                 results_multiple_thetas,
@@ -522,7 +592,9 @@ if __name__ == "__main__":
             )
 
         if do_accuracy_plot_linear:
-            filename = "results/accuracy_linear.png" if save_results else False
+            filename = (
+                f"{results_dir}/accuracy_linear.png" if save_results else False
+            )
             accuracy_plot_linear(
                 results_multiple_thetas,
                 theta_range,
