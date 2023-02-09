@@ -222,7 +222,9 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
         return circuit
 
     def estimate(
-        self, estimation_problem: EstimationProblem
+        self,
+        estimation_problem: EstimationProblem,
+        output: str = "full",
     ) -> "ExqaliberAmplitudeEstimationResult":
         """Run amplitude estimation algorithm on estimation problem.
 
@@ -394,7 +396,6 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
 
         result.estimation = estimation
         result.standard_deviation = prior_distributions[-1].standard_deviation
-        result.distributions = prior_distributions
         result.epsilon_estimated = (
             confidence_interval[1] - confidence_interval[0]
         ) / 2
@@ -414,7 +415,9 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
         #     ) / 2
         #     result.estimate_intervals = a_intervals
         #     result.theta_intervals = theta_intervals
-        result.powers = powers
+        if output == "full":
+            result.distributions = prior_distributions
+            result.powers = powers
 
         return result
 
