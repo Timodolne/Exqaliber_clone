@@ -1,4 +1,5 @@
 """Graph the behaviour of Exqaliber Amplitude Estimation."""
+import math
 import multiprocessing
 import os.path
 import pickle
@@ -474,24 +475,62 @@ def run_single_experiment(experiment):
     return result
 
 
-def run_experiment_multiple_thetas(theta_range, experiment):
+def run_experiment_multiple_thetas(
+    theta_range, experiment, run_or_load, results_dir, max_block_size=1_000
+):
     """Create results for Exqaliber AE for multiple input thetas."""
     # recording
     results_multiple_thetas = []
 
-    for theta in tqdm(theta_range, desc="theta", position=0):
-        experiment["true_theta"] = theta
+    if not os.path.exists(results_dir):
+        os.mkdir(results_dir)
 
-        with multiprocessing.Pool() as pool:
-            results_theta = list(
-                tqdm(
-                    pool.imap(run_single_experiment, [experiment] * reps),
-                    total=reps,
-                    position=1,
-                    leave=False,
-                    desc=" iteration",
-                )
-            )
+    i = 0
+    for theta in tqdm(theta_range, desc="theta", position=0):
+        results_theta = []
+        for j, block in tqdm(
+            enumerate(range(math.ceil(reps / max_block_size))),
+            total=math.ceil(reps / max_block_size),
+            position=1,
+            leave=False,
+            desc=" block",
+        ):
+            block_size = min([(reps - j * max_block_size), max_block_size])
+            experiment["true_theta"] = theta
+
+            filename = f"{results_dir}/{i:05}.pkl"
+
+            if run_or_load == "load":
+                try:
+                    # load results
+                    with open(filename, "rb") as f:
+                        results_theta_block = pickle.load(f)
+                except FileNotFoundError:
+                    print("File not found, running experiment.")
+                    run_or_load = "run"
+
+            if run_or_load == "run":
+                with multiprocessing.Pool(8) as pool:
+                    results_theta_block = list(
+                        tqdm(
+                            pool.imap(
+                                run_single_experiment,
+                                [experiment] * block_size,
+                            ),
+                            total=block_size,
+                            position=2,
+                            leave=False,
+                            desc="  iteration",
+                        )
+                    )
+
+                # save results
+                with open(filename, "wb") as f:
+                    pickle.dump(results_theta_block, f, protocol=-1)
+
+            results_theta.append(results_theta_block)
+
+            i += 1
 
         results_multiple_thetas.append(results_theta)
 
@@ -502,7 +541,7 @@ if __name__ == "__main__":
 
     # saving and running parameters
     run_or_load = "run"
-    save_results = False
+    save_results = True
     show_results = True
     one_theta_experiment = False
     sweep_experiment = True
@@ -526,8 +565,8 @@ if __name__ == "__main__":
     do_convergence_plot = True
 
     # parameters theta sweep
-    reps = 500
-    resolution = 96
+    reps = 5000
+    resolution = 180
     theta_range = np.linspace(0, np.pi, resolution, endpoint=True)
     # replace theta == 0.0 with 2pi
     theta_range[0] = 2 * np.pi
@@ -558,24 +597,33 @@ if __name__ == "__main__":
 
     if sweep_experiment:
         results_dir = f"results/{resolution}x{reps}"
-        if run_or_load == "run":
-            results_multiple_thetas = run_experiment_multiple_thetas(
-                theta_range, experiment=EXPERIMENT
-            )
-            if not os.path.exists(results_dir):
-                os.mkdir(results_dir)
-            # save results
-            with open(f"{results_dir}/results_multiple_thetas.pkl", "wb") as f:
-                pickle.dump(results_multiple_thetas, f, protocol=-1)
-            with open(f"{results_dir}/theta_range.pkl", "wb") as f:
-                pickle.dump(theta_range, f, protocol=-1)
 
-        elif run_or_load == "load":
-            # load results
-            with open(f"{results_dir}/results_multiple_thetas.pkl", "rb") as f:
-                results_multiple_thetas = pickle.load(f)
-            with open(f"{results_dir}/theta_range.pkl", "rb") as f:
-                theta_range = pickle.load(f)
+        results_multiple_thetas = run_experiment_multiple_thetas(
+            theta_range,
+            experiment=EXPERIMENT,
+            run_or_load=run_or_load,
+            results_dir=results_dir,
+        )
+
+        # if run_or_load == "run":
+        #     results_multiple_thetas = run_experiment_multiple_thetas(
+        #         theta_range, experiment=EXPERIMENT)
+        #     if not os.path.exists(results_dir):
+        #         os.mkdir(results_dir)
+        #     # save results
+        #     with open(f"{results_dir}/results_multiple_thetas.pkl",
+        #               "wb") as f:
+        #         pickle.dump(results_multiple_thetas, f, protocol=-1)
+        #     with open(f"{results_dir}/theta_range.pkl", "wb") as f:
+        #         pickle.dump(theta_range, f, protocol=-1)
+        #
+        # elif run_or_load == "load":
+        #     # load results
+        #     with open(f"{results_dir}/results_multiple_thetas.pkl",
+        #               "rb") as f:
+        #         results_multiple_thetas = pickle.load(f)
+        #     with open(f"{results_dir}/theta_range.pkl", "rb") as f:
+        #         theta_range = pickle.load(f)
 
         if do_circular_histogram:
             filename = (
