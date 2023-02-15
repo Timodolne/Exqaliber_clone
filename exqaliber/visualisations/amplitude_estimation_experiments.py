@@ -467,10 +467,10 @@ def run_experiment_one_theta(theta, experiment):
     return result_one_theta
 
 
-def run_single_experiment(experiment):
+def run_single_experiment(experiment, output="sparse"):
     """Run one experiment (wrapper for multiprocessing)."""
     ae = ExqaliberAmplitudeEstimation(**experiment)
-    result = ae.estimate(None)
+    result = ae.estimate(None, output=output)
 
     return result
 
