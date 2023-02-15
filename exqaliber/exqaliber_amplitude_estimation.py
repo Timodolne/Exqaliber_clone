@@ -87,8 +87,8 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
         self._epsilon = epsilon_target
         self._alpha = alpha
         self._sampler = sampler
-        self._true_theta = kwargs.get("true_theta")
-        self._method = kwargs.get("method")
+        self._true_theta = kwargs.get("true_theta", np.pi / 2)
+        self._method = kwargs.get("method", "greedy")
 
         self._prior_mean = kwargs.get("prior_mean", 0.5)
         if self._prior_mean == "true_theta":
@@ -253,6 +253,11 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
         theta_min_0, theta_max_0 = prior.confidence_interval(self._alpha)
         theta_intervals = [[theta_min_0, theta_max_0]]
 
+        # compute a_min_i, a_max_i
+        a_min_0 = np.sin(theta_min_0 / 2) ** 2
+        a_max_0 = np.sin(theta_max_0 / 2) ** 2
+        a_intervals = [[a_min_0, a_max_0]]
+
         # do while loop. Theta between 0 and pi.
         while prior_distributions[-1].standard_deviation > sigma_tolerance:
             num_iterations += 1
@@ -382,11 +387,17 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
 
             theta_intervals.append([theta_min_i, theta_max_i])
 
-        # get the latest confidence interval for the estimate of theta
-        confidence_interval = tuple(theta_intervals[-1])
+            # compute a_min_i, a_max_i
+            a_min_i = np.sin(theta_min_i / 2) ** 2
+            a_max_i = np.sin(theta_max_i / 2) ** 2
+            a_intervals.append([a_min_i, a_max_i])
 
-        # the final estimate is the mean of the confidence interval
-        estimation = prior_distributions[-1].mean
+        # get the latest confidence interval for the estimate of theta
+        confidence_interval = tuple(a_intervals[-1])
+
+        # the final estimate is coming from the final mean
+        final_theta = prior_distributions[-1].mean
+        estimation = np.sin(final_theta / 2) ** 2
 
         result = ExqaliberAmplitudeEstimationResult()
         result.alpha = self._alpha
@@ -394,6 +405,7 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
         # result.post_processing = estimation_problem.post_processing
         result.num_oracle_queries = num_oracle_queries
 
+        result.final_theta = final_theta
         result.estimation = estimation
         result.standard_deviation = prior_distributions[-1].standard_deviation
         result.epsilon_estimated = (
@@ -413,8 +425,8 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
         #     result.epsilon_estimated_processed = (
         #         confidence_interval[1] - confidence_interval[0]
         #     ) / 2
-        #     result.estimate_intervals = a_intervals
-        #     result.theta_intervals = theta_intervals
+        result.estimate_intervals = a_intervals
+        result.theta_intervals = theta_intervals
         if output == "full":
             result.distributions = prior_distributions
             result.powers = powers
