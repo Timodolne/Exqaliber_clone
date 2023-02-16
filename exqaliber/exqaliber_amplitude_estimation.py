@@ -257,6 +257,7 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
         a_min_0 = np.sin(theta_min_0 / 2) ** 2
         a_max_0 = np.sin(theta_max_0 / 2) ** 2
         a_intervals = [[a_min_0, a_max_0]]
+        estimates = [np.sin(self._prior_mean / 2) ** 2]
 
         # do while loop. Theta between 0 and pi.
         while prior_distributions[-1].standard_deviation > sigma_tolerance:
@@ -392,6 +393,9 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
             a_max_i = np.sin(theta_max_i / 2) ** 2
             a_intervals.append([a_min_i, a_max_i])
 
+            a_i = np.sin(posterior.mean / 2) ** 2
+            estimates.append(a_i)
+
         # get the latest confidence interval for the estimate of theta
         confidence_interval = tuple(a_intervals[-1])
 
@@ -425,9 +429,11 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
         #     result.epsilon_estimated_processed = (
         #         confidence_interval[1] - confidence_interval[0]
         #     ) / 2
-        result.estimate_intervals = a_intervals
-        result.theta_intervals = theta_intervals
+
         if output == "full":
+            result.estimates = estimates
+            result.estimate_intervals = a_intervals
+            result.theta_intervals = theta_intervals
             result.distributions = prior_distributions
             result.powers = powers
 
