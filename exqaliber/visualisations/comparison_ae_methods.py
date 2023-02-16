@@ -1,13 +1,26 @@
-"""Comparing different Ampltidue Estimation algorithms."""
+"""Compare different amplitude estimation algorithms."""
+# ---
+# jupyter:
+#   jupytext:
+#     formats: ipynb,py
+#     text_representation:
+#       extension: .py
+#       format_name: light
+#       format_version: '1.5'
+#       jupytext_version: 1.14.4
+#   kernelspec:
+#     display_name: Python 3 (ipykernel)
+#     language: python
+#     name: python3
+# ---
 
 # # Amplitude Estimation
 
 # ### Set-up
 
-# In[1]:
-
-
 import matplotlib.pyplot as plt
+
+# +
 import numpy as np
 from qiskit import QuantumCircuit
 from qiskit.algorithms import (
@@ -25,9 +38,8 @@ from exqaliber.exqaliber_amplitude_estimation import (
 
 np.random.seed(0)
 
-# In[2]:
 
-
+# +
 class BernoulliA(QuantumCircuit):
     """A circuit representing the Bernoulli A operator."""
 
@@ -68,8 +80,7 @@ exact_p = Statevector(A).probabilities(qargs=[0])[1]
 
 print(f"Exact Probability we're trying to estimate: {exact_p:.5f}")
 
-
-# In[3]:
+# +
 
 # quantum sampler
 shots = 4
@@ -77,7 +88,7 @@ shots = 4
 sampler = Sampler(options={"shots": shots})
 
 
-# In[4]:
+# -
 
 
 def pretty_print_result(result):
@@ -98,17 +109,13 @@ def pretty_print_result(result):
 
 # ## Canonical AE
 
-# In[5]:
-
+# +
 
 max_nb_qubits = 16
 ae_nb_qubits = np.arange(1, max_nb_qubits + 1)
+# -
 
-
-# In[6]:
-
-
-# %%time
+# # %%time
 ae_results = []
 for qbts in ae_nb_qubits:
     # the number of evaluation qbts specifies circuit width and accuracy
@@ -119,19 +126,13 @@ for qbts in ae_nb_qubits:
     ae_result = ae.estimate(problem)
     ae_results.append(ae_result)
 
-
-# In[7]:
-
-
 print("Amplitude Estimation")
 print(f"Exact probability: {exact_p:.4f}")
 print(pretty_print_result(ae_results[-1]))
 
-
 # ## Iterative AE
 
-# In[8]:
-
+# +
 
 epsilon_target = 1e-4
 alpha = 0.01
@@ -141,36 +142,24 @@ iae = IterativeAmplitudeEstimation(
     alpha=alpha,  # width of the confidence interval
     sampler=sampler,
 )
+# -
 
-
-# In[9]:
-
-
-# %%time
+# # %%time
 iae_result = iae.estimate(problem)
-
-
-# In[10]:
-
 
 print("Iterative Amplitude Estimation")
 print(f"Exact probability: {exact_p:.4f}")
 print(pretty_print_result(iae_result))
 
-
 # ## Maximum Likelihood AE
 
-# In[11]:
-
+# +
 
 max_power = 11
 mlae_powers = 2 ** np.arange(0, max_power)
 
-
-# In[12]:
-
-
-# %%time
+# +
+# # %%time
 mlae_results = []
 
 for i, power in enumerate(mlae_powers):
@@ -181,19 +170,15 @@ for i, power in enumerate(mlae_powers):
     mlae_result = mlae.estimate(problem)
 
     mlae_results.append(mlae_result)
-
-
-# In[13]:
-
+# -
 
 print("Maximum Likelihood Amplitude Estimation")
 print(f"Exact probability: {exact_p:.4f}")
 print(pretty_print_result(mlae_results[-1]))
 
-
 # ## Exqaliber AE
 
-# In[14]:
+# +
 
 
 exae = ExqaliberAmplitudeEstimation(
@@ -203,29 +188,20 @@ exae = ExqaliberAmplitudeEstimation(
     prior_std=1,
     alpha=alpha,
 )
+# -
 
-
-# In[15]:
-
-
-# %%time
+# # %%time
 exae_result = exae.estimate(problem)
-
-
-# In[16]:
-
 
 print("Exqaliber Amplitude Estimation")
 print(f"Exact probability: {exact_p:.4f}")
 print(pretty_print_result(exae_result))
 
-
 # # Compare performance
 
 # ## Oracle queries
 
-# In[29]:
-
+# +
 
 plt.style.use("ggplot")
 
@@ -309,10 +285,7 @@ plt.tight_layout()
 
 plt.show()
 
-
-# In[18]:
-
-
+# +
 fig, ax = plt.subplots(1, 2, figsize=(10, 5))
 
 conf_intervals = np.array(exae_result.estimate_intervals)
@@ -341,13 +314,11 @@ plt.suptitle("Discussion of Exqaliber AE conf. interval")
 plt.savefig("results/exae-conf-int.png")
 
 plt.show()
-
+# -
 
 # ## Convergence
 
-# In[19]:
-
-
+# +
 fig, ax = plt.subplots()
 
 # Convergence
@@ -415,10 +386,7 @@ plt.savefig("results/width-confinterval-shots.png")
 
 plt.show()
 
-
-# In[20]:
-
-
+# +
 fig, ax = plt.subplots()
 
 ax.plot(iae_result.powers, label="Iterative AE")
