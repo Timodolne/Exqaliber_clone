@@ -3,6 +3,7 @@ import math
 import multiprocessing
 import os.path
 import pickle
+import time
 from fractions import Fraction
 
 import matplotlib.pyplot as plt
@@ -323,7 +324,7 @@ def circular_histogram(
 
     # axis
     ax.set_xlim(0, np.pi)
-    ax.set_rlim(1, max_y)
+    ax.set_rlim(1, 3 * max_y)
     ax.set_rscale("symlog")
     ax.grid(True)
 
@@ -528,8 +529,10 @@ def run_experiment_multiple_thetas(
                 with open(filename, "wb") as f:
                     pickle.dump(results_theta_block, f, protocol=-1)
 
-            results_theta.append(results_theta_block)
+            for result in results_theta_block:
+                results_theta.append(result)
 
+            time.sleep(0.001)
             i += 1
 
         results_multiple_thetas.append(results_theta)
@@ -567,12 +570,12 @@ if __name__ == "__main__":
     # parameters theta sweep
     reps = 5000
     resolution = 180
-    theta_range = np.linspace(0, np.pi, resolution, endpoint=True)
+    theta_range = np.linspace(0, np.pi, resolution + 1, endpoint=True)
     # replace theta == 0.0 with 2pi
     theta_range[0] = 2 * np.pi
-    do_circular_histogram = False
+    do_circular_histogram = True
     do_accuracy_plot_linear = False
-    do_error_plot = True
+    do_error_plot = False
 
     if one_theta_experiment:
         result_one_theta = run_experiment_one_theta(true_theta, EXPERIMENT)
