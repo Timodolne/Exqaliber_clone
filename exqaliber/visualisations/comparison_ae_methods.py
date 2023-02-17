@@ -1,3 +1,18 @@
+# ---
+# jupyter:
+#   jupytext:
+#     formats: ipynb,py
+#     text_representation:
+#       extension: .py
+#       format_name: light
+#       format_version: '1.5'
+#       jupytext_version: 1.14.4
+#   kernelspec:
+#     display_name: Python 3 (ipykernel)
+#     language: python
+#     name: python3
+# ---
+
 """Compare different amplitude estimation algorithms."""
 # ---
 # jupyter:
@@ -81,7 +96,6 @@ exact_p = Statevector(A).probabilities(qargs=[0])[1]
 print(f"Exact Probability we're trying to estimate: {exact_p:.5f}")
 
 # +
-
 # quantum sampler
 shots = 4
 
@@ -109,11 +123,8 @@ def pretty_print_result(result):
 
 # ## Canonical AE
 
-# +
-
 max_nb_qubits = 16
 ae_nb_qubits = np.arange(1, max_nb_qubits + 1)
-# -
 
 # # %%time
 ae_results = []
@@ -133,7 +144,6 @@ print(pretty_print_result(ae_results[-1]))
 # ## Iterative AE
 
 # +
-
 epsilon_target = 1e-4
 alpha = 0.01
 
@@ -144,7 +154,7 @@ iae = IterativeAmplitudeEstimation(
 )
 # -
 
-# # %%time
+# %%time
 iae_result = iae.estimate(problem)
 
 print("Iterative Amplitude Estimation")
@@ -153,13 +163,11 @@ print(pretty_print_result(iae_result))
 
 # ## Maximum Likelihood AE
 
-# +
-
 max_power = 11
 mlae_powers = 2 ** np.arange(0, max_power)
 
 # +
-# # %%time
+# %%time
 mlae_results = []
 
 for i, power in enumerate(mlae_powers):
@@ -178,9 +186,6 @@ print(pretty_print_result(mlae_results[-1]))
 
 # ## Exqaliber AE
 
-# +
-
-
 exae = ExqaliberAmplitudeEstimation(
     sampler=sampler,
     epsilon=epsilon_target,
@@ -188,9 +193,8 @@ exae = ExqaliberAmplitudeEstimation(
     prior_std=1,
     alpha=alpha,
 )
-# -
 
-# # %%time
+# %%time
 exae_result = exae.estimate(problem)
 
 print("Exqaliber Amplitude Estimation")
@@ -202,7 +206,6 @@ print(pretty_print_result(exae_result))
 # ## Oracle queries
 
 # +
-
 plt.style.use("ggplot")
 
 fig, axs = plt.subplots(2, 2, figsize=(10, 10))
