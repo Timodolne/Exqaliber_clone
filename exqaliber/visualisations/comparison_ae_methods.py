@@ -95,6 +95,9 @@ exact_p = Statevector(A).probabilities(qargs=[0])[1]
 
 print(f"Exact Probability we're trying to estimate: {exact_p:.5f}")
 
+alpha = 0.01
+epsilon_target = 1e-4
+
 # +
 # quantum sampler
 shots = 4
@@ -126,7 +129,7 @@ def pretty_print_result(result):
 max_nb_qubits = 16
 ae_nb_qubits = np.arange(1, max_nb_qubits + 1)
 
-# # %%time
+# %%time
 ae_results = []
 for qbts in ae_nb_qubits:
     # the number of evaluation qbts specifies circuit width and accuracy
@@ -135,6 +138,10 @@ for qbts in ae_nb_qubits:
         sampler=sampler,
     )
     ae_result = ae.estimate(problem)
+    ae_result.confidence_interval = ae.compute_confidence_interval(
+        ae_result, alpha
+    )
+
     ae_results.append(ae_result)
 
 print("Amplitude Estimation")
@@ -143,16 +150,11 @@ print(pretty_print_result(ae_results[-1]))
 
 # ## Iterative AE
 
-# +
-epsilon_target = 1e-4
-alpha = 0.01
-
 iae = IterativeAmplitudeEstimation(
     epsilon_target=epsilon_target,  # target accuracy
     alpha=alpha,  # width of the confidence interval
     sampler=sampler,
 )
-# -
 
 # %%time
 iae_result = iae.estimate(problem)
@@ -176,6 +178,9 @@ for i, power in enumerate(mlae_powers):
     )
 
     mlae_result = mlae.estimate(problem)
+    mlae_result.confidence_interval = mlae.compute_confidence_interval(
+        mlae_result, alpha
+    )
 
     mlae_results.append(mlae_result)
 # -
