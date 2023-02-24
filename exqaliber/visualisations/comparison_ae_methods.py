@@ -14,20 +14,6 @@
 # ---
 
 """Compare different amplitude estimation algorithms."""
-# ---
-# jupyter:
-#   jupytext:
-#     formats: ipynb,py
-#     text_representation:
-#       extension: .py
-#       format_name: light
-#       format_version: '1.5'
-#       jupytext_version: 1.14.4
-#   kernelspec:
-#     display_name: Python 3 (ipykernel)
-#     language: python
-#     name: python3
-# ---
 
 # # Amplitude Estimation
 
@@ -44,14 +30,14 @@ from qiskit.algorithms import (
     IterativeAmplitudeEstimation,
     MaximumLikelihoodAmplitudeEstimation,
 )
-from qiskit.primitives import Sampler
 from qiskit.quantum_info import Statevector
+from qiskit_aer.primitives import Sampler
 
 from exqaliber.exqaliber_amplitude_estimation import (
     ExqaliberAmplitudeEstimation,
 )
 
-np.random.seed(0)
+np.random.seed(1)
 
 
 # +
@@ -98,12 +84,6 @@ print(f"Exact Probability we're trying to estimate: {exact_p:.5f}")
 alpha = 0.01
 epsilon_target = 1e-4
 
-# +
-# quantum sampler
-shots = 4
-
-sampler = Sampler(options={"shots": shots})
-
 
 # -
 
@@ -129,13 +109,20 @@ def pretty_print_result(result):
 max_nb_qubits = 16
 ae_nb_qubits = np.arange(1, max_nb_qubits + 1)
 
+# +
+# quantum sampler
+shots_ae = 1
+
+sampler_ae = Sampler(backend_options={"shots": shots_ae})
+# -
+
 # %%time
 ae_results = []
 for qbts in ae_nb_qubits:
     # the number of evaluation qbts specifies circuit width and accuracy
     ae = AmplitudeEstimation(
         num_eval_qubits=qbts,
-        sampler=sampler,
+        sampler=sampler_ae,
     )
     ae_result = ae.estimate(problem)
     ae_result.confidence_interval = ae.compute_confidence_interval(
@@ -150,10 +137,17 @@ print(pretty_print_result(ae_results[-1]))
 
 # ## Iterative AE
 
+# +
+# quantum sampler
+shots_iae = 12
+
+sampler_iae = Sampler(backend_options={"shots": shots_iae})
+# -
+
 iae = IterativeAmplitudeEstimation(
     epsilon_target=epsilon_target,  # target accuracy
     alpha=alpha,  # width of the confidence interval
-    sampler=sampler,
+    sampler=sampler_iae,
 )
 
 # %%time
@@ -169,12 +163,18 @@ max_power = 11
 mlae_powers = 2 ** np.arange(0, max_power)
 
 # +
+# quantum sampler
+shots_mlae = 1
+
+sampler_mlae = Sampler(backend_options={"shots": shots_mlae})
+
+# +
 # %%time
 mlae_results = []
 
 for i, power in enumerate(mlae_powers):
     mlae = MaximumLikelihoodAmplitudeEstimation(
-        evaluation_schedule=i, sampler=sampler
+        evaluation_schedule=i, sampler=sampler_mlae
     )
 
     mlae_result = mlae.estimate(problem)
@@ -191,8 +191,15 @@ print(pretty_print_result(mlae_results[-1]))
 
 # ## Exqaliber AE
 
+# +
+# quantum sampler
+shots_exae = 1
+
+sampler_exae = Sampler(backend_options={"shots": shots_exae})
+# -
+
 exae = ExqaliberAmplitudeEstimation(
-    sampler=sampler,
+    sampler=sampler_exae,
     epsilon=epsilon_target,
     prior_mean=np.pi / 2,
     prior_std=1,
@@ -221,15 +228,15 @@ conf_intervals = np.array(
     [result.confidence_interval for result in ae_results]
 )
 ae_powers = 2**ae_nb_qubits
-x_ae = np.repeat((2 * ae_powers).cumsum() + 1, shots)
-y_1 = np.repeat(conf_intervals[:, 0], shots)
-y_2 = np.repeat(conf_intervals[:, 1], shots)
+x_ae = np.repeat((2 * ae_powers).cumsum() + 1, shots_ae)
+y_1 = np.repeat(conf_intervals[:, 0], shots_ae)
+y_2 = np.repeat(conf_intervals[:, 1], shots_ae)
 
 axs[0, 0].fill_between(x_ae, y_1, y_2, alpha=0.5, label="Canonical AE")
 
 # IAE
 conf_intervals = np.array(iae_result.estimate_intervals)
-iae_oracle_queries = shots * (2 * np.array(iae_result.powers) + 1)
+iae_oracle_queries = shots_iae * (2 * np.array(iae_result.powers) + 1)
 x_iae = iae_oracle_queries.cumsum()
 y_1 = conf_intervals[:, 0]
 y_2 = conf_intervals[:, 1]
@@ -241,9 +248,9 @@ conf_intervals = np.array(
     [result.confidence_interval for result in mlae_results]
 )
 mlae_oracle_queries = 2 * np.array(mlae_powers) + 1
-x_mlae = np.repeat(mlae_oracle_queries * shots, shots)
-y_1 = np.repeat(conf_intervals[:, 0], shots)
-y_2 = np.repeat(conf_intervals[:, 1], shots)
+x_mlae = np.repeat(mlae_oracle_queries * shots_mlae, shots_mlae)
+y_1 = np.repeat(conf_intervals[:, 0], shots_mlae)
+y_2 = np.repeat(conf_intervals[:, 1], shots_mlae)
 
 axs[1, 0].fill_between(
     x_mlae, y_1, y_2, alpha=0.5, label="Maximum Likelihood AE"
@@ -260,7 +267,7 @@ axs[1, 1].fill_between(x_exae, y_1, y_2, alpha=0.5, label="Exqaliber AE")
 
 # Estimate line
 # CAE
-y = np.repeat([result.estimation for result in ae_results], shots)
+y = np.repeat([result.estimation for result in ae_results], shots_ae)
 axs[0, 0].plot(x_ae, y)
 
 # IAE
@@ -268,7 +275,7 @@ y = np.array(iae_result.estimate_intervals).mean(axis=1)
 axs[0, 1].plot(x_iae, y)
 
 # MLAE
-y = np.repeat([result.estimation for result in mlae_results], shots)
+y = np.repeat([result.estimation for result in mlae_results], shots_mlae)
 axs[1, 0].plot(x_mlae, y)
 
 # EXAE
@@ -336,8 +343,8 @@ conf_intervals = np.array(
 )
 ae_powers = 2**ae_nb_qubits
 ae_width_conf = conf_intervals[:, 1] - conf_intervals[:, 0]
-x_ae = np.repeat((2 * ae_powers).cumsum() + 1, shots)
-y_ae = np.repeat(ae_width_conf, shots)
+x_ae = np.repeat((2 * ae_powers).cumsum() + 1, shots_ae)
+y_ae = np.repeat(ae_width_conf, shots_ae)
 ax.plot(x_ae, y_ae, label="Canonical AE")
 
 
@@ -345,8 +352,8 @@ ax.plot(x_ae, y_ae, label="Canonical AE")
 conf_intervals = np.array(iae_result.estimate_intervals)
 iae_oracle_queries = 2 * np.array(iae_result.powers) + 1
 iae_width_conf = conf_intervals[:, 1] - conf_intervals[:, 0]
-x_iae = np.repeat(iae_oracle_queries, shots).cumsum()
-y_iae = np.repeat(iae_width_conf, shots)
+x_iae = np.repeat(iae_oracle_queries, shots_iae).cumsum()
+y_iae = np.repeat(iae_width_conf, shots_iae)
 
 ax.plot(x_iae, y_iae, label="Iterative AE")
 
@@ -356,8 +363,8 @@ conf_intervals = np.array(
 )
 mlae_oracle_queries = 2 * np.array(mlae_powers) + 1
 mlae_width_conf = conf_intervals[:, 1] - conf_intervals[:, 0]
-x_mlae = np.repeat(mlae_oracle_queries * shots, shots)
-y_mlae = np.repeat(mlae_width_conf, shots)
+x_mlae = np.repeat(mlae_oracle_queries * shots_mlae, shots_mlae)
+y_mlae = np.repeat(mlae_width_conf, shots_mlae)
 
 ax.plot(x_mlae, y_mlae, label="Maximum Likelihood AE")
 
