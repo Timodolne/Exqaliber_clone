@@ -1,0 +1,484 @@
+\documentclass[]{report}
+
+
+% Title Page
+\title{Bayesian Updates}
+\usepackage{amsmath,amsthm,amssymb,bbold}
+
+
+\begin{document}
+\maketitle
+\chapter{Preliminaries}
+\section{Sequential amplitude estimation}
+General sequential amplitude estimation algorithms.
+\section{Circular distributions}
+I'm anticipating that I might need to put more words into this later on, so am leaving space for them here.
+
+\subsection{Von Mises distribution}
+The Von-Mises distribution is given by:
+\[
+f(x, \mu, \kappa) = \frac{1}{2 \pi I_0{\kappa}} \exp(\kappa \cos(x-\mu)), \quad - \pi \le x \le \pi,
+\]
+
+where $I_0(\cdot)$ is the $0$th modified Bessel function, where the $n$th modified Bessel function is given by
+\[
+I_{n}(\kappa) = \frac{1}{\pi} \int_0^\pi \cos(n\theta) \exp(\kappa \cos \theta) \text{d}\theta.
+\]
+
+The circular mean of the Von-Mises distribution is given by:
+ \[
+	 \mathbb{E}\left[ \exp i  \theta \right]   = \frac{I_1\left( \kappa \right) }{I_0 \left( \kappa \right) }e^{i \mu}
+.\]
+In general, this can be seen via
+\begin{align*}
+	\mathbb{E} [e^{i n \theta}] &= \frac{1}{2\pi I_0 \left( \kappa \right) }\int_{-\pi}^{\pi}\exp\left( in \theta \right) \exp\left( \kappa \cos( \theta - \mu) \right) \text{d}\theta\\
+				    &= \frac{1}{2\pi I_0\left( \kappa \right) }\int_{-\pi - \mu}^{\pi - \mu}\exp(in (\psi + \mu)) \exp\left( \kappa \cos\psi  \right) \text{d}\psi \\
+				    &= \frac{e^{in \mu} }{2\pi I_0\left( \kappa \right) }\int_{-\pi}^{\pi} \exp\left( i n \theta \right) \exp \left( \kappa \cos\theta  \right) \text{d}\theta \\
+				    &= \frac{e^{in \mu}}{2\pi I_0 (\kappa)} \int_{- \pi}^{\pi} \left( \cos( n \theta) + i \sin (n \theta)  \right) \exp\left( \kappa \cos \theta \right) \text{d} \theta \\
+				    &= \frac{e^{in \mu}}{2\pi I_0\left( \kappa \right) } \int_{-\pi}^{\pi} \cos\left( n\theta \right)  \exp \left( \kappa \cos \theta \right) \text{d}\theta \\
+				    &= \frac{I_{|n|}(\kappa)}{I_0(\kappa)} e^{i n \mu}. \\
+\end{align*}
+Note that we remove the $\sin$ integral by using the fact that the integral of an odd function over a symmetric, periodic interval is $0$.
+
+\section{Confidence intervals}
+Needed for termination conditions in the update process or replace with equivalent background required.
+\chapter{Problem Statement}
+\section{Setup}
+Goal: Given a single measurement of a Bernoulli random variable and a Von-Mises prior distribution, calculate the posterior distribution and approximate to a Von-Mises distribution.
+
+\begin{itemize}
+	\item $t$ - time step
+	\item $d_t$ - Grover depth of quantum circuit at time $t$
+	\item $Y_t$ - random variable representing a single shot measurement $y_t$ of the quantum circuit at time $t$
+	\item $\Pi(\theta| Y_1 = y_1, \ldots, Y_t = y_t) = \Pi(\theta | \mathbf{Y}_t )$ - 'true' posterior at time $t$ (though values for $t ' < t$ have been used to approximate the earlier distributions)
+	\item  $\hat{\Pi}(\theta| Y_1 = y_1, \ldots, Y_t = y_t) = \hat{\Pi}(\theta | \mathbf{Y}_t )$ - approximate posterior at time $t$.
+\end{itemize}
+
+According to Bayes rule:
+\[
+\Pi (\theta | Y_t = y_t, \mathbf{Y}_{t -1}) = \frac{\Pi(Y_t = y_t | \theta) \Pi(\theta | \mathbf{Y}_{t-1})}{\Pi(Y_t = y_t) },
+\]
+so we need to compute each of the quantities on the RHS.
+
+At time $t$, we make a measurement $y_t$ of $Y_t \sim \text{Ber}(p_t)$ at a Grover depth of $d_t$ where
+\[
+	p_t = \frac{1}{2}(1 - \cos((4d_t + 2) \hat{\mu}_{t-1}).
+\]
+Thus,
+\[
+\Pi(Y_t = y_t | \theta) =  \frac{1}{2}(1 + (-1)^{y_t} \cos((4d_t + 2) \hat{\mu}_{t-1})).
+\]
+For convenience, let $\lambda_t = 4d_t + 2$.
+
+To simplify some of the computations, we're going to assert that the posterior follows a Von-Mises distribution after every update, so we calculate the new values $\hat{\mu}_t, \hat{\kappa}_t$ and generate our approximate posterior
+\[
+\hat{\Pi}(\theta | \mathbf{Y}_t )  \sim VM(\hat{\mu}_t, \hat{\kappa}_t).
+\]
+\section{Single shot updates}
+For simplicity, we're going to consider the first step of the update, which makes things a lot nicer. In this case, we want to know what the circular mean of the posterior distribution is after updating.
+
+\begin{itemize}
+	\item $\Pi(\theta) \sim \text{VM}(\mu, \kappa)$ - prior
+	\item $\Pi(Y | \theta) \sim \text{Ber}(\frac{1}{2}(1 - \cos(\lambda \theta)))$
+\end{itemize}
+
+This gives us:
+\begin{align*}
+	\Pi(Y = y) &= \int_{-\pi}^{\pi} \Pi(Y = y | \theta) \Pi\left( \theta \right) \text{d}\theta \\
+		   &= \frac{1}{2 \pi I_0(\kappa)} \int_{- \pi}^{\pi} \frac{1}{2} (1 + (-1)^y \cos(\lambda \theta)) \exp(\kappa \cos(\theta - \mu)) \text{d} \theta \\
+	&= \frac{1}{2 \pi I_0(\kappa)} \left( \int_{- \pi}^{\pi} \frac{1}{2} \exp(\kappa \cos(\theta - \mu)) \text{d} \theta \right. \\
+	 &\left. + (-1)^y \int_{- \pi}^{\pi} \frac{1}{2} \cos(\lambda \theta) \exp(\kappa \cos(\theta - \mu)) \text{d} \theta  \right) \\
+	 &= \frac{1}{4 \pi I_0\left( \kappa \right) }\left( 2\pi I_0\left( \kappa \right)  + (-1)^{y} \int_{-\pi}^{\pi}\frac{e^{i \lambda \theta} + e^{-i \lambda \theta}}{2}\exp\left( \kappa \cos \left( \theta - \mu \right)  \right) \text{d}\theta \right) \\
+	&= \frac{1}{2}\left(1 + (-1)^y \cos(\lambda \mu) \frac{I_\lambda(\kappa)}{I_0(\kappa)}\right)  \\
+\end{align*}
+where in the penultimate line, we use the expression for the $n$th circular moment.
+Putting this all together, and letting
+
+\[
+C(y, \lambda, \mu, \kappa) = \frac{\frac{1}{2} \frac{1}{2 \pi I_0(\kappa)}}{\frac{1}{2} (1 + (-1)^y \cos(\lambda \mu) \frac{I_\lambda(\kappa)}{I_0(\kappa)} )} = \frac{1}{ 2 \pi(I_0(\kappa) + (-1)^y \cos(\lambda \mu) I_\lambda(\kappa))}
+\]
+gives
+
+\begin{align*}
+	\mathbb{E}[e^{i \theta} | Y = y] &= C(y, \lambda,\mu, \kappa) \int_{- \pi}^{\pi} e^{i \theta} (1 + (-1)^y \cos(\lambda \theta)) \exp(\kappa \cos(\theta - \mu)) \text{d} \theta \\
+& =	C(y, \lambda,\mu, \kappa) \left(  \int_{- \pi}^{\pi} e^{i \theta} \exp(\kappa \cos(\theta - \mu)) \text{d} \theta \right. \\
+ & \quad + (-1)^y  \left. \int_{- \pi}^{\pi} e^{i \theta} \cos(\lambda \theta)   \exp(\kappa \cos(\theta - \mu)) \text{d} \theta \right)\\
+ &= C(y, \lambda,\mu, \kappa) \left( \vphantom{\int_{-\pi}^\pi} 2 \pi I_1(\kappa) e^{i \mu} \right. \\
+ &\quad \left.+ (-1)^y  \int_{-\pi}^{\pi} e^{i \theta} \left( \frac{e^{i \lambda \theta} + e^{- i \lambda \theta}}{2}\right)  \exp(\kappa \cos(\theta - \mu)) \text{d} \theta \right) \\
+ &= 2 \pi C(y, \lambda,\mu, \kappa) \left( I_1(\kappa) e^{i \mu} + \frac{(-1)^y}{2} \left(I_{\lambda + 1}(\kappa)e^{i(\lambda + 1) \mu}  + I_{\lambda - 1}(\kappa) e^{-i(\lambda - 1)\mu}\right) \right)
+\end{align*}
+where in the penultimate line, we use the fact that
+\[
+\int_{- \pi}^ \pi e^{i n \theta} \exp(\kappa \cos(\theta - \mu)) \text{d} \theta = 2 \pi I_0(\kappa) \mathbb{E}[e^{i n \theta}] = I_{|n|}(\kappa) e^{i n \mu}.
+\]
+
+This gives us that
+\[
+\mathbb{E}[e^{i \theta} | Y = y] = \frac{ I_1(\kappa) e^{i \mu} + \frac{(-1)^y}{2} \left(I_{\lambda + 1}(\kappa)e^{i(\lambda + 1) \mu}  + I_{\lambda - 1}(\kappa) e^{-i(\lambda - 1)\mu}\right)}{I_0(\kappa) + (-1)^y \cos(\lambda \mu) I_\lambda(\kappa)}.
+\]
+
+If we then take expectations over $Y$ (i.e. multiply by $\Pi(Y = y))$ and sum) this gives us
+
+\[
+\mathbb{E}[e^{i \theta}] = \frac{I_{1}(\kappa)}{I_0(\kappa)}e^{i \mu}.
+\]
+So, we can infer that we do not expect the angular parameter $\mu$ to move. To infer something about $\kappa$, we need to consider $\mathbb{E}[R]$. As before, let's consider $\mathbb{E}[R | Y = y]$. From the above, we can deduce that
+ \begin{align*}
+	 \mathbb{E}[R | Y = y]^{2} &= \frac{\left( I_1 + \frac{(-1)^{y}}{2}\left( e^{i \lambda \mu}I_{\lambda + 1}+ e^{- i \lambda \mu}I_{\lambda -1} \right)  \right) \left( I_1 + \frac{(-1)^{y}}{2}\left( e^{-i \lambda \mu}I_{\lambda + 1} + e^{i \lambda \mu} I_{\lambda -1 } \right)  \right) }{\left( I_0 + (-1)^{y}\cos(\lambda \mu) I_{\lambda} \right)^{2} } \\
+				   &= \frac{I_1^{2} + \frac{1}{4}\left( I_{\lambda + 1}^2 + I_{\lambda - 1}^2 \right) +\frac{1}{2} \cos\left( 2 \lambda \mu \right)  I_{\lambda +1}I_{\lambda - 1} + (-1)^{y} I_1\left( I_{\lambda + 1} + I_{\lambda - 1} \right) \cos \lambda \mu}{\left( I_0 + (-1)^{y}\cos (\lambda \mu) I_{\lambda} \right) ^2} \\
+				   &= \frac{N_y^2}{\left( I_0 + (-1)^{y}\cos(\lambda \mu) I_{\lambda} \right) ^2},
+\end{align*}
+where for brevity, we have suppressed the argument $\kappa$ for each of the Bessel functions $I_{\nu}$.
+
+Calculating $\mathbb{E}[R]$ then, is achieved by multiplying by  $\Pi(Y = y)$, square-rooting, and summing. This results in the sum of the square roots of the numerators multiplied by a constant factor of $\frac{1}{2 I_0(\kappa)}$, i.e.
+
+\begin{align*}
+	\mathbb{E}[R] &= \frac{N_0 + N_1}{2 I_0(\kappa)} \\
+		      &= \frac{1}{2 I_0(\kappa) } \sqrt{I_1^2 + \frac{1}{4} \left( I_{\lambda + 1}^{2} + I_{\lambda - 1}^2 \right)  + \frac{1}{2}\cos(2 \lambda \mu) I_{\lambda +1} I_{\lambda - 1} + I_1 \left( I_{\lambda + 1} + I_{\lambda -1 } \right) \cos (\lambda \mu) } \\
+		      & + \frac{1}{2 I_0(\kappa) } \sqrt{I_1^2 + \frac{1}{4} \left( I_{\lambda + 1}^{2} + I_{\lambda - 1}^2 \right)  + \frac{1}{2}\cos(2 \lambda \mu) I_{\lambda +1} I_{\lambda - 1} - I_1 \left( I_{\lambda + 1} + I_{\lambda -1 } \right) \cos (\lambda \mu) }
+\end{align*}
+
+\section{Gaussian case}
+\subsection{Posterior}
+Now we're going to assume a different prior and posterior:
+
+\begin{itemize}
+	\item $\Pi(\theta) \sim \text{N}(\mu, \sigma^2)$ - prior
+	\item $\Pi(Y=y | \theta) \sim \text{Ber}(\lambda) = \frac{1}{2}(1 + (-1)^{y} \cos(\lambda \theta))$
+\end{itemize}
+Bayes rule, again, states that
+\begin{equation}
+    \Pi'(\theta|Y = y) = \frac{\Pi(\theta) \mathcal{L} (y, \theta)}{\Pi(Y=y)}.
+\end{equation}
+We assume that
+\begin{equation}
+    \Pi(\theta) = \frac{1}{\sqrt{2\pi \sigma^2}} e^{-\frac{(\theta - \mu)^2}{2\sigma^2}},
+\end{equation}
+we know that
+\begin{equation}
+    \mathcal{L} (y, \theta) = \frac{1}{2}(1 + (-1)^{y} \cos(\lambda \theta)),
+\end{equation}
+and by definition
+\begin{equation}
+\label{eq:normalisation-factor}
+    \Pi(Y=y) = \int_{-\infty}^{\infty} \mathcal{L}(y, \theta) \Pi(\theta) \text{d}\theta.
+\end{equation}
+
+Let us now define the \textit{bias} to be
+\begin{equation}
+    \Lambda ( \theta) = 2 \mathcal{L} (0, \theta) - 1,
+\end{equation}
+which gives the likelihood as
+\begin{equation}
+    \mathcal{L} (y, \theta) = \frac{1}{2}(1 + (-1)^{y} \Lambda(\theta)).
+\end{equation}
+Recognise that in this case $\Lambda(\theta) = \cos(\lambda \theta)$.
+
+
+Let us define \textit{expected bias} $b$ and the \textit{chi function} $\chi$ as
+\begin{align}
+\label{eq:b}
+    b &= \int_{-\infty}^{\infty} \Pi(\theta) \Lambda (\theta) \text{d} \theta\\
+\label{eq:chi}
+    \chi &= \frac{1}{\sigma^2} \int_{-\infty}^{\infty} (\theta - \mu)\Pi(\theta) \Lambda (\theta) \text{d} \theta
+\end{align}
+
+Now, putting that in to equation \eqref{eq:normalisation-factor} gives
+\begin{equation}
+    \Pi(Y=y) = \frac{1}{2} \Big[ \int_{-\infty}^{\infty} \Pi(\theta) \text{d}\theta + (-1)^y \int_{-\infty}^{\infty} \Pi(\theta) \Lambda (\theta) \text{d} \theta \Big].
+\end{equation}
+The first part equals $1$ by normalisation. The second part is the expected bias by definition, i.e.,
+\begin{equation}
+     \Pi(Y=y) = \frac{1}{2} \Big[ 1 + (-1)^y b\Big].
+\end{equation}
+
+The expected bias $b$ is given by
+\begin{align}
+    b   &= \int_{-\infty}^{\infty} \Pi(\theta) \Lambda (\theta) \text{d} \theta\\
+        &= \int_{-\infty}^{\infty} \frac{1}{\sqrt{2\pi \sigma^2}} e^{-\frac{(\theta - \mu)^2}{2\sigma^2}} \cos(\lambda \theta) \text{d} \theta,
+\end{align}
+which apparently (\cite{Koh2020}, equation 153 on page 25) is an 'identity' for $\sigma > 0$ and $\mu, \lambda \in \mathbb{R}$:
+\begin{equation}
+\label{eq:b-gaussian}
+    b(\mu, \sigma) = e^{-\frac{1}{2}\lambda^2\sigma^2} \cos (\lambda \mu).
+\end{equation}
+
+
+Putting this all together gives for the posterior:
+
+\begin{align}
+    \Pi'(\theta|Y = y)  &= \frac{\Pi(\theta) \mathcal{L} (y, \theta)}{\Pi(Y=y)}\\
+    &= \frac{1}{\sqrt{2\pi \sigma^2}}\frac{e^{-\frac{1}{2}(\frac{\theta - \mu}{\sigma})^2} ( 1 + (-1)^y \cos(\lambda \theta))}{1 + (-1)^y e^{-\frac{1}{2}\lambda^2\sigma^2} \cos (\lambda \mu)}.
+\end{align}
+
+\subsection{Expected values}
+Now, we're interested in the following quantities:
+\begin{itemize}
+    \item $\mathbb{E}_y(\text{Var}_{\theta}(\theta | Y))$ - The expected posterior variance
+    \item $\mathcal{V}$ - The variance reduction factor
+    \item $\mathbb{E}(\theta | Y=0), \text{Var}(\theta|Y=0)$ - Posterior mean and variance when measure $Y=0$
+    \item $\mathbb{E}(\theta | Y=1), \text{Var}(\theta|Y=1)$ - Posterior mean and variance when measure $Y=1$
+\end{itemize}
+
+Theorem 12 (together with equation (113)) of \cite{Koh2020} states that the \textit{expected posterior variance} is given by
+\begin{equation}
+    \mathbb{E}_y(\text{Var}_{\theta}(\theta | Y)) = \sigma^2(1-\sigma^2\mathcal{V}),
+\end{equation}
+with
+\begin{equation}
+    \mathcal{V} = \frac{1}{4}\Bigg[ \sum_{y\in \{0,1\}}\frac{I_1(y)^2}{I_0(y)} - \mu^2\Bigg],
+\end{equation}
+and with
+\begin{equation}
+    I_k(y) = \int_{-\infty}^{\infty} \theta^k \mathcal{L}(y, \theta)\Pi(\theta) \text{d}\theta
+\end{equation}
+the $k$-th moment of the function $\mathcal{L}(y, \cdot)\Pi(\cdot)$.
+
+Now by writing the expected bias $b$ and chi function $\chi$, equations \eqref{eq:b} and \eqref{eq:chi} respectively, in terms of the moments, you can show (equations (132-135) from \cite{Koh2020}) that for a two-outcome likelihood function, the variance reduction factor can be written as
+\begin{equation}
+    \mathcal{V} = \begin{cases}
+        \frac{\chi^2}{1-b^2},   & |b|<1\\
+        0,                      & |b|=1.
+    \end{cases}
+\end{equation}
+The Gaussian prior has a nice property: differentiating the expected bias w.r.t. the prior mean gives the chi function, i.e.
+\begin{equation}
+\label{eq:chi-diff}
+    \chi(\mu, \sigma) = \frac{\partial}{\partial\mu}b(\mu, \sigma),
+\end{equation}
+resulting in
+\begin{equation}
+\label{eq:chi-gaussian}
+    \chi(\mu, \sigma) = - \lambda e^{-\frac{1}{2}\lambda^2\sigma^2}\sin(\lambda\mu)
+\end{equation}
+and now the variance reduction factor can be written as
+\begin{equation}
+    \mathcal{V} = \mathcal{V}(\mu, \sigma) = \frac{\partial_{\mu}b(\mu, \sigma)^2}{1 - b(\mu, \sigma)^2} \mathbb{1}_{\Lambda \notin \{\pm1\}},
+\end{equation}
+where $\mathbb{1}_{\Lambda \notin \{\pm1\}}$ denotes the indicator function which is equal to 1 when $\Lambda \notin \{\pm1\}$ and $0$ otherwise.
+
+Combining the above, gives, together with equation \eqref{eq:b-gaussian} for the Gaussian prior:
+\begin{equation}
+    \mathcal{V} = \frac{\lambda^2 e^{-\lambda^2\sigma^2} \sin^2(\lambda\mu)}{1-e^{-\lambda^2\sigma^2} \cos^2(\lambda\mu)}\mathbb{1}_{\Lambda \notin \{\pm1\}},
+\end{equation}
+and thereby the expected posterior variance is
+\begin{equation}
+    \mathbb{E}_y(\text{Var}_{\theta}(\theta | Y)) = \sigma^2(1-\sigma^2\frac{\lambda^2 e^{-\lambda^2\sigma^2} \sin^2(\lambda\mu)}{1-e^{-\lambda^2\sigma^2} \cos^2(\lambda\mu)}\mathbb{1}_{\Lambda \notin \{\pm1\}}).
+\end{equation}
+
+The next quantities of interest are $\mathbb{E}(\theta | Y=y)$ and $\text{Var}(\theta|Y=y)$ for $y\in \{0,1\}$. By definition:
+\begin{equation}
+    \mathbb{E}(\theta | Y=y) = \int_{-\infty}^{\infty} \theta \Pi'(\theta|Y=y)\text{d}\theta,
+\end{equation}
+and
+\begin{equation}
+    \text{Var}(\theta|Y=y) = \mathbb{E}(\theta^2 | Y=y) - (\mathbb{E}(\theta | Y=y))^2,
+\end{equation}
+with
+\begin{equation}
+    \mathbb{E}(\theta^2 | Y=y) = \int_{-\infty}^{\infty} \theta^2 \Pi'(\theta|Y=y)\text{d}\theta.
+\end{equation}
+
+Starting with $\mathbb{E}(\theta | Y=y)$, we write
+\begin{align}
+    \mathbb{E}(\theta | Y=y) &= \frac{1}{\Pi(Y=y)} \int_{-\infty}^{\infty} \theta \Pi(\theta)\mathcal{L}(y, \theta)\text{d}\theta\\
+    &= \frac{1}{\Pi(Y=y)} \int_{-\infty}^{\infty} \theta \Pi(\theta)\Big(\frac{1}{2}(1 + (-1)^{y} \cos(\lambda \theta))\Big)\text{d}\theta\\
+    &= \frac{1/2}{\Pi(Y=y)} \Bigg(\int_{-\infty}^{\infty}\theta\Pi(\theta)\text{d}\theta + (-1)^y \int_{-\infty}^{\infty}\theta\Pi(\theta)\Lambda(\theta)\text{d}\theta\Bigg)\\
+    &= \frac{1/2}{\Pi(Y=y)} \Bigg(\mu + (-1)^y \int_{-\infty}^{\infty}\theta\Pi(\theta)\Lambda(\theta)\text{d}\theta\Bigg).
+\end{align}
+Now by equation \eqref{eq:chi},
+\begin{equation}
+    \chi = \frac{1}{\sigma^2}\Bigg( \int_{-\infty}^{\infty} \theta\Pi(\theta)\Lambda(\theta)\text{d}\theta - \mu \int_{-\infty}^{\infty} \Pi(\theta)\Lambda(\theta)\text{d}\theta\Bigg),
+\end{equation}
+and by using the definition for $b$ (equation \eqref{eq:b}):
+\begin{equation}
+    \int_{-\infty}^{\infty} \theta\Pi(\theta)\Lambda(\theta)\text{d}\theta = \sigma^2\chi + \mu b,
+\end{equation}
+which gives:
+\begin{align}
+    \mathbb{E}(\theta | Y=y) &= \frac{1/2(\mu + (-1)^y(\sigma^2\chi + \mu b))}{\Pi(Y=y)}\\
+    &= \frac{\mu + (-1)^y(\sigma^2\chi + \mu b)}{1+(-1)^yb}\\
+\end{align}
+and with equations \eqref{eq:b-gaussian} and \eqref{eq:chi-gaussian} gives:
+\begin{equation}
+    \mathbb{E}(\theta | Y=y) = \frac{\mu + (-1)^ye^{-\frac{1}{2}\lambda^2\sigma^2}\big(\mu\cos(\lambda\mu) - \sigma^2\lambda \sin(\lambda\mu)\big)}{1+(-1)^ye^{-\frac{1}{2}\lambda^2\sigma^2}\cos(\lambda\mu)}.
+\end{equation}
+
+Now for the posterior variance $\text{Var}(\theta|Y=y)$, we only need $\mathbb{E}(\theta^2 | Y=y)$, which is
+\begin{align}
+   \mathbb{E}(\theta^2 | Y=y) &= \frac{1}{\Pi(Y=y)} \int_{-\infty}^{\infty} \theta^2 \Pi(\theta)\mathcal{L}(y, \theta)\text{d}\theta\\
+   &= \frac{1}{\Pi(Y=y)} \int_{-\infty}^{\infty} \theta^2 \Pi(\theta)\Big(\frac{1}{2}(1 + (-1)^{y} \cos(\lambda \theta))\Big)\text{d}\theta\\
+   &= \frac{1/2}{\Pi(Y=y)} \Bigg(\int_{-\infty}^{\infty}\theta^2\Pi(\theta)\text{d}\theta + (-1)^y \int\theta^2\Pi(\theta)\Lambda(\theta)\text{d}\theta\Bigg),
+\end{align}
+and using
+\begin{equation}
+   \int_{-\infty}^{\infty}\theta^2\Pi(\theta)\text{d}\theta = \sigma^2 + \mu^2,
+\end{equation}
+this gives
+\begin{equation}
+\label{eq:second-moment}
+    \mathbb{E}(\theta^2 | Y=y) = \frac{1/2}{\Pi(Y=y)} \Bigg(\sigma^2 + \mu^2+ (-1)^y \underbrace{\int_{-\infty}^{\infty}\theta^2\Pi(\theta)\Lambda(\theta)\text{d}\theta}_{\star}\Bigg).
+\end{equation}
+Let us focus on the last integral, which we define as $\star$:
+
+\begin{equation}
+    \star = \frac{1}{\sqrt{2\pi \sigma^2}}\int_{-\infty}^{\infty}\theta^2e^{-\frac{(\theta-\mu)^2}{2\sigma^2}}\cos(\lambda\theta)\text{d}\theta,
+\end{equation}
+which can be written as
+\begin{equation}
+    \frac{1}{2\sqrt{2\pi \sigma^2}}\int_{-\infty}^{\infty}\theta^2e^{-\frac{(\theta-\mu)^2}{2\sigma^2}} \Big( e^{i\lambda\theta} + e^{-i\lambda\theta} \Big) \text{d}\theta,
+\end{equation}
+and that breaks up the problem in two problems:
+\begin{equation}
+    \frac{1}{2\sqrt{2\pi \sigma^2}} \Big(
+        \underbrace{\int_{-\infty}^{\infty}\theta^2e^{-\frac{(\theta-\mu)^2}{2\sigma^2}} e^{i\lambda\theta}\text{d}\theta}_{A_0} +
+        \underbrace{\int_{-\infty}^{\infty}\theta^2e^{-\frac{(\theta-\mu)^2}{2\sigma^2}}e^{-i\lambda\theta}\text{d}\theta}_{B_0}
+    \Big)
+\end{equation}
+Here, $A_0$ and $B_0$ are very similar, except for the sign of the complex part.
+
+Let us simplify the exponent. The full exponent for $A_0$ is
+\begin{align}
+    &-\frac{(\theta-\mu)^2}{2\sigma^2} + i\lambda\theta\\
+    &=\frac{-1}{2\sigma^2}(\theta^2 - 2\theta\mu + \mu^2 - 2i\lambda\theta\sigma^2)\\
+    &=\frac{-1}{2\sigma^2}(\theta^2 - 2(\mu + i\lambda\sigma^2)\theta + \mu^2)\\
+    &=\frac{-1}{2\sigma^2}\big( (\theta - (\mu + i \lambda \sigma^2))^2 - (\mu^2 + 2\mu i \lambda \sigma^2 - \lambda^2 \sigma^4)+\mu^2\big)\\
+    &=-\frac{(\theta - (\mu + i \lambda \sigma^2))^2}{2\sigma^2} + \lambda \mu i - \frac{1}{2}\lambda^2\sigma^2
+\end{align}
+where in the penultimate line, we completed the square. Analogously, for $B_0$ the exponent is
+\begin{equation}
+    -\frac{(\theta - (\mu - i \lambda \sigma^2))^2}{2\sigma^2} - \lambda \mu i - \frac{1}{2}\lambda^2\sigma^2.
+\end{equation}
+In totally, $\star$ now becomes
+\begin{equation}
+    \frac{1}{2\sqrt{2\pi \sigma^2}} e^{-\frac{1}{2}\lambda^2\sigma^2}
+    \Big(
+        e^{\lambda \mu i}\underbrace{\int_{-\infty}^{\infty}\theta^2e^{-\frac{(\theta - (\mu + i \lambda \sigma^2))^2}{2\sigma^2}} \text{d}\theta}_{A_1} +
+        e^{-\lambda \mu i}\underbrace{\int_{-\infty}^{\infty}\theta^2e^{-\frac{(\theta - (\mu - i \lambda \sigma^2))^2}{2\sigma^2}}\text{d}\theta}_{B_1}
+    \Big).
+\end{equation}
+We can solve $A_1$ and $B_1$ by using substitution:
+\begin{align}
+    u &= \theta - (\mu + i \lambda \sigma^2) & v &= \theta - (\mu - i \lambda \sigma^2)\\
+    \text{d}u &= \text{d}\theta & \text{d}v &= \text{d}\theta\\
+    \theta^2 &= u^2 + 2u(\mu + i \lambda \sigma^2) + (\mu + i \lambda \sigma^2)^2 &
+    \theta^2 &= v^2 + 2v(\mu - i \lambda \sigma^2) + (\mu - i \lambda \sigma^2)^2
+\end{align}
+Now $A_1$ is
+\begin{align}
+    A_1 &= \int_{-\infty}^{\infty}\theta^2e^{-\frac{(\theta - (\mu + i \lambda \sigma^2))^2}{2\sigma^2}} \text{d}\theta\\
+    &= \int_{-\infty}^{\infty}(u^2 + 2u(\mu + i \lambda \sigma^2) + (\mu + i \lambda \sigma^2)^2)e^{-\frac{u^2}{2\sigma^2}} \text{d}\theta\\
+    &=
+    \underbrace{\int_{-\infty}^{\infty}u^2 e^{-\frac{u^2}{2\sigma^2}} \text{d}u}_{=\sqrt{2\pi\sigma^6}} +
+    2(\mu + i \lambda \sigma^2) \underbrace{\int_{-\infty}^{\infty} ue^{-\frac{u^2}{2\sigma^2}} \text{d}u}_{=0} +
+    (\mu + i \lambda \sigma^2)^2 \underbrace{\int_{-\infty}^{\infty}e^{-\frac{u^2}{2\sigma^2}} \text{d}u}_{=\sqrt{2\pi\sigma^2}}\\
+    &= \sqrt{2\pi\sigma^6} + (\mu + i \lambda \sigma^2)^2 \sqrt{2\pi\sigma^2}\\
+    &= \sqrt{2\pi\sigma^2} (\sigma^2 + (\mu + i \lambda \sigma^2)^2)
+\end{align}
+and for $B_1$
+\begin{equation}
+    B_1 = \sqrt{2\pi\sigma^2} (\sigma^2 + (\mu - i \lambda \sigma^2)^2).
+\end{equation}
+The prefactor $\sqrt{2\pi\sigma^2}$ cancels with the prefactor in $\star$ to give
+\begin{equation}
+    \star = \frac{1}{2}e^{-\frac{1}{2}\lambda^2\sigma^2}
+    \Big(
+        e^{\lambda \mu i}(\sigma^2 + (\mu + i \lambda \sigma^2)^2) +
+        e^{-\lambda \mu i}(\sigma^2 + (\mu - i \lambda \sigma^2)^2)
+    \Big).
+\end{equation}
+We can do some accounting to arrive at the final form:
+\begin{align}
+    \star &= \frac{1}{2}e^{-\frac{1}{2}\lambda^2\sigma^2}
+    \Big(
+        e^{\lambda \mu i}(\sigma^2 + \mu^2 - \lambda^2\sigma^4 + 2\mu i \lambda \sigma^2) +
+        e^{-\lambda \mu i}(\sigma^2 + \mu^2 - \lambda^2\sigma^4 - 2\mu i \lambda \sigma^2)
+    \Big)\\
+    &= \frac{1}{2}e^{\frac{1}{2}\lambda^2\sigma^2}
+    \Big(
+        (\sigma^2 + \mu^2 - \lambda^2\sigma^4)(\underbrace{e^{\lambda \mu i} + e^{-\lambda \mu i}}_{=2\cos{\lambda \mu}})
+        + 2\lambda \mu \sigma^2(\underbrace{i e^{\lambda \mu i} - ie^{-\lambda \mu i}}_{=-2\sin{\lambda \mu}})
+    \Big)\\
+    &= \sigma^2 e^{-\frac{1}{2}\lambda^2\sigma^2}\Big((1 + \frac{\mu^2}{\sigma^2} - \lambda^2\sigma^2)\cos{\lambda \mu} - 2\lambda \mu \sin{\lambda \mu}\Big).
+\end{align}
+
+And with equation \eqref{eq:b-gaussian} and \eqref{eq:chi-gaussian}, we can also write it as
+\begin{equation}
+    \star = \sigma^2\Big( (1 + \frac{\mu^2}{\sigma^2} - \lambda^2\sigma^2)b +2\mu \chi\Big)
+\end{equation}
+
+Plugging this back in equation \eqref{eq:second-moment} gives for the second moment,
+\begin{equation}
+    \mathbb{E}(\theta^2 | Y=y) = \frac{\sigma^2 + \mu^2+ (-1)^y \sigma^2\Big( (1 + \frac{\mu^2}{\sigma^2} - \lambda^2\sigma^2)b +2\mu \chi\Big)}{1+(-1)^yb},
+\end{equation}
+or when fully expanded:
+\begin{equation}
+    \mathbb{E}(\theta^2 | Y=y) = \frac{\sigma^2 + \mu^2+ (-1)^y \sigma^2 e^{-\frac{1}{2}\lambda^2\sigma^2}\Big((1 + \frac{\mu^2}{\sigma^2} - \lambda^2\sigma^2)\cos{\lambda \mu} - 2\lambda \mu \sin{\lambda \mu}\Big)}{1+(-1)^ye^{-\frac{1}{2}\lambda^2\sigma^2}\cos(\lambda\mu)}.
+\end{equation}
+
+This gives
+\[
+\text{Var}(\theta | Y = y) = \sigma^2 \left( 1 - (-1)^y \lambda^2 e^{- \lambda^2 \sigma^2 /2} \frac{\cos (\lambda \mu) + (-1)^y\sigma^2 e^{\lambda^2 \sigma^2 /2}}{(1 + (-1)^y e^{- \lambda^2 \sigma^2 / 2} \cos  ( \lambda \mu))^2}\right)
+\]
+
+\section{Noise}
+We can also extend this formulation to consider execution on noisy quantum computers. For this, we'll model the noise as a depolarising channel for each use of the initial state preparation routine $A$ is used. 
+This channel can be roughly modelled by:
+\[
+\Phi(\rho) = (1 - \xi) \rho + \frac{\xi}{2} I
+\]
+In a single round of AE, we use this routine once to prepare the initial state, and twice for each usage of the Grover iteration operator. For a decohering channel, we therefore model the probabilities as 
+
+\[
+\mathbb{P}(Y = y| \theta = \mu)  = \frac{1}{2}\left[1 + (-1)^y e^{- (2k +1) \zeta} \cos(\lambda \mu)\right]
+\] 
+
+This translates to update rules:
+\begin{align*}
+	k(\mu, \sigma^2)  &= \max_{k \in \mathbb{N}_0} \frac{(2k+1)^2 e^{-2 (2k+1) \zeta} e^{-(2k+1)^2\sigma^2} \sin^2((2k+1)\mu)}{1- e^{-2 (2k+1)\zeta }e^{-(2k+1)^2\sigma^2} \cos^2((2k+1)\mu)} \\
+	& \approx \frac{1}{2}\left( \frac{- \zeta + \sqrt{\zeta^2 + 4\sigma^2}}{2\sigma^2} - 1\right) \\
+	\mu_{y}(\mu, \sigma^2) &= \frac{\mu + (-1)^y e^{-\lambda \zeta} e^{-\frac{1}{2}\lambda^2\sigma^2}\big(\mu\cos(\lambda\mu) - \sigma^2\lambda \sin(\lambda\mu)\big)}{1+(-1)^y e^{-\lambda \zeta} e^{-\frac{1}{2}\lambda^2\sigma^2}\cos(\lambda\mu)} \\
+	    \mathbb{E}(\theta^2 | Y=y) &= \frac{\sigma^2 + \mu^2+ (-1)^y \sigma^2 e^{-\lambda \zeta}e^{-\frac{1}{2}\lambda^2\sigma^2}\Big((1 + \frac{\mu^2}{\sigma^2} - \lambda^2\sigma^2)\cos{\lambda \mu} - 2\lambda \mu \sin{\lambda \mu}\Big)}{1+(-1)^ye^{-\lambda \zeta}e^{-\frac{1}{2}\lambda^2\sigma^2}\cos(\lambda\mu)} \\
+	\sigma^2_{y}(\mu, \sigma^2) &= \sigma^2 \left( 1 - (-1)^y \lambda^2 e^{-\lambda \zeta} e^{- \lambda^2 \sigma^2 /2} \frac{\cos (\lambda \mu) + (-1)^y\sigma^2 e^{-\lambda \zeta} e^{\lambda^2 \sigma^2 /2}}{(1 + (-1)^y e^{-\lambda \zeta} e^{- \lambda^2 \sigma^2 / 2} \cos  ( \lambda \mu))^2}\right)
+\end{align*}
+
+
+\chapter{Reinforcement Learning}
+\section{Bellman Equations}
+
+For a simple example of how reinforcement learning can be applied to this problem, let us consider the problem of choosing between noisy computers to run our computations on at each stage in the learning process.
+
+For a given computer $C_i$, we have a corresponding error rate $\zeta_i$ and wall-clock time $s_i$ per Grover operator usage.
+
+The value function for this sequential estimation process is given as
+\begin{align*}
+v(n, (\mu, \sigma^2)) &= \sup_{i \in \{1, \ldots, m\}} \{ k_i(\mu, \sigma^2)\cdot s_i + p_{(i,0)} \mathbb{E}_Y[v(n+1, (\mu_{(i, y)}, \sigma^2_{(i,y) }))] \} \\
+&= \sup_{i \in \{1, \ldots, m\}} \{ k_i(\mu, \sigma^2)\cdot s_i + p_{(i,0)} v(n+1, (\mu_{(i, 0)}, \sigma^2_{(i,0) })) +  p_{(i,1)} v(n+1, (\mu_{(i, 1)}, \sigma^2_{(i,1)})) \}
+\end{align*}
+
+where
+\begin{align*}
+	p_{(i,y)}(\mu, \sigma^2) & = \frac{1}{2}\left[1 + (-1)^y e^{- (2k_i(\mu, \sigma^2))\zeta_i} \cos((2k_i(\mu, \sigma^2)+1)\mu)\right] \\
+	k_i(\mu, \sigma^2)  &= \max_{k \in \mathbb{N}_0} \frac{(2k+1)^2 e^{-2 (2k+1) \zeta_i} e^{-(2k+1)^2\sigma^2} \sin^2((2k+1)\mu)}{1- e^{-2 (2k+1) \zeta_i}e^{-(2k+1)^2\sigma^2} \cos^2((2k+1)\mu)} \\
+	\mu_{(i,y)}(\mu, \sigma^2) &= \frac{\mu + (-1)^y e^{-\lambda \zeta_i} e^{-\frac{1}{2}\lambda^2\sigma^2}\big(\mu\cos(\lambda\mu) - \sigma^2\lambda \sin(\lambda\mu)\big)}{1+(-1)^y e^{-\lambda \zeta_i} e^{-\frac{1}{2}\lambda^2\sigma^2}\cos(\lambda\mu)} \\
+	\sigma^2_{(i,y)}(\mu, \sigma^2) &= \sigma^2 \left( 1 - (-1)^y \lambda^2 e^{-\lambda \zeta_i} e^{- \lambda^2 \sigma^2 /2} \frac{\cos (\lambda \mu) + (-1)^y\sigma^2 e^{-\lambda \zeta_i} e^{\lambda^2 \sigma^2 /2}}{(1 + (-1)^y e^{-\lambda \zeta_i} e^{- \lambda^2 \sigma^2 / 2} \cos ( \lambda \mu))^2}\right)
+\end{align*}
+\appendix
+
+\chapter{Integrals}
+\section{Normal Distribution}
+First, let us note that
+\[
+\frac{\text{d}}{\text{d}x}(e^{- x^2}) = - 2 x e^{ - x ^2}
+.\]
+The integrals we are interested in computing, are either of the form
+\[
+	I_{2n}(k) = \int_{- \infty}^{\infty} \theta^{2n} \cos (k \theta) e^{ - \theta^2}\text{d}\theta \text{ or } I_{2n + 1} = \int_{- \infty}^{\infty} \theta^{2n + 1} \sin (k \theta) e^{ - \theta^2}\text{d} \theta
+\]
+
+\bibliographystyle{abbrv}
+\bibliography{refs}
+
+
+
+\end{document}
