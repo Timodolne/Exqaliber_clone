@@ -436,7 +436,7 @@ In a single round of AE, we use this routine once to prepare the initial state, 
 This translates to update rules:
 \begin{align*}
 	k(\mu, \sigma^2)  &= \max_{k \in \mathbb{N}_0} \frac{(2k+1)^2 e^{-2 (2k+1) \zeta} e^{-(2k+1)^2\sigma^2} \sin^2((2k+1)\mu)}{1- e^{-2 (2k+1)\zeta }e^{-(2k+1)^2\sigma^2} \cos^2((2k+1)\mu)} \\
-	& \approx \frac{1}{2}\left( \frac{- \zeta + \sqrt{\zeta^2 + 4}}{2} - 1\right) \\
+	& \approx \frac{1}{2}\left( \frac{- \zeta + \sqrt{\zeta^2 + 4\sigma^2}}{2\sigma^2} - 1\right) \\
 	\mu_{y}(\mu, \sigma^2) &= \frac{\mu + (-1)^y e^{-\lambda \zeta} e^{-\frac{1}{2}\lambda^2\sigma^2}\big(\mu\cos(\lambda\mu) - \sigma^2\lambda \sin(\lambda\mu)\big)}{1+(-1)^y e^{-\lambda \zeta} e^{-\frac{1}{2}\lambda^2\sigma^2}\cos(\lambda\mu)} \\
 	    \mathbb{E}(\theta^2 | Y=y) &= \frac{\sigma^2 + \mu^2+ (-1)^y \sigma^2 e^{-\lambda \zeta}e^{-\frac{1}{2}\lambda^2\sigma^2}\Big((1 + \frac{\mu^2}{\sigma^2} - \lambda^2\sigma^2)\cos{\lambda \mu} - 2\lambda \mu \sin{\lambda \mu}\Big)}{1+(-1)^ye^{-\lambda \zeta}e^{-\frac{1}{2}\lambda^2\sigma^2}\cos(\lambda\mu)} \\
 	\sigma^2_{y}(\mu, \sigma^2) &= \sigma^2 \left( 1 - (-1)^y \lambda^2 e^{-\lambda \zeta} e^{- \lambda^2 \sigma^2 /2} \frac{\cos (\lambda \mu) + (-1)^y\sigma^2 e^{-\lambda \zeta} e^{\lambda^2 \sigma^2 /2}}{(1 + (-1)^y e^{-\lambda \zeta} e^{- \lambda^2 \sigma^2 / 2} \cos  ( \lambda \mu))^2}\right)
