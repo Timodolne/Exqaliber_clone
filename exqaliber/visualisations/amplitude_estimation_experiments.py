@@ -3,11 +3,14 @@ import math
 import multiprocessing
 import os.path
 import pickle
+import time
 from fractions import Fraction
 
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import animation
+from matplotlib.widgets import Slider
 from scipy.stats import norm
 from tqdm import tqdm
 
@@ -318,12 +321,17 @@ def circular_histogram(
     bins = [x_bins, y_bins]
 
     h = ax.hist2d(
-        thetas_repeated.flatten(), queries.flatten(), bins=bins, cmin=1
+        thetas_repeated.flatten(),
+        queries.flatten(),
+        bins=bins,
+        cmin=1,
+        cmax=nb_reps,
+        norm=mpl.colors.LogNorm(),
     )
 
     # axis
     ax.set_xlim(0, np.pi)
-    ax.set_rlim(1, max_y)
+    ax.set_rlim(1, 3 * max_y)
     ax.set_rscale("symlog")
     ax.grid(True)
 
@@ -419,30 +427,156 @@ def error_in_estimate_2d_hist(
         ]
     )
     estimations = estimations % (2 * np.pi)
-    median_estimations = np.median(estimations, axis=1)
     thetas = theta_range % (2 * np.pi)
 
     nb_reps = len(estimations[0])
 
     thetas_repeated = np.vstack([thetas] * nb_reps).T
     errors = estimations - thetas_repeated
-    median_errors = median_estimations - thetas
+
+    # data
+    width = np.pi / (resolution + 1)
+    min_y = errors.min()
+    max_y = errors.max()
 
     # build figure
-    fig, axs = plt.subplots(2, 1, figsize=(5, 10))
+    fig, axs = plt.subplots(2, 2, figsize=(12, 9))
 
-    axs[0].scatter(thetas_repeated, errors)
-    axs[0].plot(thetas, median_errors)
+    # Left figures
+    val = thetas[58]
 
-    axs[0].set_ylim(-experiment["epsilon"], experiment["epsilon"])
+    # top figure
+    bins_top = np.linspace(-3 * epsilon_target, 3 * epsilon_target, 100)
+    i = np.argwhere(thetas == val)
 
-    axs[1].scatter(thetas_repeated, errors)
-    axs[1].plot(thetas, median_errors)
+    axs[0, 0].hist(errors[i].flatten(), bins=bins_top)
 
-    plt.tight_layout()
+    # bottom figure
+    bins_bottom = np.linspace(min_y, max_y, 100)
+    axs[1, 0].hist(errors[i].flatten(), bins=bins_bottom)
+
+    # Right figures
+    # top figure
+    x_bins = np.arange(-width / 2, np.pi + width / 2, width)
+    y_bins = bins_top
+    bins = [x_bins, y_bins]
+
+    axs[0, 1].hist2d(
+        thetas_repeated.flatten(),
+        errors.flatten(),
+        bins=bins,
+        cmin=1,
+        cmax=nb_reps,
+        norm=mpl.colors.LogNorm(),
+    )
+    vline_top = axs[0, 1].axvline(
+        val, ymin=-1, ymax=1, linestyle="--", color="red"
+    )
+
+    # bottom figure
+    x_bins = np.arange(-width / 2, np.pi + width / 2, width)
+    y_bins = bins_bottom
+    bins = [x_bins, y_bins]
+
+    h2 = axs[1, 1].hist2d(
+        thetas_repeated.flatten(),
+        errors.flatten(),
+        bins=bins,
+        cmin=1,
+        cmax=nb_reps,
+        norm=mpl.colors.LogNorm(),
+    )
+    vline_bottom = axs[1, 1].axvline(
+        val, ymin=y_bins.min(), ymax=y_bins.max(), linestyle="--", color="red"
+    )
+
+    # X-axis right
+    for ax in axs[:, 1]:
+        ax.set_xlabel(r"$\theta$")
+        ax.set_xlim(0, np.pi)
+
+        ax.xaxis.set_major_locator(plt.MultipleLocator(np.pi / 4))
+        ax.xaxis.set_minor_locator(plt.MultipleLocator(np.pi / 8))
+        ax.xaxis.set_major_formatter(plt.FuncFormatter(format_with_pi))
+
+    # Y-axes right
+    axs[0, 1].set_ylim(-3 * epsilon_target, 3 * epsilon_target)
+    axs[0, 1].set_ylabel("Error in estimate")
+
+    axs[1, 1].set_ylim(min_y, max_y)
+    axs[1, 1].set_ylabel("Error in estimate")
+
+    # Axes left
+    for ax in axs[:, 0]:
+        ax.set_xlabel("Error in estimate")
+
+        ax.set_ylim(1, None)
+        ax.set_yscale("log")
+        ax.set_ylabel("Frequency")
+
+    axs[0, 0].set_title(rf"Errors in estimates for $\theta=${val:.3f}")
+
+    # Finishing figure
+    title = (
+        f"Error in estimate of theta "
+        f"\n{experiment_string(experiment, True)}"
+    )
+    plt.suptitle(title)
+
+    # Colorbar
+    # make room for colorbar and slider
+    fig.subplots_adjust(bottom=0.1, right=0.95)
+    fig.colorbar(h2[3], ax=axs[:, 1], label="Runs")
+
+    # Slider
+
+    valmin = thetas[0]
+    valmax = thetas[-1]
+    valstep = thetas[1] - thetas[0]
+
+    x0 = axs[1, 1].get_position().x0
+    x1 = axs[1, 1].get_position().x1 - x0
+
+    slider_ax = fig.add_axes([x0, 0.03, x1, 0.03])
+    slider = Slider(
+        slider_ax,
+        label=r"$\theta$",
+        valmin=valmin,
+        valmax=valmax,
+        valstep=valstep,
+        valinit=val,
+    )
+
+    # update function
+    def update(val):
+        # Left figures
+
+        # top figure
+        i = np.argwhere(thetas == val)
+        axs[0, 0].cla()
+        axs[0, 0].hist(errors[i].flatten(), bins=bins_top)
+
+        axs[1, 0].cla()
+        axs[1, 0].hist(errors[i].flatten(), bins=bins_bottom)
+
+        # Axes left
+        for ax in axs[:, 0]:
+            ax.set_xlabel("Error in estimate")
+
+            ax.set_ylim(1, None)
+            ax.set_yscale("log")
+            ax.set_ylabel("Frequency")
+
+        axs[0, 0].set_title(rf"Errors in estimates for $\theta=${val:.3f}")
+
+        # Right figures
+        vline_bottom.set_xdata(val)
+        vline_top.set_xdata(val)
+
+    slider.on_changed(update)
 
     if save:
-        plt.savefig(save)
+        plt.savefig(save, dpi=300)
 
     if show:
         plt.show()
@@ -528,8 +662,10 @@ def run_experiment_multiple_thetas(
                 with open(filename, "wb") as f:
                     pickle.dump(results_theta_block, f, protocol=-1)
 
-            results_theta.append(results_theta_block)
+            for result in results_theta_block:
+                results_theta.append(result)
 
+            time.sleep(0.001)
             i += 1
 
         results_multiple_thetas.append(results_theta)
@@ -540,9 +676,9 @@ def run_experiment_multiple_thetas(
 if __name__ == "__main__":
 
     # saving and running parameters
-    run_or_load = "run"
+    run_or_load = "load"
     save_results = True
-    show_results = True
+    show_results = False
     one_theta_experiment = False
     sweep_experiment = True
 
@@ -605,29 +741,9 @@ if __name__ == "__main__":
             results_dir=results_dir,
         )
 
-        # if run_or_load == "run":
-        #     results_multiple_thetas = run_experiment_multiple_thetas(
-        #         theta_range, experiment=EXPERIMENT)
-        #     if not os.path.exists(results_dir):
-        #         os.mkdir(results_dir)
-        #     # save results
-        #     with open(f"{results_dir}/results_multiple_thetas.pkl",
-        #               "wb") as f:
-        #         pickle.dump(results_multiple_thetas, f, protocol=-1)
-        #     with open(f"{results_dir}/theta_range.pkl", "wb") as f:
-        #         pickle.dump(theta_range, f, protocol=-1)
-        #
-        # elif run_or_load == "load":
-        #     # load results
-        #     with open(f"{results_dir}/results_multiple_thetas.pkl",
-        #               "rb") as f:
-        #         results_multiple_thetas = pickle.load(f)
-        #     with open(f"{results_dir}/theta_range.pkl", "rb") as f:
-        #         theta_range = pickle.load(f)
-
         if do_circular_histogram:
             filename = (
-                f"{results_dir}/circular_histogram.png"
+                f"{results_dir}/figures/circular_histogram.png"
                 if save_results
                 else False
             )
@@ -653,7 +769,7 @@ if __name__ == "__main__":
 
         if do_error_plot:
             filename = (
-                f"{results_dir}/error_in_estimate.png"
+                f"{results_dir}/figures/error_in_estimate-1.png"
                 if save_results
                 else False
             )
