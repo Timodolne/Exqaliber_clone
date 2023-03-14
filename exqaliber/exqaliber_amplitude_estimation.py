@@ -95,6 +95,8 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
             self._prior_mean = self._true_theta
         self._prior_std = kwargs.get("prior_std", 0.5)
 
+        self._zeta = kwargs.get("zeta", 0)
+
     @property
     def sampler(self) -> BaseSampler | None:
         """Get the sampler primitive.
@@ -165,6 +167,7 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
                     lamdas,
                     prior_distribution.mean,
                     prior_distribution.standard_deviation,
+                    self._zeta,
                 )
                 lamda = np.argmax(variance_reduction_factors)
             case _:
@@ -364,7 +367,8 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
                 # num_oracle_queries += k
 
             else:  # Cheat sampling
-                p = 0.5 * (1 - np.cos(lamda * self._true_theta))
+                noise = np.exp(-lamda * self._zeta)
+                p = 0.5 * (1 - noise * np.cos(lamda * self._true_theta))
                 measurement_outcome = np.random.binomial(1, p)
 
             prior = prior_distributions[-1]
@@ -375,6 +379,7 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
                 lamda,
                 prior.mean,
                 prior.standard_deviation,
+                self._zeta,
             )
             posterior = Normal(mu, sigma)
 
@@ -602,9 +607,10 @@ if __name__ == "__main__":
         "prior_mean": np.pi / 2,
         "prior_std": 0.5,
         "method": "greedy",
+        "zeta": 1e-9,
     }
 
-    ae = ExqaliberAmplitudeEstimation(0.01, 0.01, **EXPERIMENT)
+    ae = ExqaliberAmplitudeEstimation(0.001, 0.01, **EXPERIMENT)
     estimation_problem = None
 
     result = ae.estimate(estimation_problem)
