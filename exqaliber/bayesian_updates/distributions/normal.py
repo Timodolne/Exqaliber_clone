@@ -116,7 +116,11 @@ class Normal:
 
     @staticmethod
     def get_first_moment_posterior(
-        measurement: int, lamda: int, mu: float, sigma: float
+        measurement: int,
+        lamda: int,
+        mu: float,
+        sigma: float,
+        zeta: float = 0,
     ) -> float:
         """Get 1st moment of posterior normal dist, given measurement.
 
@@ -133,6 +137,8 @@ class Normal:
             Location parameter of the current normal distribution
         sigma : float
             Scale parameter of the current normal distribution
+        zeta : float
+            Depolarising noise parameter
 
         Returns
         -------
@@ -142,15 +148,16 @@ class Normal:
         sign = (-1) ** measurement
         b = Normal.get_expected_bias(lamda, mu, sigma)
         chi = Normal.get_chi(lamda, mu, sigma)
+        noise = np.exp(-lamda * zeta)
 
-        denom = 1 + sign * b
-        numer = mu + sign * (sigma**2 * chi + mu * b)
+        denom = 1 + sign * b * noise
+        numer = mu + sign * (sigma**2 * chi + mu * b) * noise
 
         return numer / denom
 
     @staticmethod
     def get_second_moment_posterior(
-        measurement: int, lamda: int, mu: float, sigma: float
+        measurement: int, lamda: int, mu: float, sigma: float, zeta: float = 0
     ):
         """Get 2nd moment of posterior normal dist, given measurement.
 
@@ -167,6 +174,8 @@ class Normal:
             Location parameter of the current normal distribution
         sigma : float
             Scale parameter of the current normal distribution
+        zeta : float
+            Depolarising noise parameter
 
         Returns
         -------
@@ -176,8 +185,9 @@ class Normal:
         sign = (-1) ** measurement
         b = Normal.get_expected_bias(lamda, mu, sigma)
         chi = Normal.get_chi(lamda, mu, sigma)
+        noise = np.exp(-lamda * zeta)
 
-        denom = 1 + sign * b
+        denom = 1 + sign * b * noise
         numer = (
             sigma**2
             + mu**2
@@ -186,13 +196,14 @@ class Normal:
                 (sigma**2 + mu**2 - lamda**2 * sigma**4) * b
                 + 2 * mu * chi * sigma**2
             )
+            * noise
         )
 
         return numer / denom
 
     @staticmethod
     def update(
-        measurement: int, lamda: int, mu: float, sigma: float
+        measurement: int, lamda: int, mu: float, sigma: float, zeta: float = 0
     ) -> Tuple[float, float]:
         """Get the mean and std of the updated normal distribution.
 
@@ -209,6 +220,8 @@ class Normal:
             Location parameter of the current normal distribution
         sigma : float
             Scale parameter of the current normal distribution
+        zeta: float
+            Depolarising noise parameter
 
         Returns
         -------
@@ -216,10 +229,10 @@ class Normal:
             Mean and standard deviation of the new distribution
         """
         posterior_mu = Normal.get_first_moment_posterior(
-            measurement, lamda, mu, sigma
+            measurement, lamda, mu, sigma, zeta
         )
         second_moment = Normal.get_second_moment_posterior(
-            measurement, lamda, mu, sigma
+            measurement, lamda, mu, sigma, zeta
         )
         posterior_var = second_moment - posterior_mu**2
         posterior_sigma = np.sqrt(posterior_var)
@@ -228,7 +241,7 @@ class Normal:
 
     @staticmethod
     def get_variance_reduction_factor(
-        lamda: int, mu: float, sigma: float
+        lamda: int, mu: float, sigma: float, zeta: float = 0
     ) -> float:
         """Get the variance reduction factor for given lambda.
 
@@ -240,6 +253,8 @@ class Normal:
             Location parameter of the current normal distribution
         sigma : float
             Scale parameter of the current normal distribution
+        zeta:
+            Depolarising noise parameter
 
         Returns
         -------
@@ -248,15 +263,16 @@ class Normal:
         """
         b = Normal.get_expected_bias(lamda, mu, sigma)
         chi = Normal.get_chi(lamda, mu, sigma)
+        noise = np.exp(-lamda * zeta)
 
         if np.abs(b - 1) < 1e-8:
             return 0
         else:
-            return chi**2 / (1 - b**2)
+            return (noise * chi**2) / (1 - noise * b**2)
 
     @staticmethod
     def eval_lambdas(
-        lambdas: np.ndarray, mu: float, sigma: float
+        lambdas: np.ndarray, mu: float, sigma: float, zeta: float = 0
     ) -> np.ndarray:
         """Get the variance reduction factor for lambdas.
 
@@ -268,6 +284,8 @@ class Normal:
             Location parameter of the current normal distribution
         sigma : float
             Scale parameter of the current normal distribution
+        zeta : float
+            Depolarising noise parameter
 
         Returns
         -------
@@ -276,7 +294,7 @@ class Normal:
         """
         return np.array(
             [
-                Normal.get_variance_reduction_factor(lamda, mu, sigma)
+                Normal.get_variance_reduction_factor(lamda, mu, sigma, zeta)
                 for lamda in lambdas
             ]
         )
