@@ -5,11 +5,11 @@ from qiskit.algorithms import EstimationProblem
 from qiskit.circuit import QuantumCircuit
 from qiskit_aer.primitives import Sampler
 
+from exqaliber.experiments.amplitude_estimation_experiments import (
+    convergence_plot,
+)
 from exqaliber.exqaliber_amplitude_estimation import (
     ExqaliberAmplitudeEstimation,
-)
-from exqaliber.visualisations.amplitude_estimation_experiments import (
-    convergence_plot,
 )
 
 

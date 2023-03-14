@@ -625,3 +625,4 @@ reports/
 !reports/*.pdf
 !reports/*.tex
 *.ipynb
+*.ipynb_checkpoints/
