@@ -624,3 +624,4 @@ MigrationBackup/
 reports/
 !reports/*.pdf
 !reports/*.tex
+*.ipynb
