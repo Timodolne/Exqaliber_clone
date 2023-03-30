@@ -1,0 +1,73 @@
+\documentclass[]{article}
+
+\usepackage{amsmath,amsthm,amssymb}
+
+%opening
+\title{Framework for Stochastic Amplitude Estimation}
+\author{James Cruise, Joseph Tedds, Camille de Valk}
+
+\begin{document}
+
+\maketitle
+
+
+
+\section{Overview}
+Aim: estimate $\theta$ from samples such that
+\[
+P(X = 1 | \theta) = \frac{1}{2} ( 1- \cos((4m + 2) \theta)).
+\]
+
+Cost:
+\begin{itemize}
+	\item Number of oracle calls
+	\item Number of shots
+\end{itemize}
+
+Action:
+\begin{itemize}
+	\item Stop
+	\item Select $m$ for the next shot
+\end{itemize}
+Bellman equation
+\[
+V(s) = \underset{a \in \{m,\text{stop}\}}{ \min } \mathbb{E}_a \left[ V(S) + c(a)\right]
+\]
+The future cost is given by:
+\[
+c(m) = \begin{cases}
+	2m + 1, \quad \text{ Number of oracle calls} \\
+	1, \quad \text{ Number of shots}
+\end{cases}
+\]
+and for $s = \text{stop}$
+\[
+c(\text{stop}) = \begin{cases}
+	0, \quad \| \theta - \tilde{\theta}\| < \varepsilon \\
+	\infty , \quad \text{else}
+\end{cases}
+\]
+
+Bayesian Framework:
+Prior $\to$ posterior:
+What state could be:
+\begin{enumerate}
+	\item Full posterior distribution for $\theta$: $\pi(\theta) \to \tilde{\pi}(\theta)$
+	\[
+	\tilde{\pi)\theta} \propto \pi(\theta) P(X = x | \theta).
+	\]
+	Compact representation: Fourier series or Bessel series
+	\item Approximation 1: Particle filter - approximate by discrete / point distribution
+	\item Approximation 2: use moments \& moment match to given distribution. Force posterior into Normal or von Mises. Use a von Mise or Normal Prior and get a formula for posterior mean \& variance.
+\end{enumerate}
+
+Value function:
+We know how it scales $\varepsilon_1 \to \varepsilon$, linear in the ratio $O(\frac{1}{\varepsilon})$ \& quadratic in the ratio $O(\frac{1}{\varepsilon^2})$.
+
+
+Some frameworks that already touch on this problem:
+\begin{itemize}
+	\item Sequential estimation - decision or don't stop
+	\item "Design of experiment" - online decision matrices.
+\end{itemize}
+\end{document}

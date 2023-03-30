@@ -1,0 +1,130 @@
+\documentclass[a4paper,onecolumn,11pt,unpublished]{quantumarticle}
+\pdfoutput=1
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+\usepackage{hyperref}
+
+\usepackage{tikz}
+\usepackage{lipsum}
+
+\newtheorem{theorem}{Theorem}
+
+\begin{document}
+
+\title{Exqaliber Stage 1 Report}
+
+\author{James Cruise}
+\affiliation{Cambridge Consultants, Cambridge, UK}
+\orcid{0000-0002-8127-1528}
+\email{james.cruise@cambridgeconsultants.com}
+\author{Joseph Tedds}
+\email{jospeh.tedds@cambridgeconsultants.com}
+\affiliation{Cambridge Consultants, Cambridge, UK}
+\author{Camille de Valk}
+\email{camille.de.valk@capgemini.com}
+\affiliation{Capgemini QLab}
+\maketitle
+
+\begin{abstract}
+ TBD
+\end{abstract}
+
+
+\section{Introduction}
+Basic introduction giving definition and contribution
+
+\subsection{Amplitude estimation}
+Details of the amplitude estimation and background on its use, including Quantum Monte Carlo
+
+\subsubsection{Statistical amplitude estimation}
+Introduce idea of statistical learning of parameter to reduce circuit length
+
+\subsubsection{Decoherent noise model}
+Introduce model for decoherent noise and associated effects on statistical problem
+
+\subsection{Related work}
+Review of related work and papers
+
+\subsubsection{Quantum phase estimation}
+I am not sure if we want to make the connection in a public document but it is useful to make in an internal report
+
+\subsection{Contribution}
+This should be written last and include a map for the rest of the paper
+
+
+\section{Algorithm}
+
+\subsection{Algorithm description}
+Give a statement of our algorithm, phrase as an algorithm rather than talking about Bayes updates etc. What is implemented
+
+State is current estimate and variance
+Rules for updating state given result
+Rules for selecting next update
+
+Include detail of stopping criteria
+
+\subsubsection{Adjustments for noise}
+Changes needed for decoherence noise
+
+\subsection{Bayesian framework}
+Introduction to Bayesian stats, prior, posterior, and adaptive termination
+
+Introduce idea of using normal distribution 
+
+
+\subsubsection{Posterior properties}
+Posterior mean, variance and expected variance under noiseless and decoherence noise model
+
+\subsubsection{Normal approximation of posterior}
+Details on the use of a normal approximation for posterior distribution and next prior.
+Include comments about both the circular issue and tails due to indeterminacy. 
+
+\subsection{Selecting next sample depth}
+Details of greedy choice (possibly give indication of dynamic programming approach)
+Noise and noiseless
+
+\section{Experimentation}
+Describe experiments and performance measures
+Two measures of interest, time to solution and quality of solutions
+
+\subsection{Simulation experiments}
+Details on setup both with circuits and with direct sampling
+\subsubsection{Noiseless experiments}
+	
+\subsubsection{Decoherence noise experiments}
+Focused on direct sampling case
+
+\subsection{Real hardware experiments}
+Include if we decide to carry these out. 
+	
+
+\section{Discussion}
+This is for internal discussions not external release
+Topics to include here include:
+\begin{itemize}
+	\item Directions for future including reinforcement learning
+	\item Superconducting and trapped ion thought experiment
+	\item Discussion about general dynamic programming approach for considering error mitigation and correction
+	\item Connection to QPE and applicability of thinking to that setting (maybe include small section on the more complicated statistical challenge of general state)
+	\item Circular distributions and what we know about them (probably subsection of this section or algorithm)
+\end{itemize}
+
+
+\bibliographystyle{quantum}
+\begin{thebibliography}{9}
+
+
+\bibitem{jj}
+gg
+\end{thebibliography}
+
+
+
+
+\appendix
+
+\section{Technical details}
+Details of technical work if needed
+\end{document}

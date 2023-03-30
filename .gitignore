@@ -620,7 +620,6 @@ MigrationBackup/
 # .tex files
 *.gz
 *.aux
-
-reports/
-!reports/*.pdf
-!reports/*.tex
+*.blg
+*.bbl
+*.log
