@@ -246,12 +246,13 @@ class AnalyticalNoisyMLAE(MaximumLikelihoodAmplitudeEstimation):
         """Estimate theta with MLAE."""
         result = MaximumLikelihoodAmplitudeEstimationResult()
         result.evaluation_schedule = self._evaluation_schedule
-        result.minimizer = self._minimizer
-        result.post_processing = lambda x: np.arcsin(np.sqrt(np.min([1, x])))
+        result.zeta = self._zeta
+        # result.minimizer = self._minimizer
+        result.post_processing = post_processing
 
         circuit_results = []
         for k in self._evaluation_schedule:
-            lamda = 2 * k + 1
+            lamda = 4 * k + 2
             noise = np.exp(-lamda * self._zeta)
             p = 0.5 * (1 - noise * np.cos(lamda * true_theta))
             measurement_outcome = np.random.binomial(1, p, self._shots)
@@ -265,9 +266,7 @@ class AnalyticalNoisyMLAE(MaximumLikelihoodAmplitudeEstimation):
         theta, good_counts = self.compute_mle(result.circuit_results)
 
         # store results
-        # theta is off by a factor of two, can't be bother to fix it now
-        # but have to check later
-        result.theta = 2 * theta
+        result.theta = theta
         result.good_counts = good_counts
         result.estimation = np.sin(result.theta) ** 2
 
@@ -294,7 +293,12 @@ class AnalyticalNoisyMLAE(MaximumLikelihoodAmplitudeEstimation):
 
 def run_one_experiment_noisy_mlae(noise, experiment):
     """Run one noisy mlae experiment."""
+    np.random.seed(0)
     experiment["zeta"] = noise
-    noisy_mlae = AnalyticalNoisyMLAE(10, **experiment)
+    evaluation_schedule = experiment.get("m", 6)
+    noisy_mlae = AnalyticalNoisyMLAE(evaluation_schedule, **experiment)
 
-    return noisy_mlae.estimate(0.8, alpha=0.01)
+    true_theta = experiment["true_theta"]
+    alpha = experiment.get("alpha", 0.01)
+
+    return noisy_mlae.estimate(true_theta, alpha=alpha)
