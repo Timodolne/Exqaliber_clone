@@ -54,13 +54,13 @@ class AnalyticalNoisyIAE(IterativeAmplitudeEstimation):
 
         num_iterations = 0  # keep track of the number of iterations
         # number of shots per iteration
-        shots = 0
+        shots = 1
         # do while loop, keep in mind that we scaled
         # theta mod 2pi such that it lies in [0,1]
         while (
             theta_intervals[-1][1] - theta_intervals[-1][0]
             > self._epsilon / np.pi
-        ) and num_iterations < max_iterations:
+        ):
             num_iterations += 1
 
             # get the next k
@@ -76,7 +76,7 @@ class AnalyticalNoisyIAE(IterativeAmplitudeEstimation):
             ratios.append((2 * powers[-1] + 1) / (2 * powers[-2] + 1))
 
             # set lambda
-            lamda = 2 * k + 1
+            lamda = 4 * k + 2
 
             noise = np.exp(-lamda * self._zeta)
             p = 0.5 * (1 - noise * np.cos(lamda * true_theta))
@@ -139,6 +139,9 @@ class AnalyticalNoisyIAE(IterativeAmplitudeEstimation):
             a_l = cast(float, a_l)
             a_intervals.append([a_l, a_u])
 
+            if num_iterations > max_iterations:
+                break
+
         # get the latest confidence interval for the estimate of a
         confidence_interval = tuple(a_intervals[-1])
 
@@ -180,7 +183,9 @@ def run_one_experiment_noisy_iae(noise, experiment):
     experiment["zeta"] = noise
     noisy_iae = AnalyticalNoisyIAE(0.01, 0.01, **experiment)
 
-    return noisy_iae.estimate(experiment["true_theta"])
+    true_theta = experiment["true_theta"]
+
+    return noisy_iae.estimate(true_theta)
 
 
 class AnalyticalNoisyMLAE(MaximumLikelihoodAmplitudeEstimation):
