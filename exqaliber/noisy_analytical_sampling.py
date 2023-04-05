@@ -19,11 +19,17 @@ from qiskit.algorithms.amplitude_estimators.mlae import (
 )
 
 
+def post_processing(x):
+    """Post processing p and theta."""
+    return np.arcsin(np.sqrt(np.min([1, x])))
+
+
 class AnalyticalNoisyIAE(IterativeAmplitudeEstimation):
     """Analytically (noisy) sampling with Iterative AE."""
 
     def __init__(self, epsilon_target, alpha, *args, **kwargs):
         super().__init__(epsilon_target, alpha)
+        self._shots = kwargs.get("shots", 1024)
         self._zeta = kwargs.get("zeta", 0)
 
     def estimate(self, true_theta, max_iterations=10000):
@@ -54,7 +60,7 @@ class AnalyticalNoisyIAE(IterativeAmplitudeEstimation):
 
         num_iterations = 0  # keep track of the number of iterations
         # number of shots per iteration
-        shots = 1
+        shots = self._shots
         # do while loop, keep in mind that we scaled
         # theta mod 2pi such that it lies in [0,1]
         while (
@@ -80,20 +86,20 @@ class AnalyticalNoisyIAE(IterativeAmplitudeEstimation):
 
             noise = np.exp(-lamda * self._zeta)
             p = 0.5 * (1 - noise * np.cos(lamda * true_theta))
-            measurement_outcome = np.random.binomial(1, p)
+            measurement_outcome = np.random.binomial(1, p, shots)
 
-            one_counts = measurement_outcome
-            prob = measurement_outcome
+            one_counts = measurement_outcome.sum()
+            prob = np.mean(measurement_outcome)
 
             num_one_shots.append(one_counts)
 
             # track number of Q-oracle calls
-            num_oracle_queries += shots * k
+            num_oracle_queries += shots * (2 * k + 1)
 
             # if on the previous iterations we have K_{i-1} == K_i,
             # we sum these samples up
             j = 1  # number of times we stayed fixed at the same K
-            round_shots = 1
+            round_shots = shots
             round_one_counts = one_counts
             if num_iterations > 1:
                 while (
@@ -101,7 +107,7 @@ class AnalyticalNoisyIAE(IterativeAmplitudeEstimation):
                     and num_iterations >= j + 1
                 ):
                     j = j + 1
-                    round_shots += 1
+                    round_shots += shots
                     round_one_counts += num_one_shots[-j]
 
             # compute a_min_i, a_max_i
@@ -151,7 +157,9 @@ class AnalyticalNoisyIAE(IterativeAmplitudeEstimation):
         result = IterativeAmplitudeEstimationResult()
         result.alpha = self._alpha
         result.zeta = self._zeta
-        # result.post_processing = estimation_problem.post_processing
+        result.true_theta = true_theta
+
+        result.post_processing = post_processing
         result.num_oracle_queries = num_oracle_queries
 
         result.estimation = estimation
@@ -160,18 +168,28 @@ class AnalyticalNoisyIAE(IterativeAmplitudeEstimation):
         ) / 2
         result.confidence_interval = confidence_interval
 
-        # result.estimation_processed =
-        # estimation_problem.post_processing(estimation)
-        # confidence_interval = tuple(
-        #     estimation_problem.post_processing(x)
-        #     for x in confidence_interval
-        # )
-        # result.confidence_interval_processed = confidence_interval
+        result.estimation_processed = post_processing(estimation)
+        confidence_interval = tuple(
+            post_processing(x) for x in confidence_interval
+        )
+        result.confidence_interval_processed = confidence_interval
         result.epsilon_estimated_processed = (
             confidence_interval[1] - confidence_interval[0]
         ) / 2
         result.estimate_intervals = a_intervals
+        estimate_intervals_processed = []
+        for bounds in a_intervals:
+            estimate_intervals_processed.append(
+                [post_processing(b) for b in bounds]
+            )
+        result.estimate_intervals_processed = estimate_intervals_processed
         result.theta_intervals = theta_intervals
+        theta_intervals_processed = []
+        for bounds in theta_intervals:
+            theta_intervals_processed.append(
+                [post_processing(b) for b in bounds]
+            )
+        result.theta_intervals_processed = theta_intervals_processed
         result.powers = powers
         result.ratios = ratios
 
@@ -180,8 +198,11 @@ class AnalyticalNoisyIAE(IterativeAmplitudeEstimation):
 
 def run_one_experiment_noisy_iae(noise, experiment):
     """Run one noisy iae experiment."""
+    np.random.seed(0)
     experiment["zeta"] = noise
-    noisy_iae = AnalyticalNoisyIAE(0.01, 0.01, **experiment)
+    epsilon = experiment.get("epsilon", 0.01)
+    alpha = experiment.get("alpha", 0.01)
+    noisy_iae = AnalyticalNoisyIAE(epsilon, alpha, **experiment)
 
     true_theta = experiment["true_theta"]
 

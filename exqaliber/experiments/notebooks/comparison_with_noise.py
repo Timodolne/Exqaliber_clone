@@ -24,11 +24,13 @@ import concurrent.futures
 # +
 from copy import copy
 
-import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 from tqdm.notebook import tqdm
 
+from exqaliber.experiments.amplitude_estimation_experiments import (
+    format_with_pi,
+)
 from exqaliber.exqaliber_amplitude_estimation import (
     ExqaliberAmplitudeEstimation,
 )
@@ -39,7 +41,7 @@ from exqaliber.noisy_analytical_sampling import (
 
 # +
 EXPERIMENT = {
-    "true_theta": 0.4,
+    "true_theta": 1.3,
     "prior_mean": "true_theta",
     "prior_std": 0.5,
     "method": "greedy",
@@ -72,55 +74,65 @@ print("Done.")
 # In IAE, the schedule changes.
 
 
+# +
 results = []
-min_noise_magn = -9
-max_noise_magn = -1
-noise_levels = np.logspace(
-    min_noise_magn, max_noise_magn, 10 * (max_noise_magn - min_noise_magn + 1)
-)
+min_noise_magn = -6
+max_noise_magn = 2
+noise_levels = [0] + [
+    i
+    for i in np.logspace(
+        min_noise_magn,
+        max_noise_magn,
+        5 * (max_noise_magn - min_noise_magn + 1),
+    )
+]
+noise_levels = np.array(noise_levels)
 
-with concurrent.futures.ProcessPoolExecutor(8) as executor:
-    results = list(
-        tqdm(
+EXPERIMENT["shots"] = 128
+EXPERIMENT["epsilon"] = 1e-5
+
+# +
+all_results = []
+theta_range = np.linspace(0, np.pi / 2, 13)
+
+for theta in tqdm(theta_range, position=0):
+    experiment = copy(EXPERIMENT)
+    experiment["true_theta"] = theta
+    with concurrent.futures.ProcessPoolExecutor(8) as executor:
+        results = list(
+            # tqdm(
             executor.map(
                 run_one_experiment_noisy_iae,
                 noise_levels,
-                [EXPERIMENT] * len(noise_levels),
-            ),
-            total=len(noise_levels),
+                [experiment] * len(noise_levels),
+                # ),
+                # total=len(noise_levels),
+                # position=1,
+                # leave=False
+            )
         )
-    )
+    all_results.append(results)
 
 # +
-norm = mpl.colors.LogNorm(vmin=noise_levels.min(), vmax=noise_levels.max())
-cmap = mpl.cm.get_cmap("viridis", len(noise_levels))
+for i, theta in enumerate(theta_range):
+    x = []
+    y = []
 
-fig, ax = plt.subplots(1)
+    for res in all_results[i]:
+        x.append(res.zeta)
+        y.append(res.estimation_processed)
 
-for res in results:
-    intervals = np.array(res.estimate_intervals)
-    errors = intervals[:, 1] - intervals[:, 0]
+    plt.plot(x, y, label=format_with_pi(theta))
 
-    oracle_queries = 2 * np.array(res.powers) + 1
-    x = oracle_queries.cumsum()
+plt.xlabel("noise level")
+plt.ylabel("estimation")
 
-    ax.plot(x, errors, c=cmap(norm(res.zeta)), alpha=0.5)
+plt.legend()
 
-ax.set_xscale("log")
-ax.set_yscale("log")
+plt.xscale("log")
 
-ax.set_xlabel("oracle queries")
-ax.set_ylabel("width confidence interval")
-
-fig.colorbar(
-    mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, label="noise level"
-)
-
-ax.set_title("Iterative amplitude estimation")
+plt.title("Estimation by IAE")
 # -
-
-
-#
 
 # ## MLAE
 
