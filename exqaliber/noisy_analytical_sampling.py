@@ -26,7 +26,7 @@ class AnalyticalNoisyIAE(IterativeAmplitudeEstimation):
         super().__init__(epsilon_target, alpha)
         self._zeta = kwargs.get("zeta", 0)
 
-    def estimate(self, true_theta):
+    def estimate(self, true_theta, max_iterations=10000):
         """Estimate with analytical sampling."""
         # initialize memory variables
 
@@ -60,7 +60,7 @@ class AnalyticalNoisyIAE(IterativeAmplitudeEstimation):
         while (
             theta_intervals[-1][1] - theta_intervals[-1][0]
             > self._epsilon / np.pi
-        ):
+        ) and num_iterations < max_iterations:
             num_iterations += 1
 
             # get the next k
@@ -147,6 +147,7 @@ class AnalyticalNoisyIAE(IterativeAmplitudeEstimation):
 
         result = IterativeAmplitudeEstimationResult()
         result.alpha = self._alpha
+        result.zeta = self._zeta
         # result.post_processing = estimation_problem.post_processing
         result.num_oracle_queries = num_oracle_queries
 
@@ -172,6 +173,14 @@ class AnalyticalNoisyIAE(IterativeAmplitudeEstimation):
         result.ratios = ratios
 
         return result
+
+
+def run_one_experiment_noisy_iae(noise, experiment):
+    """Run one noisy iae experiment."""
+    experiment["zeta"] = noise
+    noisy_iae = AnalyticalNoisyIAE(0.01, 0.01, **experiment)
+
+    return noisy_iae.estimate(experiment["true_theta"])
 
 
 class AnalyticalNoisyMLAE(MaximumLikelihoodAmplitudeEstimation):
@@ -255,3 +264,11 @@ class AnalyticalNoisyMLAE(MaximumLikelihoodAmplitudeEstimation):
         # )
 
         return result
+
+
+def run_one_experiment_noisy_mlae(noise, experiment):
+    """Run one noisy mlae experiment."""
+    experiment["zeta"] = noise
+    noisy_mlae = AnalyticalNoisyMLAE(10, **experiment)
+
+    return noisy_mlae.estimate(0.8, alpha=0.01)

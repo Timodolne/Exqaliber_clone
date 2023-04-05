@@ -19,10 +19,12 @@
 
 # ## Exqaliber AE
 
-import time
-from copy import copy
+import concurrent.futures
 
 # +
+from copy import copy
+
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 from tqdm.notebook import tqdm
@@ -31,8 +33,8 @@ from exqaliber.exqaliber_amplitude_estimation import (
     ExqaliberAmplitudeEstimation,
 )
 from exqaliber.noisy_analytical_sampling import (
-    AnalyticalNoisyIAE,
     AnalyticalNoisyMLAE,
+    run_one_experiment_noisy_iae,
 )
 
 # +
@@ -70,40 +72,55 @@ print("Done.")
 # In IAE, the schedule changes.
 
 
-# +
-
 results = []
 min_noise_magn = -9
 max_noise_magn = -1
 noise_levels = np.logspace(
-    min_noise_magn, max_noise_magn, max_noise_magn - min_noise_magn + 1
+    min_noise_magn, max_noise_magn, 10 * (max_noise_magn - min_noise_magn + 1)
 )
 
-min_noise = 1e-3
-max_noise = 1e-2
-noise_levels = np.linspace(min_noise, max_noise, 10)
+with concurrent.futures.ProcessPoolExecutor(8) as executor:
+    results = list(
+        tqdm(
+            executor.map(
+                run_one_experiment_noisy_iae,
+                noise_levels,
+                [EXPERIMENT] * len(noise_levels),
+            ),
+            total=len(noise_levels),
+        )
+    )
 
-experiment = copy(EXPERIMENT)
+# +
+norm = mpl.colors.LogNorm(vmin=noise_levels.min(), vmax=noise_levels.max())
+cmap = mpl.cm.get_cmap("viridis", len(noise_levels))
 
-for noise_level in tqdm(noise_levels):
-    np.random.seed(0)
-    print(noise_level)
-    experiment["zeta"] = noise_level
+fig, ax = plt.subplots(1)
 
-    iae = AnalyticalNoisyIAE(0.05, 0.01, **experiment)
+for res in results:
+    intervals = np.array(res.estimate_intervals)
+    errors = intervals[:, 1] - intervals[:, 0]
 
-    time.sleep(0.1)
+    oracle_queries = 2 * np.array(res.powers) + 1
+    x = oracle_queries.cumsum()
 
-    results.append(iae.estimate(experiment["true_theta"]))
+    ax.plot(x, errors, c=cmap(norm(res.zeta)), alpha=0.5)
+
+ax.set_xscale("log")
+ax.set_yscale("log")
+
+ax.set_xlabel("oracle queries")
+ax.set_ylabel("width confidence interval")
+
+fig.colorbar(
+    mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, label="noise level"
+)
+
+ax.set_title("Iterative amplitude estimation")
 # -
 
-for i, noise_level in enumerate(noise_levels):
-    plt.plot(results[i].powers, label=noise_level)
-plt.legend()
 
-for i, noise_level in enumerate(noise_levels):
-    plt.plot(results[i].estimate_intervals, label=noise_level)
-plt.legend()
+#
 
 # ## MLAE
 
