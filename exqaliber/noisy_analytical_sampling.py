@@ -18,6 +18,10 @@ from qiskit.algorithms.amplitude_estimators.mlae import (
     _fisher_confint,
 )
 
+from exqaliber.exqaliber_amplitude_estimation import (
+    ExqaliberAmplitudeEstimation,
+)
+
 
 def post_processing(x):
     """Post processing p and theta."""
@@ -302,3 +306,16 @@ def run_one_experiment_noisy_mlae(noise, experiment):
     alpha = experiment.get("alpha", 0.01)
 
     return noisy_mlae.estimate(true_theta, alpha=alpha)
+
+
+def run_one_experiment_noisy_exae(noise, experiment):
+    """Run one noisy exae experiment."""
+    np.random.seed(0)
+    experiment["zeta"] = noise
+    if "epsilon" not in experiment.keys():
+        experiment["epsilon"] = 0.01
+    if "alpha" not in experiment.keys():
+        experiment["alpha"] = 0.01
+    noisy_exae = ExqaliberAmplitudeEstimation(**experiment)
+
+    return noisy_exae.estimate(None, output="full", max_iter=100_000)
