@@ -204,9 +204,15 @@ def run_one_experiment_noisy_iae(noise, experiment):
     """Run one noisy iae experiment."""
     np.random.seed(0)
     experiment["zeta"] = noise
-    epsilon = experiment.get("epsilon", 0.01)
-    alpha = experiment.get("alpha", 0.01)
-    noisy_iae = AnalyticalNoisyIAE(epsilon, alpha, **experiment)
+
+    if "epsilon" not in experiment.keys():
+        experiment["epsilon_target"] = 0.01
+    else:
+        experiment["epsilon_target"] = experiment["epsilon"]
+    if "alpha" not in experiment.keys():
+        experiment["alpha"] = 0.01
+
+    noisy_iae = AnalyticalNoisyIAE(**experiment)
 
     true_theta = experiment["true_theta"]
 
@@ -317,5 +323,6 @@ def run_one_experiment_noisy_exae(noise, experiment):
     if "alpha" not in experiment.keys():
         experiment["alpha"] = 0.01
     noisy_exae = ExqaliberAmplitudeEstimation(**experiment)
+    output = experiment.get("output", "sparse")
 
-    return noisy_exae.estimate(None, output="full", max_iter=100_000)
+    return noisy_exae.estimate(None, output=output, max_iter=100_000)
