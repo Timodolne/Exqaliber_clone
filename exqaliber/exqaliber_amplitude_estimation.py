@@ -228,6 +228,7 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
         self,
         estimation_problem: EstimationProblem,
         output: str = "full",
+        max_iter: int = 0,
     ) -> "ExqaliberAmplitudeEstimationResult":
         """Run amplitude estimation algorithm on estimation problem.
 
@@ -265,6 +266,9 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
         # do while loop. Theta between 0 and pi.
         while prior_distributions[-1].standard_deviation > sigma_tolerance:
             num_iterations += 1
+            if max_iter != 0:
+                if num_iterations > max_iter:
+                    break
 
             # get the next k
             k = self._find_next_k(prior_distributions[-1], method=self._method)
@@ -411,6 +415,7 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
         result = ExqaliberAmplitudeEstimationResult()
         result.alpha = self._alpha
         result.epsilon_target = self.epsilon_target
+        result.zeta = self._zeta
         # result.post_processing = estimation_problem.post_processing
         result.num_oracle_queries = num_oracle_queries
 
@@ -601,7 +606,6 @@ def _chernoff_confint(
 
 
 if __name__ == "__main__":
-
     EXPERIMENT = {
         "true_theta": 0.4,
         "prior_mean": np.pi / 2,

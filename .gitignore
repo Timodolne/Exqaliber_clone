@@ -626,3 +626,7 @@ reports/
 !reports/*.tex
 *.ipynb
 *.ipynb_checkpoints/
+.idea/*
+*.png
+*.pkl
+*.mp4
