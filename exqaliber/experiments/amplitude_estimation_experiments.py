@@ -584,12 +584,9 @@ def error_in_estimate_2d_hist(
 
 def run_experiment_one_theta(theta, experiment):
     """Run Exqaliber AE for one theta."""
-    # set experiment
-    experiment["true_theta"] = theta
-
     # do the experiment
     ae = ExqaliberAmplitudeEstimation(**experiment)
-    result_one_theta = ae.estimate(None)
+    result_one_theta = ae.estimate(theta)
 
     print(f"Executed {len(result_one_theta.powers)} rounds")
     print(
@@ -604,7 +601,7 @@ def run_experiment_one_theta(theta, experiment):
 def run_single_experiment(experiment, output="sparse"):
     """Run one experiment (wrapper for multiprocessing)."""
     ae = ExqaliberAmplitudeEstimation(**experiment)
-    result = ae.estimate(None, output=output)
+    result = ae.estimate(experiment["theta"], output=output)
 
     return result
 
@@ -674,7 +671,6 @@ def run_experiment_multiple_thetas(
 
 
 if __name__ == "__main__":
-
     # saving and running parameters
     run_or_load = "load"
     save_results = True

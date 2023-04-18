@@ -325,4 +325,6 @@ def run_one_experiment_noisy_exae(noise, experiment):
     noisy_exae = ExqaliberAmplitudeEstimation(**experiment)
     output = experiment.get("output", "sparse")
 
-    return noisy_exae.estimate(None, output=output, max_iter=100_000)
+    return noisy_exae.estimate(
+        experiment["true_theta"], output=output, max_iter=100_000
+    )

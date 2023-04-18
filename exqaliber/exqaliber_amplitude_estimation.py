@@ -2,6 +2,8 @@
 
 # from typing import cast
 
+from typing import Union
+
 import numpy as np
 from qiskit import ClassicalRegister, QuantumCircuit
 from qiskit.algorithms.amplitude_estimators import (
@@ -87,13 +89,11 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
         self._epsilon = epsilon_target
         self._alpha = alpha
         self._sampler = sampler
-        self._true_theta = kwargs.get("true_theta", np.pi / 2)
+        # self._true_theta = kwargs.get("true_theta", np.pi / 2)
         self._method = kwargs.get("method", "greedy")
 
-        self._prior_mean = kwargs.get("prior_mean", 0.5)
-        if self._prior_mean == "true_theta":
-            self._prior_mean = self._true_theta
-        self._prior_std = kwargs.get("prior_std", 0.5)
+        self._prior_mean = kwargs.get("prior_mean", np.pi / 2)
+        self._prior_std = kwargs.get("prior_std", 1)
 
         self._zeta = kwargs.get("zeta", 0)
 
@@ -226,7 +226,7 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
 
     def estimate(
         self,
-        estimation_problem: EstimationProblem,
+        estimation_problem: Union[EstimationProblem, float],
         output: str = "full",
         max_iter: int = 0,
     ) -> "ExqaliberAmplitudeEstimationResult":
@@ -245,6 +245,13 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
             ValueError: A quantum instance or Sampler must be provided.
             AlgorithmError: Sampler job run error.
         """
+        # read estimation problem
+        if isinstance(estimation_problem, float):
+            self._true_theta = estimation_problem
+
+            if self._prior_mean == "true_theta":
+                self._prior_mean = self._true_theta
+
         # initiliaze starting variables
         prior = Normal(self._prior_mean, self._prior_std)
         prior_distributions = [prior]
@@ -282,7 +289,7 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
             # Record oracle queries
             num_oracle_queries += lamda
 
-            if estimation_problem is not None:
+            if self._sampler is not None:
                 # run measurements for Q^k A|0> circuit
                 circuit = self.construct_circuit(estimation_problem, k)
                 try:
@@ -615,9 +622,8 @@ if __name__ == "__main__":
     }
 
     ae = ExqaliberAmplitudeEstimation(0.001, 0.01, **EXPERIMENT)
-    estimation_problem = None
 
-    result = ae.estimate(estimation_problem)
+    result = ae.estimate(EXPERIMENT["true_theta"])
 
     print(f"Executed {len(result.powers)} rounds")
     print(
