@@ -607,7 +607,12 @@ def run_single_experiment(experiment, output="sparse"):
 
 
 def run_experiment_multiple_thetas(
-    theta_range, experiment, run_or_load, results_dir, max_block_size=1_000
+    theta_range,
+    experiment,
+    run_or_load,
+    results_dir,
+    reps,
+    max_block_size=1_000,
 ):
     """Create results for Exqaliber AE for multiple input thetas."""
     # recording
@@ -735,6 +740,7 @@ if __name__ == "__main__":
             experiment=EXPERIMENT,
             run_or_load=run_or_load,
             results_dir=results_dir,
+            reps=reps,
         )
 
         if do_circular_histogram:
