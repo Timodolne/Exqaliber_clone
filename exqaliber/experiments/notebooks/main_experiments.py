@@ -46,9 +46,10 @@ show_results = True
 # parameters all experiments
 epsilon_target = 1e-3
 alpha = 1e-2
-prior_mean = "true_theta"
+prior_mean = "uniform"
 prior_std = 1
 method = "greedy"
+max_iter = 100_000
 
 EXPERIMENT = {
     "epsilon": epsilon_target,
@@ -75,6 +76,7 @@ results_multiple_thetas = run_experiment_multiple_thetas(
     run_or_load=run_or_load,
     results_dir=results_dir,
     reps=reps,
+    max_iter=max_iter,
 )
 # + tags=[]
 if not os.path.exists(f"{results_dir}/figures/"):
@@ -91,3 +93,4 @@ circular_histogram(
     save=filename,
     show=show_results,
 )
+# -

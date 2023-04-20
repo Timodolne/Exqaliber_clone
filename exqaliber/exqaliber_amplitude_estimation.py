@@ -252,6 +252,9 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
             if self._prior_mean == "true_theta":
                 self._prior_mean = self._true_theta
 
+        if self._prior_mean == "uniform":  # Uniform between 0 and pi
+            self._prior_mean = np.pi * np.random.random()
+
         # initiliaze starting variables
         prior = Normal(self._prior_mean, self._prior_std)
         prior_distributions = [prior]

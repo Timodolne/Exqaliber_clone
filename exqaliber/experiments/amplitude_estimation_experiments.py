@@ -608,7 +608,10 @@ def run_experiment_one_theta(theta, experiment):
 def run_single_experiment(experiment, output="sparse"):
     """Run one experiment (wrapper for multiprocessing)."""
     ae = ExqaliberAmplitudeEstimation(**experiment)
-    result = ae.estimate(experiment["true_theta"], output=output)
+    max_iter = experiment["max_iter"]
+    result = ae.estimate(
+        experiment["true_theta"], output=output, max_iter=max_iter
+    )
 
     return result
 
@@ -620,6 +623,7 @@ def run_experiment_multiple_thetas(
     results_dir,
     reps,
     max_block_size=1_000,
+    max_iter=0,
 ):
     """Create results for Exqaliber AE for multiple input thetas."""
     # recording
@@ -631,6 +635,8 @@ def run_experiment_multiple_thetas(
     results_dir = f"{results_dir}/simulations/"
     if not os.path.exists(results_dir):
         os.mkdir(results_dir)
+
+    experiment["max_iter"] = max_iter
 
     i = 0
     for theta in tqdm(theta_range, desc="theta", position=0):
