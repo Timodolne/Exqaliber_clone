@@ -12,7 +12,12 @@ import numpy as np
 from matplotlib import animation
 from matplotlib.widgets import Slider
 from scipy.stats import norm
-from tqdm import tqdm
+
+try:
+    __IPYTHON__
+    from tqdm.notebook import tqdm
+except NameError:
+    from tqdm import tqdm
 
 from exqaliber.exqaliber_amplitude_estimation import (
     ExqaliberAmplitudeEstimation,
@@ -55,6 +60,8 @@ def experiment_string(experiment, sweep=False):
     sigma_hat_str = r"$\hat{\sigma}^2$"
     if experiment["prior_mean"] == "true_theta":
         prior_mean_str = r"$\theta$"
+    elif experiment["prior_mean"] == "uniform":
+        prior_mean_str = r"$U(0,\pi)$"
     else:
         prior_mean_str = format_with_pi(experiment["prior_mean"])
 
@@ -309,7 +316,7 @@ def circular_histogram(
     ax = plt.subplot(projection="polar")
 
     # data
-    width = np.pi / (resolution + 1)
+    width = np.pi / (len(theta_range) + 1)
     max_magnitude_y = int(np.ceil(np.log10(max(mean_queries))))
     max_y = 10 ** (max_magnitude_y)
     min_magnitude_y = int(np.floor(np.log10(min(mean_queries))))
@@ -435,7 +442,7 @@ def error_in_estimate_2d_hist(
     errors = estimations - thetas_repeated
 
     # data
-    width = np.pi / (resolution + 1)
+    width = np.pi / (len(theta_range) + 1)
     min_y = errors.min()
     max_y = errors.max()
 
@@ -601,7 +608,7 @@ def run_experiment_one_theta(theta, experiment):
 def run_single_experiment(experiment, output="sparse"):
     """Run one experiment (wrapper for multiprocessing)."""
     ae = ExqaliberAmplitudeEstimation(**experiment)
-    result = ae.estimate(experiment["theta"], output=output)
+    result = ae.estimate(experiment["true_theta"], output=output)
 
     return result
 
@@ -618,6 +625,10 @@ def run_experiment_multiple_thetas(
     # recording
     results_multiple_thetas = []
 
+    if not os.path.exists(results_dir):
+        os.mkdir(results_dir)
+
+    results_dir = f"{results_dir}/simulations/"
     if not os.path.exists(results_dir):
         os.mkdir(results_dir)
 

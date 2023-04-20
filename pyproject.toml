@@ -26,6 +26,8 @@ jupyter = "^1.0.0"
 pylatexenc = "^2.10"
 qiskit-aer = "^0.12.0"
 isort = "^5.12.0"
+jupyterlab = "^3.6.3"
+entrypoints = "^0.4"
 
 [tool.poetry.dev-dependencies]
 black = ">=22.6.0"
