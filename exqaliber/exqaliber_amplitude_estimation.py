@@ -436,6 +436,8 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
         result.num_oracle_queries = num_oracle_queries
 
         result.final_theta = final_theta
+        if hasattr(self, "_true_theta"):
+            result.true_theta = self._true_theta
         result.estimation = estimation
         result.standard_deviation = prior_distributions[-1].standard_deviation
         result.epsilon_estimated = (
