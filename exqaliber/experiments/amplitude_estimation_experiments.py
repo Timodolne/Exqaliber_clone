@@ -1,10 +1,10 @@
 """Graph the behaviour of Exqaliber Amplitude Estimation."""
 import math
-import multiprocessing
 import os.path
 import pickle
-import time
 from fractions import Fraction
+from functools import partial
+from multiprocessing import Pool, Queue
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -318,12 +318,12 @@ def circular_histogram(
     ax = plt.subplot(projection="polar")
 
     # data
-    width = np.pi / (len(theta_range) + 1)
+    width = np.pi / (len(theta_range) - 1)
     max_magnitude_y = int(np.ceil(np.log10(max(mean_queries))))
     max_y = 10 ** (max_magnitude_y)
     min_magnitude_y = int(np.floor(np.log10(min(mean_queries))))
 
-    x_bins = np.arange(-width / 2, np.pi + width / 2, width)
+    x_bins = np.arange(-width / 2, np.pi + 3 * width / 2, width)
     y_bins = np.logspace(
         min_magnitude_y, max_magnitude_y, 2 * max_magnitude_y + 1
     )
@@ -618,6 +618,22 @@ def run_single_experiment(experiment, output="sparse"):
     return result
 
 
+def run_experiment_single_rep(args):
+    """Run a single repetition of an experiment."""
+    experiment, filename, run_or_load = args
+    if run_or_load == "load":
+        if os.path.isfile(filename):
+            with open(filename, "rb") as f:
+                results = pickle.load(f)
+        else:
+            run_or_load = "run"
+    if run_or_load == "run":
+        results = run_single_experiment(experiment)
+        with open(filename, "wb") as f:
+            pickle.dump(results, f, protocol=-1)
+    return results
+
+
 def run_experiment_multiple_thetas(
     theta_range,
     experiment,
@@ -626,6 +642,7 @@ def run_experiment_multiple_thetas(
     reps,
     max_block_size=1_000,
     max_iter=0,
+    num_processes=8,
 ):
     """Create results for Exqaliber AE for multiple input thetas."""
     # recording
@@ -640,55 +657,42 @@ def run_experiment_multiple_thetas(
 
     experiment["max_iter"] = max_iter
 
-    i = 0
-    for theta in tqdm(theta_range, desc="theta", position=0):
-        results_theta = []
-        for j, block in tqdm(
-            enumerate(range(math.ceil(reps / max_block_size))),
-            total=math.ceil(reps / max_block_size),
-            position=1,
-            leave=False,
-            desc=" block",
-        ):
+    q = Queue()
+    num_jobs = 0
+
+    for theta in theta_range:
+        for j, block in enumerate(range(math.ceil(reps / max_block_size))):
             block_size = min([(reps - j * max_block_size), max_block_size])
             experiment["true_theta"] = theta
 
-            filename = f"{results_dir}/{i:05}.pkl"
+            for i in range(block_size):
+                filename = f"{results_dir}/{theta:05f}-{j:05d}-{i:05d}.pkl"
+                q.put((experiment.copy(), filename, run_or_load))
+                num_jobs += 1
 
-            if run_or_load == "load":
-                try:
-                    # load results
-                    with open(filename, "rb") as f:
-                        results_theta_block = pickle.load(f)
-                except FileNotFoundError:
-                    print("File not found, running experiment.")
-                    run_or_load = "run"
+    pool = Pool(num_processes)
+    output = []
 
-            if run_or_load == "run":
-                with multiprocessing.Pool(8) as pool:
-                    results_theta_block = list(
-                        tqdm(
-                            pool.imap(
-                                run_single_experiment,
-                                [experiment] * block_size,
-                            ),
-                            total=block_size,
-                            position=2,
-                            leave=False,
-                            desc="  iteration",
-                        )
-                    )
+    with tqdm(
+        total=num_jobs
+    ) as pbar:  # create a progress bar with the total number of jobs
+        imap_func = partial(run_experiment_single_rep)
+        imap_iter = pool.imap(imap_func, [q.get() for _ in range(num_jobs)])
+        for result in imap_iter:
+            output.append(result)
+            pbar.update(1)
 
-                # save results
-                with open(filename, "wb") as f:
-                    pickle.dump(results_theta_block, f, protocol=-1)
+    pool.close()
+    pool.join()
 
+    results_multiple_thetas = []
+    for theta in theta_range:
+        results_theta = []
+        for j in range(math.ceil(reps / max_block_size)):
+            block_size = min([(reps - j * max_block_size), max_block_size])
+            results_theta_block = [output.pop(0) for i in range(block_size)]
             for result in results_theta_block:
                 results_theta.append(result)
-
-            time.sleep(0.001)
-            i += 1
-
         results_multiple_thetas.append(results_theta)
 
     return results_multiple_thetas

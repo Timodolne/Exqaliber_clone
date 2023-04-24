@@ -39,14 +39,14 @@ from exqaliber.experiments.amplitude_estimation_experiments import (
 
 # + tags=[]
 # saving and running parameters
-run_or_load = "run"
+run_or_load = "load"
 save_results = True
 show_results = True
 
 # parameters all experiments
 epsilon_target = 1e-3
 alpha = 1e-2
-prior_mean = "uniform"
+prior_mean = "true_theta"
 prior_std = 1
 method = "greedy"
 max_iter = 100_000
@@ -61,8 +61,9 @@ EXPERIMENT = {
 
 # + tags=[]
 # parameters theta sweep
-reps = 50
-resolution = 6
+reps = 500
+resolution = 12
+max_block_size = 1_000
 theta_range = np.linspace(0, np.pi, resolution, endpoint=True)
 # replace theta == 0.0 with 2pi
 theta_range[0] = 2 * np.pi
@@ -77,13 +78,15 @@ results_multiple_thetas = run_experiment_multiple_thetas(
     results_dir=results_dir,
     reps=reps,
     max_iter=max_iter,
+    max_block_size=max_block_size,
 )
+
 # + tags=[]
 if not os.path.exists(f"{results_dir}/figures/"):
     os.mkdir(f"{results_dir}/figures/")
 
 filename = (
-    f"{results_dir}/figures/circular_histogram.png" if save_results else False
+    f"{results_dir}/figures/circular_histogram.pdf" if save_results else False
 )
 
 circular_histogram(
@@ -93,4 +96,13 @@ circular_histogram(
     save=filename,
     show=show_results,
 )
+
+# + tags=[]
+theta_range
+
+# + tags=[]
+width = np.pi / (len(theta_range) - 1)
+
+# + tags=[]
+theta_range[1] + width
 # -
