@@ -3,26 +3,56 @@
 \usepackage[utf8]{inputenc}
 \usepackage[english]{babel}
 \usepackage[T1]{fontenc}
+\usepackage[numbers]{natbib}
 \usepackage{amsmath}
-\usepackage{amssymb}
 \usepackage{hyperref}
-
-\makeatletter
-\newcommand{\bra}[1]{
-  \langle #1|
-}
-\newcommand{\ket}[1]{
-  |#1\rangle
-}
-\newcommand{\braket}[2]{
-  \langle #1|#2\rangle
-}
-\makeatother
 
 \usepackage{tikz}
 \usepackage{lipsum}
 
+\usepackage{amsfonts}
+\usepackage{amsthm}
+\usepackage{parskip}
+\usepackage{mathtools}
+\usepackage{mathrsfs}
+\usepackage{graphicx}
+\usepackage{amssymb}
+\usepackage{xtab}
+\usepackage{physics}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{seqsplit}
+\usepackage{enumitem}
+\usepackage{tikz}
+\usepackage{braket}
+\usepackage{pgfplots}
+\usepackage{subcaption}
+\usepackage{mathdots}
+\usetikzlibrary{quantikz}
+\usepgfplotslibrary{groupplots}
+
+\hypersetup{
+    colorlinks,
+    citecolor=blue,
+    filecolor=black,
+    linkcolor=black,
+    urlcolor=blue
+}
+
+\DeclareMathOperator{\lcm}{lcm}
+\DeclarePairedDelimiter{\floor}{\lfloor}{\rfloor}
+\DeclarePairedDelimiter{\ceil}{\lceil}{\rceil}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+
 \newtheorem{theorem}{Theorem}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{postulate}[theorem]{Postulate}
+\newtheorem{problem}[theorem]{Problem}
+\newtheorem*{claim}{Claim}
 
 \begin{document}
 
@@ -38,6 +68,9 @@
 \author{Camille de Valk}
 \email{camille.de.valk@capgemini.com}
 \affiliation{Capgemini QLab}
+\author{Walden Killick}
+\email{walden.killick@cambridgeconsultants.com}
+\affiliation{Cambridge Consultants, Cambridge, UK}
 \maketitle
 
 \begin{abstract}
@@ -45,128 +78,15 @@
 \end{abstract}
 
 
-\section{Introduction}
-Basic introduction giving definition and contribution
-
-\subsection{Amplitude estimation}
-Details of the amplitude estimation and background on its use, including Quantum Monte Carlo
-
-\subsubsection{Statistical amplitude estimation}
-Introduce idea of statistical learning of parameter to reduce circuit length
-
-\subsubsection{Decoherent noise model}
-Introduce model for decoherent noise and associated effects on statistical problem
-
-\subsection{Related work}
-Review of related work and papers
-
-\subsubsection{Quantum phase estimation}
-I am not sure if we want to make the connection in a public document but it is useful to make in an internal report
-
-\subsection{Contribution}
-This should be written last and include a map for the rest of the paper
-
-
-\section{Algorithm}
-
-\subsection{Algorithm description}
-Give a statement of our algorithm, phrase as an algorithm rather than talking about Bayes updates etc. What is implemented
-
-State is current estimate and variance
-Rules for updating state given result
-Rules for selecting next update
-
-Include detail of stopping criteria
-
-\subsubsection{Adjustments for noise}
-Changes needed for decoherence noise
-
-\subsection{Bayesian framework}
-Introduction to Bayesian stats, prior, posterior, and adaptive termination
-
-Introduce idea of using normal distribution
-
-
-\subsubsection{Posterior properties}
-Posterior mean, variance and expected variance under noiseless and decoherence noise model
-
-\subsubsection{Normal approximation of posterior}
-Details on the use of a normal approximation for posterior distribution and next prior.
-Include comments about both the circular issue and tails due to indeterminacy.
-
-\subsection{Selecting next sample depth}
-Details of greedy choice (possibly give indication of dynamic programming approach)
-Noise and noiseless
-
-\section{Experimentation}
-%Describe experiments and performance measures
-%Two measures of interest, time to solution and quality of solutions
-
-% This is probably explained earlier, but I need it for my argument, so I wrote it. In the final version, we probably need to refer to earlier in the text.
-In amplitude estimation, there is an operator $\mathcal{A}$ acting on $n+1$ qubits, such that $\mathcal{A} \ket{\psi}_{n+1} = \sqrt{a}\ket{\psi_1}_{n}\ket{1} + \sqrt{1-a}\ket{\psi_0}_n\ket{0}$,
-with $a\in [0,1]$ or, when defining $a=\sin^2{\theta_a}$ with $\theta_a \in [0, \pi]$,
-\begin{equation}
-	\mathcal{A}_{n+1} \ket{\psi} = \sin{\theta_a} \ket{\psi_1}_n \ket{1}
-	+ \cos{\theta_a}\ket{\psi_0}_n\ket{0}.
-\end{equation}
-The goal is to find $\theta_a$.
-
-One can create an operator $\mathcal{Q} = \mathcal{A} \mathcal{S}_0 \mathcal{A}^{\dagger}\mathcal{S}_{\psi_0}$ with $\mathcal{S}_{\psi_0} = \mathbb{I} - 2\ket{\psi_0}_n\bra{\psi_0}_n\otimes\ket{0}\bra{0}$ and $\mathcal{S}_0 = \mathbb{I} - 2\ket{0}_{n+1}\bra{0}_{n+1}$. % TODO reference
-% TODO choose definition of 'oracle queries'. In the iterative AE paper, they "denote applications of Q as quantum samples or oracle queries."
-Now by applying $\mathcal{Q}$ for $k$ times (and thereby applying $\mathcal{A}$ a total of $(2k+1)$ times), the probability of measuring the $\ket{1}$ state follows a Bernoulli distribution with $p$ equal to
-\begin{equation}
-	p = \frac{1}{2}(1-\cos{((2k+1)\theta_a)}).
-	\label{eq:bernoulli-p}
-\end{equation}
-Using this equation, one can test different amplitude estimation analytically, by sampling from the Bernoulli distribution directly. We call this direct analytical sampling.
-
-We experimented with our novel amplitude estimation routine. There are two relevant measures for amplitude estimation.
-These are the time to solution (and its scaling) and the quality of the solution, i.e., the error $\epsilon$.
-To measure these, we simulate experiments using direct analytical sampling.
-
-
-As our algorithm uses dynamical updates, depending on the true $\theta$, %TODO: make this consistent throughout the article. Maybe theta hat?
-anomalies can rise for values around integer fractions of $\pi$.
-
-\subsection{Simulation experiments}
-Details on setup both with circuits and with direct sampling
-
-
-
-\subsubsection{Noiseless experiments}
-
-\subsubsection{Decoherence noise experiments}
-Focused on direct sampling case
-
-\subsection{Real hardware experiments}
-Include if we decide to carry these out.
-
-
-\section{Discussion}
-This is for internal discussions not external release
-Topics to include here include:
-\begin{itemize}
-	\item Directions for future including reinforcement learning
-	\item Superconducting and trapped ion thought experiment
-	\item Discussion about general dynamic programming approach for considering error mitigation and correction
-	\item Connection to QPE and applicability of thinking to that setting (maybe include small section on the more complicated statistical challenge of general state)
-	\item Circular distributions and what we know about them (probably subsection of this section or algorithm)
-\end{itemize}
-
+\input{exqaliber-intro}
+\input{exqaliber-algo}
+\input{exqaliber-experiments}
+\input{exqaliber-discussion}
 
 \bibliographystyle{quantum}
-\begin{thebibliography}{9}
-
-
-\bibitem{jj}
-gg
-\end{thebibliography}
-
-
-
+\bibliography{exqaliber-phase1-bibliography.bib}
 
 \appendix
 
-\section{Technical details}
-Details of technical work if needed
+\input{exqaliber-appendix.tex}
 \end{document}
