@@ -62,6 +62,8 @@ def experiment_string(experiment, sweep=False):
         prior_mean_str = r"$\theta$"
     elif experiment["prior_mean"] == "uniform":
         prior_mean_str = r"$U(0,\pi)$"
+    elif experiment["prior_mean"] == "gaussian":
+        prior_mean_str = r"$N(0,\pi)$"
     else:
         prior_mean_str = format_with_pi(experiment["prior_mean"])
 
