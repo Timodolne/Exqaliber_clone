@@ -618,7 +618,7 @@ def run_single_experiment(experiment, output="sparse"):
     return result
 
 
-def run_experiment_single_rep(args):
+def run_experiment_single_rep(args, experiment_f=run_single_experiment):
     """Run a single repetition of an experiment."""
     experiment, filename, run_or_load = args
     if run_or_load == "load":
@@ -628,7 +628,7 @@ def run_experiment_single_rep(args):
         else:
             run_or_load = "run"
     if run_or_load == "run":
-        results = run_single_experiment(experiment)
+        results = experiment_f(experiment)
         with open(filename, "wb") as f:
             pickle.dump(results, f, protocol=-1)
     return results
@@ -643,6 +643,7 @@ def run_experiment_multiple_thetas(
     max_block_size=1_000,
     max_iter=0,
     num_processes=8,
+    experiment_f=run_single_experiment,
 ):
     """Create results for Exqaliber AE for multiple input thetas."""
     # recording
@@ -676,7 +677,9 @@ def run_experiment_multiple_thetas(
     with tqdm(
         total=num_jobs
     ) as pbar:  # create a progress bar with the total number of jobs
-        imap_func = partial(run_experiment_single_rep)
+        imap_func = partial(
+            run_experiment_single_rep, experiment_f=experiment_f
+        )
         imap_iter = pool.imap(imap_func, [q.get() for _ in range(num_jobs)])
         for result in imap_iter:
             output.append(result)
