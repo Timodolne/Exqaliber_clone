@@ -352,9 +352,9 @@ def circular_histogram(
     )
     plt.title(title)
 
-    fig.colorbar(h[3], ax=ax, location="bottom")
+    fig.colorbar(h[3], ax=ax, location="bottom", label="oracle queries")
 
-    plt.tight_layout()
+    plt.tight_layout(pad=1.0)
 
     if save:
         plt.savefig(save, dpi=300)
