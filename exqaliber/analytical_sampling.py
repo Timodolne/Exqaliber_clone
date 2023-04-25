@@ -200,10 +200,9 @@ class AnalyticalNoisyIAE(IterativeAmplitudeEstimation):
         return result
 
 
-def run_one_experiment_noisy_iae(noise, experiment):
+def run_one_experiment_iae(experiment):
     """Run one noisy iae experiment."""
     np.random.seed(0)
-    experiment["zeta"] = noise
 
     if "epsilon" not in experiment.keys():
         experiment["epsilon_target"] = 0.01
@@ -301,10 +300,10 @@ class AnalyticalNoisyMLAE(MaximumLikelihoodAmplitudeEstimation):
         return result
 
 
-def run_one_experiment_noisy_mlae(noise, experiment):
-    """Run one noisy mlae experiment."""
+def run_one_experiment_mlae(experiment):
+    """Run one mlae experiment."""
     np.random.seed(0)
-    experiment["zeta"] = noise
+
     evaluation_schedule = experiment.get("m", 6)
     noisy_mlae = AnalyticalNoisyMLAE(evaluation_schedule, **experiment)
 
@@ -314,10 +313,10 @@ def run_one_experiment_noisy_mlae(noise, experiment):
     return noisy_mlae.estimate(true_theta, alpha=alpha)
 
 
-def run_one_experiment_noisy_exae(noise, experiment):
-    """Run one noisy exae experiment."""
+def run_one_experiment_exae(experiment):
+    """Run one exae experiment."""
     np.random.seed(0)
-    experiment["zeta"] = noise
+
     if "epsilon" not in experiment.keys():
         experiment["epsilon"] = 0.01
     if "alpha" not in experiment.keys():

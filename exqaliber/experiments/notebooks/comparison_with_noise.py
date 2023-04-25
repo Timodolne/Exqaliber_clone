@@ -8,7 +8,7 @@
 #       format_version: '1.5'
 #       jupytext_version: 1.14.4
 #   kernelspec:
-#     display_name: exqaliber
+#     display_name: Python 3 (ipykernel)
 #     language: python
 #     name: python3
 # ---
@@ -24,13 +24,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 from tqdm.notebook import tqdm
 
+from exqaliber.analytical_sampling import (
+    run_one_experiment_exae,
+    run_one_experiment_iae,
+    run_one_experiment_mlae,
+)
 from exqaliber.experiments.amplitude_estimation_experiments import (
     format_with_pi,
-)
-from exqaliber.noisy_analytical_sampling import (
-    run_one_experiment_noisy_exae,
-    run_one_experiment_noisy_iae,
-    run_one_experiment_noisy_mlae,
 )
 
 # -
@@ -65,19 +65,12 @@ theta_range = np.linspace(0, np.pi / 2, 13)
 for theta in tqdm(theta_range, position=0):
     experiment = copy(EXPERIMENT)
     experiment["true_theta"] = theta
+    experiments = [
+        {**d, "zeta": zeta}
+        for zeta, d in zip(noise_levels, [experiment] * len(noise_levels))
+    ]
     with concurrent.futures.ProcessPoolExecutor(8) as executor:
-        results = list(
-            # tqdm(
-            executor.map(
-                run_one_experiment_noisy_iae,
-                noise_levels,
-                [experiment] * len(noise_levels),
-                # ),
-                # total=len(noise_levels),
-                # position=1,
-                # leave=False
-            )
-        )
+        results = executor.map(run_one_experiment_iae, experiments)
     all_results_iae.append(results)
 
 # +
@@ -114,14 +107,14 @@ theta_range = np.linspace(0, np.pi / 2, 13)
 for theta in tqdm(theta_range, position=0):
     experiment = copy(EXPERIMENT)
     experiment["true_theta"] = theta
+    experiments = [
+        {**d, "zeta": zeta}
+        for zeta, d in zip(noise_levels, [experiment] * len(noise_levels))
+    ]
     with concurrent.futures.ProcessPoolExecutor(8) as executor:
         results = list(
             tqdm(
-                executor.map(
-                    run_one_experiment_noisy_mlae,
-                    noise_levels,
-                    [experiment] * len(noise_levels),
-                ),
+                executor.map(run_one_experiment_mlae, experiments),
                 total=len(noise_levels),
                 position=1,
                 leave=False,
@@ -167,13 +160,13 @@ experiment = {
 
 
 with concurrent.futures.ProcessPoolExecutor(8) as executor:
+    experiments = [
+        {**d, "zeta": zeta}
+        for zeta, d in zip(noise_levels, [experiment] * len(noise_levels))
+    ]
     results_one_run = list(
         tqdm(
-            executor.map(
-                run_one_experiment_noisy_exae,
-                noise_levels,
-                [experiment] * len(noise_levels),
-            ),
+            executor.map(run_one_experiment_exae, experiments),
             total=len(noise_levels),
             position=1,
             leave=False,
@@ -248,14 +241,14 @@ theta_range = np.linspace(0, np.pi / 2, 13)
 for theta in tqdm(theta_range, position=0):
     experiment = copy(EXPERIMENT)
     experiment["true_theta"] = theta
+    experiments = [
+        {**d, "zeta": zeta}
+        for zeta, d in zip(noise_levels, [experiment] * len(noise_levels))
+    ]
     with concurrent.futures.ProcessPoolExecutor(8) as executor:
         results = list(
             tqdm(
-                executor.map(
-                    run_one_experiment_noisy_exae,
-                    noise_levels,
-                    [experiment] * len(noise_levels),
-                ),
+                executor.map(run_one_experiment_exae, experiments),
                 total=len(noise_levels),
                 position=1,
                 leave=False,
