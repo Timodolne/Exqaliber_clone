@@ -72,14 +72,14 @@ def experiment_string(experiment, sweep=False):
             rf"$\theta= ${format_with_pi(experiment['true_theta'])}, "
             rf"{mu_hat_str}$= ${prior_mean_str}, "
             rf"{sigma_hat_str}$= ${format_with_pi(experiment['prior_std'])}. "
-            rf"$\epsilon = ${experiment['epsilon']}. "
+            rf"$\epsilon = ${experiment['epsilon_target']}. "
             rf"Method: {experiment['method']}"
         )
     else:
         experiment = (
             rf"{mu_hat_str}$= ${prior_mean_str}, "
             rf"{sigma_hat_str}$= ${format_with_pi(experiment['prior_std'])}. "
-            rf"$\epsilon = ${experiment['epsilon']}. "
+            rf"$\epsilon = ${experiment['epsilon_target']}. "
             rf"Method: {experiment['method']}"
         )
 
@@ -452,7 +452,9 @@ def error_in_estimate_2d_hist(
     fig, axs = plt.subplots(2, 2, figsize=(12, 9))
 
     # Left figures
-    val = thetas[58]
+    val = thetas[2]
+
+    epsilon_target = experiment.get("epsilon_target")
 
     # top figure
     bins_top = np.linspace(-3 * epsilon_target, 3 * epsilon_target, 100)
@@ -644,6 +646,7 @@ def run_experiment_multiple_thetas(
     max_iter=0,
     num_processes=8,
     experiment_f=run_single_experiment,
+    epsilon_range=None,
 ):
     """Create results for Exqaliber AE for multiple input thetas."""
     # recording
@@ -658,18 +661,26 @@ def run_experiment_multiple_thetas(
 
     experiment["max_iter"] = max_iter
 
+    if epsilon_range is None:
+        epsilon_range = [experiment.get("epsilon")]
+
     q = Queue()
     num_jobs = 0
 
-    for theta in theta_range:
-        for j, block in enumerate(range(math.ceil(reps / max_block_size))):
-            block_size = min([(reps - j * max_block_size), max_block_size])
-            experiment["true_theta"] = theta
+    for epsilon in epsilon_range:
+        experiment["epsilon_target"] = epsilon
+        for theta in theta_range:
+            for j, block in enumerate(range(math.ceil(reps / max_block_size))):
+                block_size = min([(reps - j * max_block_size), max_block_size])
+                experiment["true_theta"] = theta
 
-            for i in range(block_size):
-                filename = f"{results_dir}/{theta:05f}-{j:05d}-{i:05d}.pkl"
-                q.put((experiment.copy(), filename, run_or_load))
-                num_jobs += 1
+                for i in range(block_size):
+                    filename = (
+                        f"{results_dir}/{theta:05f}-{epsilon:1.0e}"
+                        f"-{j:05d}-{i:05d}.pkl"
+                    )
+                    q.put((experiment.copy(), filename, run_or_load))
+                    num_jobs += 1
 
     pool = Pool(num_processes)
     output = []
@@ -688,15 +699,26 @@ def run_experiment_multiple_thetas(
     pool.close()
     pool.join()
 
-    results_multiple_thetas = []
-    for theta in theta_range:
-        results_theta = []
-        for j in range(math.ceil(reps / max_block_size)):
-            block_size = min([(reps - j * max_block_size), max_block_size])
-            results_theta_block = [output.pop(0) for i in range(block_size)]
-            for result in results_theta_block:
-                results_theta.append(result)
-        results_multiple_thetas.append(results_theta)
+    results_multiple_epsilons_multiple_thetas = []
+
+    for epsilon in epsilon_range:
+        results_multiple_thetas = []
+        for theta in theta_range:
+            results_theta = []
+            for j in range(math.ceil(reps / max_block_size)):
+                block_size = min([(reps - j * max_block_size), max_block_size])
+                results_theta_block = [
+                    output.pop(0) for i in range(block_size)
+                ]
+                for result in results_theta_block:
+                    results_theta.append(result)
+            results_multiple_thetas.append(results_theta)
+        results_multiple_epsilons_multiple_thetas.append(
+            results_multiple_thetas
+        )
+
+    if len(epsilon_range) > 1:
+        return results_multiple_epsilons_multiple_thetas
 
     return results_multiple_thetas
 
@@ -716,7 +738,7 @@ if __name__ == "__main__":
     prior_std = 1
     method = "greedy"
     EXPERIMENT = {
-        "epsilon": epsilon_target,
+        "epsilon_target": epsilon_target,
         "prior_mean": prior_mean,
         "prior_std": prior_std,
         "method": method,
