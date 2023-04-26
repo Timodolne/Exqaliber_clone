@@ -25,10 +25,10 @@ from exqaliber.exqaliber_amplitude_estimation import (
 
 def post_processing(x):
     """Post processing p and theta."""
-    return np.arcsin(np.sqrt(np.min([1, x])))
+    return np.arcsin(np.sqrt(np.min([1, np.abs(x)])))
 
 
-class AnalyticalNoisyIAE(IterativeAmplitudeEstimation):
+class AnalyticalIAE(IterativeAmplitudeEstimation):
     """Analytically (noisy) sampling with Iterative AE."""
 
     def __init__(self, epsilon_target, alpha, *args, **kwargs):
@@ -202,23 +202,19 @@ class AnalyticalNoisyIAE(IterativeAmplitudeEstimation):
 
 def run_one_experiment_iae(experiment):
     """Run one noisy iae experiment."""
-    np.random.seed(0)
-
-    if "epsilon" not in experiment.keys():
+    if "epsilon_target" not in experiment.keys():
         experiment["epsilon_target"] = 0.01
-    else:
-        experiment["epsilon_target"] = experiment["epsilon"]
     if "alpha" not in experiment.keys():
         experiment["alpha"] = 0.01
 
-    noisy_iae = AnalyticalNoisyIAE(**experiment)
+    noisy_iae = AnalyticalIAE(**experiment)
 
     true_theta = experiment["true_theta"]
 
     return noisy_iae.estimate(true_theta)
 
 
-class AnalyticalNoisyMLAE(MaximumLikelihoodAmplitudeEstimation):
+class AnalyticalMLAE(MaximumLikelihoodAmplitudeEstimation):
     """Analytically (noisy) sampling with Iterative AE."""
 
     def __init__(self, evaluation_schedule, shots=128, *args, **kwargs):
@@ -302,10 +298,13 @@ class AnalyticalNoisyMLAE(MaximumLikelihoodAmplitudeEstimation):
 
 def run_one_experiment_mlae(experiment):
     """Run one mlae experiment."""
-    np.random.seed(0)
-
-    evaluation_schedule = experiment.get("m", 6)
-    noisy_mlae = AnalyticalNoisyMLAE(evaluation_schedule, **experiment)
+    if hasattr(experiment, "m"):
+        evaluation_schedule = experiment.get("m", 6)
+    else:
+        evaluation_schedule = int(
+            np.log2(5e-2 / experiment.get("epsilon_target"))
+        )
+    noisy_mlae = AnalyticalMLAE(evaluation_schedule, **experiment)
 
     true_theta = experiment["true_theta"]
     alpha = experiment.get("alpha", 0.01)
@@ -315,10 +314,8 @@ def run_one_experiment_mlae(experiment):
 
 def run_one_experiment_exae(experiment):
     """Run one exae experiment."""
-    np.random.seed(0)
-
-    if "epsilon" not in experiment.keys():
-        experiment["epsilon"] = 0.01
+    if "epsilon_target" not in experiment.keys():
+        experiment["epsilon_target"] = 0.01
     if "alpha" not in experiment.keys():
         experiment["alpha"] = 0.01
     noisy_exae = ExqaliberAmplitudeEstimation(**experiment)
