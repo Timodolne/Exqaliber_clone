@@ -13,6 +13,7 @@
 #     name: python3
 # ---
 
+# + [markdown] tags=[]
 # # Amplitude Estimation experiments
 
 # + tags=[]
@@ -24,6 +25,7 @@
 # + tags=[]
 import os.path
 
+import matplotlib.pyplot as plt
 import numpy as np
 
 from exqaliber.analytical_sampling import (
@@ -36,6 +38,7 @@ from exqaliber.experiments.amplitude_estimation_experiments import (
     run_experiment_multiple_thetas,
 )
 
+np.random.seed(1)
 # -
 
 # ## Parameters
@@ -53,7 +56,7 @@ epsilon_target = 1e-3
 alpha = 1e-2
 prior_mean = "true_theta"
 prior_std = 1
-method = "greedy"
+method = "greedy-smart"
 max_iter = 100_000
 
 EXPERIMENT = {
@@ -65,11 +68,12 @@ EXPERIMENT = {
 }
 
 # + tags=[]
-# parameters theta sweep
-reps = 5
+# parameters sweep
+reps = 1
 resolution = 20
 max_block_size = 1_000
-theta_range = np.linspace(0, np.pi, resolution, endpoint=True)
+theta_range = np.linspace(0, np.pi / 2, resolution, endpoint=True)
+epsilon_range = np.logspace(-6, -3, 4)
 # replace theta == 0.0 with 2pi
 theta_range[0] = 2 * np.pi
 # -
@@ -98,9 +102,11 @@ theta_range[0] = 2 * np.pi
 # $\epsilon$ vs. oracle calls for ExAE, IAE, and MLAE.
 
 # + tags=[]
-results_dir = f"results/ExAE/{resolution}x{reps}"
+results_dir = f"results/ExAE-smart/{resolution}x{reps}"
 
-results_multiple_thetas_exae = run_experiment_multiple_thetas(
+EXPERIMENT["output"] = "full"
+
+results_exae = run_experiment_multiple_thetas(
     theta_range,
     experiment=EXPERIMENT,
     run_or_load=run_or_load,
@@ -109,12 +115,13 @@ results_multiple_thetas_exae = run_experiment_multiple_thetas(
     max_iter=max_iter,
     max_block_size=max_block_size,
     experiment_f=run_one_experiment_exae,
+    epsilon_range=epsilon_range,
 )
 
 # + tags=[]
 results_dir = f"results/IAE/{resolution}x{reps}"
 
-results_multiple_thetas_iae = run_experiment_multiple_thetas(
+results_iae = run_experiment_multiple_thetas(
     theta_range,
     experiment=EXPERIMENT,
     run_or_load=run_or_load,
@@ -123,12 +130,13 @@ results_multiple_thetas_iae = run_experiment_multiple_thetas(
     max_iter=max_iter,
     max_block_size=max_block_size,
     experiment_f=run_one_experiment_iae,
+    epsilon_range=epsilon_range,
 )
 
 # + tags=[]
 results_dir = f"results/MLAE/{resolution}x{reps}"
 
-results_multiple_thetas_mlae = run_experiment_multiple_thetas(
+results_mlae = run_experiment_multiple_thetas(
     theta_range,
     experiment=EXPERIMENT,
     run_or_load=run_or_load,
@@ -137,7 +145,73 @@ results_multiple_thetas_mlae = run_experiment_multiple_thetas(
     max_iter=max_iter,
     max_block_size=max_block_size,
     experiment_f=run_one_experiment_mlae,
+    epsilon_range=epsilon_range,
 )
+
+
+# + tags=[]
+# restoring theta_range[0]
+theta_range[0] = 0
+
+# EXAE
+abs_epsilons = [
+    np.abs(res.final_theta - theta % (2 * np.pi))
+    for results_eps in results_exae
+    for results_theta, theta in zip(results_eps, theta_range)
+    for res in results_theta
+]
+oracle_calls = [
+    res.num_oracle_queries
+    for results_exae in results_exae
+    for results_theta in results_exae
+    for res in results_theta
+]
+plt.scatter(abs_epsilons, oracle_calls, label="ExAE")
+
+# IAE
+abs_epsilons = [
+    np.abs(res.estimation_processed - theta % (2 * np.pi))
+    for results_eps in results_iae
+    for results_theta, theta in zip(results_eps, theta_range)
+    for res in results_theta
+]
+oracle_calls = [
+    res.num_oracle_queries
+    for results_iae in results_iae
+    for results_theta in results_iae
+    for res in results_theta
+]
+plt.scatter(abs_epsilons, oracle_calls, label="IAE")
+
+# MLAE
+abs_epsilons = [
+    np.abs(res.theta - theta % (2 * np.pi))
+    for results_eps in results_mlae
+    for results_theta, theta in zip(results_eps, theta_range)
+    for res in results_theta
+]
+oracle_calls = [
+    res.num_oracle_queries
+    for results_mlae in results_mlae
+    for results_theta in results_mlae
+    for res in results_theta
+]
+plt.scatter(abs_epsilons, oracle_calls, label="MLAE")
+
+plt.xscale("log")
+plt.yscale("log")
+
+plt.xlabel(r"$\epsilon$")
+plt.ylabel("Oracle queries")
+
+plt.legend()
+
+# plt.xlim(10**-6, 10**-3)
+# -
+
+# # Now with noise
+#
+# noise levels $\zeta = \{0, 10^{-6}, 10^{-4}\}$
 
 
 # + tags=[]
@@ -149,7 +223,7 @@ filename = (
 )
 
 circular_histogram(
-    results_multiple_thetas_exae,
+    results_exae,
     theta_range,
     experiment=EXPERIMENT,
     save=filename,
