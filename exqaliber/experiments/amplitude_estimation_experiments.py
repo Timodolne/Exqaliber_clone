@@ -1,9 +1,11 @@
 """Graph the behaviour of Exqaliber Amplitude Estimation."""
+import hashlib
 import math
 import os.path
 import pickle
 from fractions import Fraction
 from functools import partial
+from itertools import product
 from multiprocessing import Pool, Queue
 
 import matplotlib as mpl
@@ -633,6 +635,98 @@ def run_experiment_single_rep(args, experiment_f=run_single_experiment):
         results = experiment_f(experiment)
         with open(filename, "wb") as f:
             pickle.dump(results, f, protocol=-1)
+    return results
+
+
+def run_experiments_parameters(
+    experiment,
+    run_or_load,
+    results_dir,
+    parameters={"reps": 1},
+    num_processes=8,
+    experiment_f=run_single_experiment,
+):
+    """Create results for Exqaliber AE for different parameters."""
+    # create the folder structure
+    param_bytes = pickle.dumps(parameters)
+
+    # Generate a hash value based on the serialized parameter dictionary
+    hash_obj = hashlib.sha256(param_bytes)
+    hash_value = hash_obj.hexdigest()
+
+    # Use the hash value as the folder name
+    folder_name = f"experiment_{hash_value[:8]}"
+    results_dir = os.path.join(results_dir, folder_name)
+
+    if not os.path.exists(results_dir):
+        os.makedirs(results_dir)
+
+        # Save the parameter dictionary as a .pkl file inside the folder
+        params_filename = "params.pkl"
+        params_path = os.path.join(results_dir, params_filename)
+
+        with open(params_path, "wb") as f:
+            pickle.dump(parameters, f)
+
+    # recording the results
+    results = {}
+    results["parameters"] = parameters.copy()
+
+    # load the parameters
+    experiment["max_iter"] = parameters.get("max_iter", 0)
+
+    # create queue
+    q = Queue()
+    num_jobs = 0
+
+    iterables = []
+    fixed = []
+    for key, value in parameters.items():
+        if isinstance(value, (list, tuple, set, np.ndarray)):
+            iterables.append(key)
+        else:
+            fixed.append(key)
+
+    for fixed_value in fixed:
+        experiment[fixed_value] = parameters[fixed_value]
+
+    for values in product(*[parameters[key] for key in iterables]):
+        # setting the experiment
+        for iterable, value in zip(iterables, values):
+            experiment[iterable] = value
+
+        # creating the experiment in the queue for reps repetitions.
+        n = parameters.get("reps", 1)
+        for i in range(n):
+            filename = os.path.join(results_dir, f"{num_jobs:06d}.pkl")
+            q.put((experiment.copy(), filename, run_or_load))
+            num_jobs += 1
+
+    pool = Pool(num_processes)
+    output = []
+
+    with tqdm(
+        total=num_jobs
+    ) as pbar:  # create a progress bar with the total number of jobs
+        imap_func = partial(
+            run_experiment_single_rep, experiment_f=experiment_f
+        )
+        imap_iter = pool.imap(imap_func, [q.get() for _ in range(num_jobs)])
+        for result in imap_iter:
+            output.append(result)
+            pbar.update(1)
+
+    pool.close()
+    pool.join()
+
+    for values in product(*[parameters[key] for key in iterables]):
+        n = parameters.get("reps", 1)
+        for i in range(n):
+            filename = os.path.join(results_dir, f"{num_jobs:06d}.pkl")
+            q.put((experiment.copy(), filename, run_or_load))
+
+            results[(*values, i)] = output.pop(0)
+
     return results
 
 
