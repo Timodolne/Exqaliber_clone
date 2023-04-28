@@ -275,6 +275,9 @@ class AnalyticalMLAE(MaximumLikelihoodAmplitudeEstimation):
         result.good_counts = good_counts
         result.estimation = np.sin(result.theta) ** 2
 
+        # store orignal theta
+        result.true_theta = true_theta
+
         # not sure why pylint complains, this is a callable
         # and the tests pass
         # pylint: disable=not-callable
@@ -298,7 +301,7 @@ class AnalyticalMLAE(MaximumLikelihoodAmplitudeEstimation):
 
 def run_one_experiment_mlae(experiment):
     """Run one mlae experiment."""
-    if hasattr(experiment, "m"):
+    if "m" in experiment.keys():
         evaluation_schedule = experiment.get("m", 6)
     else:
         evaluation_schedule = int(
