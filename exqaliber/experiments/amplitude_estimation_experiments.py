@@ -686,6 +686,8 @@ def run_experiments_parameters(
             iterables.append(key)
         else:
             fixed.append(key)
+    results["iterables"] = iterables.copy()
+    results["fixed"] = fixed.copy()
 
     for fixed_value in fixed:
         experiment[fixed_value] = parameters[fixed_value]
@@ -702,7 +704,7 @@ def run_experiments_parameters(
             q.put((experiment.copy(), filename, run_or_load))
             num_jobs += 1
 
-    pool = Pool(num_processes)
+    pool = Pool(np.min([num_jobs, num_processes]))
     output = []
 
     with tqdm(
@@ -728,6 +730,29 @@ def run_experiments_parameters(
             results[(*values, i)] = output.pop(0)
 
     return results
+
+
+def get_results_slice(results, rules={}):
+    """Get results sliced based on a rule."""
+    out = {}
+
+    index = {}
+    for k, v in rules.items():
+        if k in results["iterables"]:
+            index[results["iterables"].index(k)] = v
+        if k in results["fixed"]:
+            continue
+
+    if len(index) == 0:
+        return results
+
+    for k, v in results.items():
+        if isinstance(k, str):
+            continue
+        if [k[i] for i in index] == list(index.values()):
+            out[k] = v
+
+    return out
 
 
 def run_experiment_multiple_thetas(
@@ -776,7 +801,7 @@ def run_experiment_multiple_thetas(
                     q.put((experiment.copy(), filename, run_or_load))
                     num_jobs += 1
 
-    pool = Pool(num_processes)
+    pool = Pool(np.min([num_jobs, num_processes]))
     output = []
 
     with tqdm(
