@@ -1,8 +1,8 @@
 """Graph the behaviour of Exqaliber Amplitude Estimation."""
 import hashlib
-import math
 import os.path
 import pickle
+import queue
 from fractions import Fraction
 from functools import partial
 from itertools import product
@@ -296,24 +296,35 @@ def convergence_plot(
 
 
 def circular_histogram(
-    results_multiple_thetas: list,
-    theta_range: np.ndarray,
-    experiment: dict,
+    results: dict,
     save: bool = False,
     show: bool = True,
+    rules: dict = None,
+    experiment: dict = None,
 ):
     """Plot the circular histogram of nb of queries."""
+    if (
+        isinstance(
+            results["parameters"]["epsilon_target"],
+            (list, tuple, set, np.ndarray),
+        )
+        and "epsilon_target" not in rules.keys()
+    ):
+        raise "Choose one epsilon target for circular histogram."
+
+    if rules is None:
+        rules = {"zeta": 0}
     # get queries
+    results_sliced = get_results_slice(results, rules=rules)
+
+    thetas = np.array([theta for (theta, i) in results_sliced.keys()])
     queries = np.array(
-        [
-            [res.num_oracle_queries for res in result]
-            for result in results_multiple_thetas
-        ]
+        [res.num_oracle_queries for res in results_sliced.values()]
     )
-    mean_queries = queries.mean(axis=1)
-    nb_reps = len(queries[0])
-    theta_range = theta_range % (2 * np.pi)
-    thetas_repeated = np.vstack([theta_range] * nb_reps).T
+
+    # parameters
+    nb_reps = results["parameters"]["reps"]
+    theta_range = results["parameters"]["true_theta"]
 
     # figure
     fig = plt.figure(figsize=(7, 7), dpi=100)
@@ -321,9 +332,9 @@ def circular_histogram(
 
     # data
     width = np.pi / (len(theta_range) - 1)
-    max_magnitude_y = int(np.ceil(np.log10(max(mean_queries))))
+    max_magnitude_y = int(np.ceil(np.log10(max(queries))))
     max_y = 10 ** (max_magnitude_y)
-    min_magnitude_y = int(np.floor(np.log10(min(mean_queries))))
+    min_magnitude_y = int(np.floor(np.log10(min(queries))))
 
     x_bins = np.arange(-width / 2, np.pi + 3 * width / 2, width)
     y_bins = np.logspace(
@@ -332,7 +343,7 @@ def circular_histogram(
     bins = [x_bins, y_bins]
 
     h = ax.hist2d(
-        thetas_repeated.flatten(),
+        thetas.flatten(),
         queries.flatten(),
         bins=bins,
         cmin=1,
@@ -347,11 +358,9 @@ def circular_histogram(
     ax.grid(True)
 
     # Plot title
-    title = (
-        f"Number of iterations "
-        "before convergence.\n"
-        f"{experiment_string(experiment, True)}"
-    )
+    title = "Number of iterations before convergence.\n"
+    if experiment is not None:
+        title += f"{experiment_string(experiment, True)}"
     plt.title(title)
 
     fig.colorbar(h[3], ax=ax, location="bottom", label="oracle queries")
@@ -675,10 +684,6 @@ def run_experiments_parameters(
     # load the parameters
     experiment["max_iter"] = parameters.get("max_iter", 0)
 
-    # create queue
-    q = Queue()
-    num_jobs = 0
-
     iterables = []
     fixed = []
     for key, value in parameters.items():
@@ -692,31 +697,55 @@ def run_experiments_parameters(
     for fixed_value in fixed:
         experiment[fixed_value] = parameters[fixed_value]
 
+    n = parameters.get("reps", 1)
+
+    # create queues
+    qs = [Queue()]
+    q_lens = [0]
+    q_idx = 0
+    num_jobs = 0
+
     for values in product(*[parameters[key] for key in iterables]):
         # setting the experiment
         for iterable, value in zip(iterables, values):
             experiment[iterable] = value
 
         # creating the experiment in the queue for reps repetitions.
-        n = parameters.get("reps", 1)
         for i in range(n):
             filename = os.path.join(results_dir, f"{num_jobs:06d}.pkl")
-            q.put((experiment.copy(), filename, run_or_load))
+            try:
+                qs[q_idx].put(
+                    (experiment.copy(), filename, run_or_load),
+                    block=True,
+                    timeout=0.1,
+                )
+                q_lens[q_idx] += 1
+            except queue.Full:
+                qs.append(Queue())
+                q_lens.append(0)
+                q_idx += 1
+                qs[q_idx].put(
+                    (experiment.copy(), filename, run_or_load),
+                    block=True,
+                    timeout=0.1,
+                )
+                q_lens[q_idx] += 1
             num_jobs += 1
 
     pool = Pool(np.min([num_jobs, num_processes]))
     output = []
 
-    with tqdm(
-        total=num_jobs
-    ) as pbar:  # create a progress bar with the total number of jobs
-        imap_func = partial(
-            run_experiment_single_rep, experiment_f=experiment_f
-        )
-        imap_iter = pool.imap(imap_func, [q.get() for _ in range(num_jobs)])
-        for result in imap_iter:
-            output.append(result)
-            pbar.update(1)
+    for q_len, q in tqdm(zip(q_lens, qs), total=len(qs)):
+        with tqdm(
+            total=q_len, position=1, leave=False
+        ) as pbar:  # create a progress bar with the total number of jobs
+            imap_func = partial(
+                run_experiment_single_rep, experiment_f=experiment_f
+            )
+            imap_iter = pool.imap(imap_func, [q.get() for _ in range(q_len)])
+            for result in imap_iter:
+                output.append(result)
+                pbar.update(1)
 
     pool.close()
     pool.join()
@@ -725,7 +754,7 @@ def run_experiments_parameters(
         n = parameters.get("reps", 1)
         for i in range(n):
             filename = os.path.join(results_dir, f"{num_jobs:06d}.pkl")
-            q.put((experiment.copy(), filename, run_or_load))
+            # q.put((experiment.copy(), filename, run_or_load))
 
             results[(*values, i)] = output.pop(0)
 
@@ -744,7 +773,10 @@ def get_results_slice(results, rules={}):
             continue
 
     if len(index) == 0:
-        return results
+        for k, v in results.items():
+            if isinstance(k, str):
+                continue
+            out[k] = v
 
     for k, v in results.items():
         if isinstance(k, str):
@@ -755,100 +787,13 @@ def get_results_slice(results, rules={}):
     return out
 
 
-def run_experiment_multiple_thetas(
-    theta_range,
-    experiment,
-    run_or_load,
-    results_dir,
-    reps,
-    max_block_size=1_000,
-    max_iter=0,
-    num_processes=8,
-    experiment_f=run_single_experiment,
-    epsilon_range=None,
-):
-    """Create results for Exqaliber AE for multiple input thetas."""
-    # recording
-    results_multiple_thetas = []
-
-    if not os.path.exists(results_dir):
-        os.mkdir(results_dir)
-
-    results_dir = f"{results_dir}/simulations/"
-    if not os.path.exists(results_dir):
-        os.mkdir(results_dir)
-
-    experiment["max_iter"] = max_iter
-
-    if epsilon_range is None:
-        epsilon_range = [experiment.get("epsilon")]
-
-    q = Queue()
-    num_jobs = 0
-
-    for epsilon in epsilon_range:
-        experiment["epsilon_target"] = epsilon
-        for theta in theta_range:
-            for j, block in enumerate(range(math.ceil(reps / max_block_size))):
-                block_size = min([(reps - j * max_block_size), max_block_size])
-                experiment["true_theta"] = theta
-
-                for i in range(block_size):
-                    filename = (
-                        f"{results_dir}/{theta:05f}-{epsilon:1.0e}"
-                        f"-{j:05d}-{i:05d}.pkl"
-                    )
-                    q.put((experiment.copy(), filename, run_or_load))
-                    num_jobs += 1
-
-    pool = Pool(np.min([num_jobs, num_processes]))
-    output = []
-
-    with tqdm(
-        total=num_jobs
-    ) as pbar:  # create a progress bar with the total number of jobs
-        imap_func = partial(
-            run_experiment_single_rep, experiment_f=experiment_f
-        )
-        imap_iter = pool.imap(imap_func, [q.get() for _ in range(num_jobs)])
-        for result in imap_iter:
-            output.append(result)
-            pbar.update(1)
-
-    pool.close()
-    pool.join()
-
-    results_multiple_epsilons_multiple_thetas = []
-
-    for epsilon in epsilon_range:
-        results_multiple_thetas = []
-        for theta in theta_range:
-            results_theta = []
-            for j in range(math.ceil(reps / max_block_size)):
-                block_size = min([(reps - j * max_block_size), max_block_size])
-                results_theta_block = [
-                    output.pop(0) for i in range(block_size)
-                ]
-                for result in results_theta_block:
-                    results_theta.append(result)
-            results_multiple_thetas.append(results_theta)
-        results_multiple_epsilons_multiple_thetas.append(
-            results_multiple_thetas
-        )
-
-    if len(epsilon_range) > 1:
-        return results_multiple_epsilons_multiple_thetas
-
-    return results_multiple_thetas
-
-
 if __name__ == "__main__":
     # saving and running parameters
     run_or_load = "load"
     save_results = True
     show_results = False
     one_theta_experiment = False
-    sweep_experiment = True
+    # sweep_experiment = True
 
     # parameters all experiments
     epsilon_target = 1e-3
@@ -899,55 +844,56 @@ if __name__ == "__main__":
                 show=show_results,
             )
 
-    if sweep_experiment:
-        results_dir = f"results/{resolution}x{reps}"
+    # if sweep_experiment:
+    #     results_dir = f"results/{resolution}x{reps}"
 
-        results_multiple_thetas = run_experiment_multiple_thetas(
-            theta_range,
-            experiment=EXPERIMENT,
-            run_or_load=run_or_load,
-            results_dir=results_dir,
-            reps=reps,
-        )
+    #     results_multiple_thetas = run_experiment_multiple_thetas(
+    #         theta_range,
+    #         experiment=EXPERIMENT,
+    #         run_or_load=run_or_load,
+    #         results_dir=results_dir,
+    #         reps=reps,
+    #     )
 
-        if do_circular_histogram:
-            filename = (
-                f"{results_dir}/figures/circular_histogram.png"
-                if save_results
-                else False
-            )
-            circular_histogram(
-                results_multiple_thetas,
-                theta_range,
-                experiment=EXPERIMENT,
-                save=filename,
-                show=show_results,
-            )
+    #     if do_circular_histogram:
+    #         filename = (
+    #             f"{results_dir}/figures/circular_histogram.png"
+    #             if save_results
+    #             else False
+    #         )
+    #         circular_histogram(
+    #             results_multiple_thetas,
+    #             theta_range,
+    #             experiment=EXPERIMENT,
+    #             save=filename,
+    #             show=show_results,
+    #         )
 
-        if do_accuracy_plot_linear:
-            filename = (
-                f"{results_dir}/accuracy_linear.png" if save_results else False
-            )
-            accuracy_plot_linear(
-                results_multiple_thetas,
-                theta_range,
-                experiment=EXPERIMENT,
-                save=filename,
-                show=show_results,
-            )
+    #     if do_accuracy_plot_linear:
+    #         filename = (
+    #             f"{results_dir}/accuracy_linear.png"
+    #             if save_results else False
+    #         )
+    #         accuracy_plot_linear(
+    #             results_multiple_thetas,
+    #             theta_range,
+    #             experiment=EXPERIMENT,
+    #             save=filename,
+    #             show=show_results,
+    #         )
 
-        if do_error_plot:
-            filename = (
-                f"{results_dir}/figures/error_in_estimate-1.png"
-                if save_results
-                else False
-            )
-            error_in_estimate_2d_hist(
-                results_multiple_thetas,
-                theta_range,
-                experiment=EXPERIMENT,
-                save=filename,
-                show=show_results,
-            )
+    #     if do_error_plot:
+    #         filename = (
+    #             f"{results_dir}/figures/error_in_estimate-1.png"
+    #             if save_results
+    #             else False
+    #         )
+    #         error_in_estimate_2d_hist(
+    #             results_multiple_thetas,
+    #             theta_range,
+    #             experiment=EXPERIMENT,
+    #             save=filename,
+    #             show=show_results,
+    #         )
 
     print("Done.")

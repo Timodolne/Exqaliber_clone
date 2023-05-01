@@ -35,7 +35,8 @@ from exqaliber.analytical_sampling import (
 )
 from exqaliber.experiments.amplitude_estimation_experiments import (
     circular_histogram,
-    run_experiment_multiple_thetas,
+    get_results_slice,
+    run_experiments_parameters,
 )
 
 np.random.seed(1)
@@ -60,7 +61,7 @@ method = "greedy-smart"
 max_iter = 100_000
 
 EXPERIMENT = {
-    "epsilon": epsilon_target,
+    "epsilon_target": epsilon_target,
     "alpha": alpha,
     "prior_mean": prior_mean,
     "prior_std": prior_std,
@@ -69,13 +70,22 @@ EXPERIMENT = {
 
 # + tags=[]
 # parameters sweep
-reps = 1
-resolution = 20
-max_block_size = 1_000
+reps = 20
+resolution = 4
 theta_range = np.linspace(0, np.pi / 2, resolution, endpoint=True)
-epsilon_range = np.logspace(-6, -3, 4)
 # replace theta == 0.0 with 2pi
 theta_range[0] = 2 * np.pi
+epsilon_range = np.logspace(-6, -3, 7)
+noise_levels = [0, 1e-6, 1e-3]
+
+parameters = {
+    "reps": reps,
+    "true_theta": theta_range,
+    "zeta": noise_levels,
+    "epsilon_target": epsilon_range,
+    "max_iter": 100_000,
+}
+parameters
 # -
 
 # # Similar to fig 7 from QCWare paper
@@ -102,109 +112,101 @@ theta_range[0] = 2 * np.pi
 # $\epsilon$ vs. oracle calls for ExAE, IAE, and MLAE.
 
 # + tags=[]
-results_dir = f"results/ExAE-smart/{resolution}x{reps}"
+results_dir = "results/simulations/ExAE-smart/"
 
-EXPERIMENT["output"] = "full"
-
-results_exae = run_experiment_multiple_thetas(
-    theta_range,
+results_exae = run_experiments_parameters(
     experiment=EXPERIMENT,
     run_or_load=run_or_load,
     results_dir=results_dir,
-    reps=reps,
-    max_iter=max_iter,
-    max_block_size=max_block_size,
+    parameters=parameters,
     experiment_f=run_one_experiment_exae,
-    epsilon_range=epsilon_range,
 )
 
 # + tags=[]
-results_dir = f"results/IAE/{resolution}x{reps}"
+results_dir = "results/simulations/IAE/"
 
-results_iae = run_experiment_multiple_thetas(
-    theta_range,
+results_iae = run_experiments_parameters(
     experiment=EXPERIMENT,
     run_or_load=run_or_load,
     results_dir=results_dir,
-    reps=reps,
-    max_iter=max_iter,
-    max_block_size=max_block_size,
+    parameters=parameters,
     experiment_f=run_one_experiment_iae,
-    epsilon_range=epsilon_range,
 )
 
 # + tags=[]
-results_dir = f"results/MLAE/{resolution}x{reps}"
+# MLAE can't go too deep because of compute limitations
+epsilon_target = parameters.get("epsilon_target")
+min_epsilon = 5e-5
 
-results_mlae = run_experiment_multiple_thetas(
-    theta_range,
+if not np.all(epsilon_target >= min_epsilon):
+    parameters_mlae = parameters.copy()
+    print("Changing epsilon target, because MLAE can't go too deep.")
+    if isinstance(epsilon_target, np.ndarray):
+        epsilon_target = np.concatenate(
+            ([min_epsilon], epsilon_target[epsilon_target >= min_epsilon])
+        )
+    else:
+        epsilon_target = max(epsilon_target, min_epsilon)
+    parameters_mlae["epsilon_target"] = epsilon_target
+else:
+    parameters_mlae = parameters.copy()
+
+results_dir = "results/simulations/MLAE/"
+
+results_mlae = run_experiments_parameters(
     experiment=EXPERIMENT,
     run_or_load=run_or_load,
     results_dir=results_dir,
-    reps=reps,
-    max_iter=max_iter,
-    max_block_size=max_block_size,
+    parameters=parameters,
     experiment_f=run_one_experiment_mlae,
-    epsilon_range=epsilon_range,
 )
 
-
 # + tags=[]
-# restoring theta_range[0]
-theta_range[0] = 0
+rules = {"zeta": 0}
+plot_kwargs = {"marker": "x"}
+
+fig, ax = plt.subplots(figsize=(10, 7), dpi=300)
 
 # EXAE
+results_exae_sliced = get_results_slice(results_exae, rules=rules)
 abs_epsilons = [
-    np.abs(res.final_theta - theta % (2 * np.pi))
-    for results_eps in results_exae
-    for results_theta, theta in zip(results_eps, theta_range)
-    for res in results_theta
+    np.abs(res.final_theta - res.true_theta % (2 * np.pi))
+    for k, res in results_exae_sliced.items()
 ]
 oracle_calls = [
-    res.num_oracle_queries
-    for results_exae in results_exae
-    for results_theta in results_exae
-    for res in results_theta
+    res.num_oracle_queries for k, res in results_exae_sliced.items()
 ]
-plt.scatter(abs_epsilons, oracle_calls, label="ExAE")
+ax.scatter(abs_epsilons, oracle_calls, label="ExAE", **plot_kwargs)
 
 # IAE
+results_iae_sliced = get_results_slice(results_iae, rules=rules)
 abs_epsilons = [
-    np.abs(res.estimation_processed - theta % (2 * np.pi))
-    for results_eps in results_iae
-    for results_theta, theta in zip(results_eps, theta_range)
-    for res in results_theta
+    np.abs(res.estimation_processed - res.true_theta % (2 * np.pi))
+    for k, res in results_iae_sliced.items()
 ]
 oracle_calls = [
-    res.num_oracle_queries
-    for results_iae in results_iae
-    for results_theta in results_iae
-    for res in results_theta
+    res.num_oracle_queries for k, res in results_iae_sliced.items()
 ]
-plt.scatter(abs_epsilons, oracle_calls, label="IAE")
+ax.scatter(abs_epsilons, oracle_calls, label="IAE", **plot_kwargs)
 
 # MLAE
+results_mlae_sliced = get_results_slice(results_mlae, rules=rules)
 abs_epsilons = [
-    np.abs(res.theta - theta % (2 * np.pi))
-    for results_eps in results_mlae
-    for results_theta, theta in zip(results_eps, theta_range)
-    for res in results_theta
+    np.abs(res.theta - res.true_theta % (2 * np.pi))
+    for k, res in results_mlae_sliced.items()
 ]
 oracle_calls = [
-    res.num_oracle_queries
-    for results_mlae in results_mlae
-    for results_theta in results_mlae
-    for res in results_theta
+    res.num_oracle_queries for k, res in results_mlae_sliced.items()
 ]
-plt.scatter(abs_epsilons, oracle_calls, label="MLAE")
+ax.scatter(abs_epsilons, oracle_calls, label="MLAE", **plot_kwargs)
 
-plt.xscale("log")
-plt.yscale("log")
+ax.set_xscale("log")
+ax.set_yscale("log")
 
-plt.xlabel(r"$\epsilon$")
-plt.ylabel("Oracle queries")
+ax.set_xlabel(r"$\epsilon$")
+ax.set_ylabel("Oracle queries")
 
-plt.legend()
+ax.legend()
 
 # plt.xlim(10**-6, 10**-3)
 # -
@@ -213,6 +215,30 @@ plt.legend()
 #
 # noise levels $\zeta = \{0, 10^{-6}, 10^{-4}\}$
 
+
+# # Circular histogram of oracle calls
+
+# + tags=[]
+parameters = {
+    "reps": 300,
+    "true_theta": np.linspace(0, np.pi, 180),
+    "zeta": 0,
+    "epsilon_target": 1e-4,
+    "max_iter": 100_000,
+}
+
+run_or_load = "load"
+
+# + tags=[]
+results_dir = "results/simulations/ExAE-smart/"
+
+results_exae = run_experiments_parameters(
+    experiment=EXPERIMENT,
+    run_or_load=run_or_load,
+    results_dir=results_dir,
+    parameters=parameters,
+    experiment_f=run_one_experiment_exae,
+)
 
 # + tags=[]
 if not os.path.exists(f"{results_dir}/figures/"):
@@ -223,9 +249,6 @@ filename = (
 )
 
 circular_histogram(
-    results_exae,
-    theta_range,
-    experiment=EXPERIMENT,
-    save=filename,
-    show=show_results,
+    results_exae, save=filename, show=show_results, experiment=EXPERIMENT
 )
+# -
