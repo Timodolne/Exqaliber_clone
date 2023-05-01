@@ -143,7 +143,7 @@ if not np.all(epsilon_target >= min_epsilon):
     print("Changing epsilon target, because MLAE can't go too deep.")
     if isinstance(epsilon_target, np.ndarray):
         epsilon_target = np.concatenate(
-            ([min_epsilon], epsilon_target[epsilon_target >= min_epsilon])
+            ([min_epsilon], epsilon_target[epsilon_target > min_epsilon])
         )
     else:
         epsilon_target = max(epsilon_target, min_epsilon)
@@ -216,6 +216,85 @@ ax.legend()
 # noise levels $\zeta = \{0, 10^{-6}, 10^{-4}\}$
 
 
+# + tags=[]
+markers = ["x", "o", "v"]
+colors = ["b", "r", "g"]
+
+fig, ax = plt.subplots(figsize=(10, 7), dpi=900)
+
+for marker, color, zeta in zip(markers, colors, noise_levels):
+    rules = {"zeta": zeta}
+    plot_kwargs = {"marker": marker}
+    # EXAE
+    results_exae_sliced = get_results_slice(results_exae, rules=rules)
+    abs_epsilons = [
+        np.abs(res.final_theta - res.true_theta % (2 * np.pi))
+        for k, res in results_exae_sliced.items()
+    ]
+    oracle_calls = [
+        res.num_oracle_queries for k, res in results_exae_sliced.items()
+    ]
+    ax.scatter(
+        abs_epsilons,
+        oracle_calls,
+        label="ExAE",
+        color=colors[0],
+        **plot_kwargs,
+    )
+
+    # IAE
+    results_iae_sliced = get_results_slice(results_iae, rules=rules)
+    abs_epsilons = [
+        np.abs(res.estimation_processed - res.true_theta % (2 * np.pi))
+        for k, res in results_iae_sliced.items()
+    ]
+    oracle_calls = [
+        res.num_oracle_queries for k, res in results_iae_sliced.items()
+    ]
+    ax.scatter(
+        abs_epsilons, oracle_calls, label="IAE", color=colors[1], **plot_kwargs
+    )
+
+    # MLAE
+    results_mlae_sliced = get_results_slice(results_mlae, rules=rules)
+    abs_epsilons = [
+        np.abs(res.theta - res.true_theta % (2 * np.pi))
+        for k, res in results_mlae_sliced.items()
+    ]
+    oracle_calls = [
+        res.num_oracle_queries for k, res in results_mlae_sliced.items()
+    ]
+    ax.scatter(
+        abs_epsilons,
+        oracle_calls,
+        label="MLAE",
+        color=colors[2],
+        **plot_kwargs,
+    )
+
+ax.set_xscale("log")
+ax.set_yscale("log")
+
+ax.set_xlabel(r"$\epsilon$")
+ax.set_ylabel("Oracle queries")
+
+# Create a legend
+legend_elements = []
+for marker, zeta in zip(markers, noise_levels):
+    legend_elements.append(
+        ax.scatter([], [], marker=marker, label=zeta, color="black")
+    )
+for color, ae in zip(colors, ["ExAE", "IAE", "MLAE"]):
+    legend_elements.append(
+        ax.scatter([], [], marker="s", label=ae, color=color)
+    )
+
+ax.legend(handles=legend_elements)
+
+
+plt.xlim(10**-8, None)
+# -
+
 # # Circular histogram of oracle calls
 
 # + tags=[]
@@ -252,3 +331,110 @@ circular_histogram(
     results_exae, save=filename, show=show_results, experiment=EXPERIMENT
 )
 # -
+
+# # Converging to the right value
+
+# + tags=[]
+noise_levels = np.concatenate(([0], np.logspace(-9, 3, 7)))
+theta_range = np.linspace(0, np.pi / 2, 20)
+
+parameters = {
+    "reps": 10,
+    "true_theta": theta_range,
+    "zeta": noise_levels,
+    "epsilon_target": 1e-4,
+    "max_iter": 100_000,
+    "prior_mean": ["true_theta", np.pi / 2],
+}
+
+run_or_load = "load"
+
+# + tags=[]
+results_dir = "results/simulations/ExAE-smart/"
+
+results_exae = run_experiments_parameters(
+    experiment=EXPERIMENT,
+    run_or_load=run_or_load,
+    results_dir=results_dir,
+    parameters=parameters,
+    experiment_f=run_one_experiment_exae,
+)
+
+# + tags=[]
+results_dir = "results/simulations/IAE/"
+
+results_iae = run_experiments_parameters(
+    experiment=EXPERIMENT,
+    run_or_load=run_or_load,
+    results_dir=results_dir,
+    parameters=parameters,
+    experiment_f=run_one_experiment_iae,
+)
+
+# + tags=[]
+fig, ax = plt.subplots(figsize=(10, 7), dpi=300)
+rules = {"prior_mean": np.pi / 2}
+
+for theta in theta_range:
+    rules["true_theta"] = theta
+    results = get_results_slice(results_exae, rules=rules)
+
+    estimates = np.array(
+        [res.final_theta for k, res in results.items()]
+    ).reshape(-1, results_exae["parameters"]["reps"])
+    noise_levels = np.array([res.zeta for k, res in results.items()]).reshape(
+        -1, results_exae["parameters"]["reps"]
+    )
+
+    estimates_q1 = np.quantile(estimates, 0.25, axis=1)
+    estimates_q2 = np.quantile(estimates, 0.5, axis=1)
+    estimates_q3 = np.quantile(estimates, 0.75, axis=1)
+
+    err_up = estimates_q2 - estimates_q1
+    err_down = estimates_q3 - estimates_q2
+
+    yerr = np.array([err_down, err_up])
+
+    ax.errorbar(
+        noise_levels.mean(axis=1),
+        estimates_q2,
+        yerr=yerr,
+        label=theta,
+        marker="x",
+        capsize=3,
+    )
+
+ax.set_xscale("log")
+
+# + tags=[]
+fig, ax = plt.subplots(figsize=(10, 7), dpi=300)
+
+for theta in theta_range:
+    results = get_results_slice(results_iae, rules={"true_theta": theta})
+
+    estimates = np.array(
+        [res.estimation_processed for k, res in results.items()]
+    ).reshape(-1, results_exae["parameters"]["reps"])
+    noise_levels = np.array([res.zeta for k, res in results.items()]).reshape(
+        -1, results_exae["parameters"]["reps"]
+    )
+
+    estimates_q1 = np.quantile(estimates, 0.25, axis=1)
+    estimates_q2 = np.quantile(estimates, 0.5, axis=1)
+    estimates_q3 = np.quantile(estimates, 0.75, axis=1)
+
+    err_up = estimates_q2 - estimates_q1
+    err_down = estimates_q3 - estimates_q2
+
+    yerr = np.array([err_down, err_up])
+
+    ax.errorbar(
+        noise_levels.mean(axis=1),
+        estimates_q2,
+        yerr=yerr,
+        label=theta,
+        marker="x",
+        capsize=3,
+    )
+
+ax.set_xscale("log")
