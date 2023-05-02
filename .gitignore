@@ -624,3 +624,5 @@ MigrationBackup/
 *.bbl
 *.log
 *.out
+*.bcf
+*.run.xml
