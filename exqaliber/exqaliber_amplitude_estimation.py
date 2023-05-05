@@ -278,6 +278,7 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
 
         # initialize memory variables
         powers = [0]  # list of powers k: Q^k, (called 'k' in paper)
+        measurement_results = []
         num_oracle_queries = 0
         theta_min_0, theta_max_0 = prior.confidence_interval(self._alpha)
         theta_intervals = [[theta_min_0, theta_max_0]]
@@ -400,6 +401,7 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
                 p = 0.5 * (1 - noise * np.cos(lamda * self._true_theta))
                 measurement_outcome = np.random.binomial(1, p)
 
+            measurement_results.append(measurement_outcome)
             prior = prior_distributions[-1]
 
             # Update current belief
@@ -473,6 +475,7 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
             result.theta_intervals = theta_intervals
             result.distributions = prior_distributions
             result.powers = powers
+            result.measurement_results = measurement_results
 
         return result
 
@@ -491,6 +494,7 @@ class ExqaliberAmplitudeEstimationResult(AmplitudeEstimatorResult):
         self._powers = None
         self._confidence_interval_processed = None
         self._standard_deviation = None
+        self._measurement_results = None
 
     @property
     def standard_deviation(self) -> float:
@@ -598,6 +602,16 @@ class ExqaliberAmplitudeEstimationResult(AmplitudeEstimatorResult):
     def distributions(self, distributions: list[Normal]) -> None:
         """Set the list of distributions."""
         self._distributions = distributions
+
+    @property
+    def measurement_results(self) -> list[Normal]:
+        """Return the full list of measurement results."""
+        return self._measurement_results
+
+    @measurement_results.setter
+    def measurement_results(self, measurement_results: list[Normal]) -> None:
+        """Set the list of measurement results."""
+        self._measurement_results = measurement_results
 
 
 def _chernoff_confint(
