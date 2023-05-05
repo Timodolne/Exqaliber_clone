@@ -277,7 +277,7 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
         sigma_tolerance = self.epsilon_target / norm.ppf(1 - self._alpha / 2)
 
         # initialize memory variables
-        powers = [0]  # list of powers k: Q^k, (called 'k' in paper)
+        powers = []  # list of powers k: Q^k, (called 'k' in paper)
         measurement_results = []
         num_oracle_queries = 0
         theta_min_0, theta_max_0 = prior.confidence_interval(self._alpha)
