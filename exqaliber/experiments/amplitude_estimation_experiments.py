@@ -267,7 +267,7 @@ def convergence_plot(
     axs[1].set_title(r"Estimation of $\theta$")
 
     # Powers plot
-    y = result.powers
+    y = 2 * np.array(result.powers) + 1
     axs[2].plot(x, y)
 
     text_x = (1 / 10) * max(x)
@@ -276,9 +276,10 @@ def convergence_plot(
     axs[2].text(text_x, text_y, text)
 
     axs[2].set_xlim(0, n_iter)
+    axs[2].set_yscale("log")
 
     axs[2].set_xlabel("Iteration")
-    axs[2].set_ylabel(r"$k$")
+    axs[2].set_ylabel(r"$\lambda$")
 
     axs[2].set_title(r"Oracle calls $k$")
 
