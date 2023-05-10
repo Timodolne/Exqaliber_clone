@@ -25,6 +25,7 @@
 # + tags=[]
 import os.path
 
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -475,3 +476,144 @@ for theta in theta_range:
     )
 
 ax.set_xscale("log")
+ax.set_title("IAE")
+# -
+
+# # Powers of Exqaliber AE
+
+# + tags=[]
+noise_levels = np.concatenate(([0], np.logspace(-9, 3, 7)))
+theta_range = np.linspace(0, np.pi / 2, 20)
+
+parameters = {
+    "reps": 10,
+    "true_theta": theta_range,
+    "zeta": noise_levels,
+    "epsilon_target": 1e-3,
+    "max_iter": 100_000,
+    "prior_mean": ["true_theta"],
+    "output": "powers",
+}
+
+run_or_load = "load"
+
+# + tags=[]
+results_dir = "results/simulations/ExAE-smart/"
+
+results_exae = run_experiments_parameters(
+    experiment=EXPERIMENT,
+    run_or_load=run_or_load,
+    results_dir=results_dir,
+    parameters=parameters,
+    experiment_f=run_one_experiment_exae,
+)
+
+# + tags=[]
+norm = mpl.colors.LogNorm(vmin=noise_levels[1], vmax=noise_levels[-1])
+cmap = mpl.cm.get_cmap("viridis", len(noise_levels))
+
+fig, ax = plt.subplots(1)
+
+for zeta in noise_levels:
+    results = get_results_slice(results_exae, rules={"zeta": zeta})
+
+    abs_epsilons = np.array(
+        [
+            np.abs(res.final_theta - res.true_theta % (2 * np.pi))
+            for k, res in results.items()
+        ]
+    ).reshape(-1, results_exae["parameters"]["reps"])
+    oracle_calls = np.array(
+        [res.num_oracle_queries for k, res in results.items()]
+    ).reshape(-1, results_exae["parameters"]["reps"])
+
+    ax.scatter(
+        abs_epsilons,
+        oracle_calls,
+        color=cmap(norm(zeta)),
+    )
+
+x = np.logspace(-8, 0, 100)
+y = 1e5 / x
+ax.plot(x, y, label=r"$~ 1/N$", c="r", linestyle="--")
+
+y = 1e5 / (x ** (2))
+ax.plot(x, y, label=r"$~ 1/N^2$", c="purple", linestyle="--")
+
+ax.set_xscale("log")
+ax.set_yscale("log")
+
+ax.set_xlabel(r"$\epsilon$")
+ax.set_ylabel("Oracle queries")
+
+ax.set_ylim(5e4, 1e9)
+
+ax.legend()
+
+fig.colorbar(
+    mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, label="noise level"
+)
+
+ax.set_title("Exqaliber amplitude estimation")
+
+# + tags=[]
+norm = mpl.colors.LogNorm(vmin=noise_levels[1], vmax=noise_levels[-1])
+cmap = mpl.cm.get_cmap("viridis", len(noise_levels))
+
+fig, ax = plt.subplots(1)
+
+for zeta in noise_levels:
+    results = get_results_slice(results_exae, rules={"zeta": zeta})
+
+    powers = [res.powers for res in results.values()]
+
+    powers_np = np.empty((len(powers), max([len(arr) for arr in powers])))
+    powers_np[:] = np.nan
+
+    for i, arr in enumerate(powers):
+        powers_np[i, : len(arr)] = arr
+
+    powers_q1 = np.quantile(powers, 0.25, axis=-1)
+    powers_q2 = np.quantile(powers, 0.5, axis=-1)
+    powers_q3 = np.quantile(powers, 0.75, axis=-1)
+
+    err_up = powers_q2 - powers_q1
+    err_down = powers_q3 - powers_q2
+
+    yerr = np.array([err_down, err_up])
+
+    break
+
+    ax.errorbar(powers_q2, yerr=yerr, c=cmap(norm(zeta)))
+
+# for res in results_one_run:
+#     powers = np.array(res.powers)
+
+#     ax.plot(powers, c=cmap(norm(res.zeta)), alpha=0.5)
+
+ax.set_xscale("log")
+ax.set_yscale("log")
+
+ax.set_xlabel("iteration")
+ax.set_ylabel("power $k$")
+
+fig.colorbar(
+    mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, label="noise level"
+)
+
+ax.set_title("Exqaliber amplitude estimation")
+
+# + tags=[]
+len_thetas = len(results_exae["parameters"]["true_theta"])
+reps = results_exae["parameters"]["reps"]
+max_iters = max([len(arr) for arr in powers])
+
+powers_np = np.empty((reps, len_thetas, max_iters))
+powers_np[:] = np.nan
+
+# for i, arr in enumerate(powers):
+#     powers_np[i,:len(arr)] = arr
+
+# + tags=[]
+powers_np.shape
+# -
