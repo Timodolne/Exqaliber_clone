@@ -179,6 +179,16 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
                     self._zeta,
                 )
                 lamda = np.argmax(variance_reduction_factors)
+            case int():
+                n = np.min([analytical_lamda, method])
+                lamdas = np.arange(0, 2 * analytical_lamda + n + 1)
+                variance_reduction_factors = Normal.eval_lambdas(
+                    lamdas,
+                    prior_distribution.mean,
+                    prior_distribution.standard_deviation,
+                    self._zeta,
+                )
+                lamda = np.argsort(variance_reduction_factors)[::-1][n]
             case _:
                 lamda = analytical_lamda
 
