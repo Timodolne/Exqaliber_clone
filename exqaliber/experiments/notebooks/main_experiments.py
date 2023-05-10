@@ -405,6 +405,43 @@ for theta in theta_range:
     )
 
 ax.set_xscale("log")
+ax.set_title("ExAE prior mean pi/2")
+
+# + tags=[]
+fig, ax = plt.subplots(figsize=(10, 7), dpi=300)
+rules = {"prior_mean": "true_theta"}
+
+for theta in theta_range:
+    rules["true_theta"] = theta
+    results = get_results_slice(results_exae, rules=rules)
+
+    estimates = np.array(
+        [res.final_theta for k, res in results.items()]
+    ).reshape(-1, results_exae["parameters"]["reps"])
+    noise_levels = np.array([res.zeta for k, res in results.items()]).reshape(
+        -1, results_exae["parameters"]["reps"]
+    )
+
+    estimates_q1 = np.quantile(estimates, 0.25, axis=1)
+    estimates_q2 = np.quantile(estimates, 0.5, axis=1)
+    estimates_q3 = np.quantile(estimates, 0.75, axis=1)
+
+    err_up = estimates_q2 - estimates_q1
+    err_down = estimates_q3 - estimates_q2
+
+    yerr = np.array([err_down, err_up])
+
+    ax.errorbar(
+        noise_levels.mean(axis=1),
+        estimates_q2,
+        yerr=yerr,
+        label=theta,
+        marker="x",
+        capsize=3,
+    )
+
+ax.set_xscale("log")
+ax.set_title("ExAE prior mean true theta")
 
 # + tags=[]
 fig, ax = plt.subplots(figsize=(10, 7), dpi=300)
