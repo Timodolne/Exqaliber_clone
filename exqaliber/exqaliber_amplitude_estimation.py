@@ -473,6 +473,11 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
             result.theta_intervals = theta_intervals
             result.distributions = prior_distributions
             result.powers = powers
+        elif isinstance(output, str) and output != "sparse":
+            setattr(result, output, locals()[output])
+        elif isinstance(output, list) and output != "sparse":
+            for attr in output:
+                setattr(result, output, locals()[attr])
 
         return result
 
