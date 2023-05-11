@@ -2,8 +2,10 @@
 
 # from typing import cast
 
-from typing import Union
+from typing import Dict, List, Union
 
+import matplotlib.pyplot as plt
+import numba
 import numpy as np
 from qiskit import ClassicalRegister, QuantumCircuit
 from qiskit.algorithms.amplitude_estimators import (
@@ -13,6 +15,7 @@ from qiskit.algorithms.amplitude_estimators import (
 )
 from qiskit.algorithms.exceptions import AlgorithmError
 from qiskit.primitives import BaseSampler
+from scipy.optimize import brute
 from scipy.stats import norm
 
 from exqaliber.bayesian_updates.distributions.normal import Normal
@@ -232,6 +235,121 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
         circuit.measure(estimation_problem.objective_qubits, c[:])
 
         return circuit
+
+    @staticmethod
+    def _compute_mle(
+        measurement_results: List[float],
+        circuit_depth: List[float],
+        error_tol: float = 1e-6,
+        plot_results: bool = False,
+    ):
+        """Compute the MLE for the given schedule and schedule results.
+
+        Converts this form to one suitable for the _compute_fast_mle
+        method.
+
+        Parameters
+        ----------
+        measurement_results : List[float]
+            Measurement outcomes for each circuit run. Should be a list
+            of {0,1} values.
+        circuit_depth : List[float]
+            Depth (k) of the corresponding circuits for each
+            measurement.
+        error_tol: float, optional
+            Error tolerance for the final estimate
+        plot_results : bool, optional
+            Whether to plot the log likelihood function, by default
+            False.
+
+        Returns
+        -------
+        float
+            MLE estimate from the measured circuits.
+        """
+        count_dict = {}
+
+        for i_depth, i_mmt_result in zip(circuit_depth, measurement_results):
+
+            if i_depth not in count_dict:
+                count_dict[i_depth] = [0, 0]
+
+            count_dict[i_depth][i_mmt_result] += 1
+
+        return ExqaliberAmplitudeEstimation._compute_fast_mle(
+            count_dict, error_tol=error_tol, plot_results=plot_results
+        )
+
+    @staticmethod
+    def _compute_fast_mle(
+        binomial_measurement_results: Dict[int, List[int]],
+        error_tol: float = 1e-6,
+        plot_results: bool = False,
+    ):
+        """Compute the MLE for the given schedule and schedule results.
+
+        Parameters
+        ----------
+        binomial_measurement_results : Dict[int, List[int]]
+            Map of measurement outcomes from a series of binomial
+            distributions. Each element is of the form
+            depth: [# 0's, # 1's]
+        circuit_depth : List[float]
+            Depth (k) of the corresponding circuits for each
+            measurement.
+        error_tol: float, optional
+            Error tolerance for the final estimate
+        plot_results : bool, optional
+            Whether to plot the log likelihood function, by default
+            False.
+
+        Returns
+        -------
+        float
+            MLE estimate from the measured circuits.
+        """
+        # search range
+        eps = 1e-15  # to avoid invalid value in log
+        search_range = [0 + eps, np.pi / 2 - eps]
+
+        experiment_result_array = np.array(
+            [
+                [i_depth] + i_results
+                for i_depth, i_results in binomial_measurement_results.items()
+            ]
+        )
+
+        @numba.njit()
+        def loglikelihood(theta):
+            # loglik contains the first `it` terms of
+            # the full loglikelihood
+            loglik = np.zeros(1)
+            for i_experiment in experiment_result_array:
+                angle = (2 * i_experiment[0] + 1) * theta / 2
+                loglik = loglik + np.log(np.sin(angle) ** 2) * i_experiment[2]
+                loglik = loglik + np.log(np.cos(angle) ** 2) * i_experiment[1]
+            return -loglik
+
+        nevals = max(
+            10000, int(np.pi * 1000 * max(binomial_measurement_results.keys()))
+        )
+        if nevals > np.pi * 0.5 / error_tol:
+            nevals = int(np.pi * 0.5 / error_tol)
+
+        if plot_results:
+            est_theta, est_theta_val, x, y = brute(
+                loglikelihood, [search_range], Ns=nevals, full_output=True
+            )
+
+            plt.plot(x, y)
+            plt.axhline(y=est_theta_val, linestyle="--", color="gray")
+            plt.show()
+        else:
+            est_theta = brute(
+                loglikelihood, [search_range], Ns=nevals, full_output=False
+            )
+
+        return est_theta[0]
 
     def estimate(
         self,
