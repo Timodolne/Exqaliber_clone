@@ -729,7 +729,7 @@ class ExqaliberAmplitudeEstimationResult(AmplitudeEstimatorResult):
         return self._mle_estimate
 
     @mle_estimate.setter
-    def mle_estimate(self, value: float) -> float:
+    def mle_estimate(self, value: float) -> None:
         """Set the MLE estimate of the final theta."""
         self._mle_estimate = value
 
