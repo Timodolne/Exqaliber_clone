@@ -24,6 +24,7 @@
 
 # + tags=[]
 import os.path
+from functools import partial
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -95,10 +96,10 @@ EXPERIMENT = {
 
 # + tags=[]
 # parameters
-reps = 30
+reps = 50
 
 # resolution in theta
-width = np.pi / 24
+width = np.pi / 120
 bins = np.arange(0, np.pi / 2 + width / 2, width)
 
 # Create an array to hold the samples
@@ -199,12 +200,12 @@ def circular_bar(
         queries_q2,
         yerr=[down_err, up_err],
         linestyle="",
-        marker="x",
         c="r",
     )
 
     # axis
     ax.set_xlim(0, np.pi / 2)
+    ax.set_ylabel("Oracle calls")
     ax.set_rscale("symlog")
     ax.grid(True)
 
@@ -244,7 +245,7 @@ def circular_bar(
     )
 
     # Plot title
-    title = "Number of iterations before convergence."
+    title = "Number of oracle calls before convergence."
     plt.title(title)
 
     plt.tight_layout(pad=1.0)
@@ -259,6 +260,180 @@ def circular_bar(
 # + tags=[]
 circular_bar(
     results_exae,
+    save=False,
+    show=True,
+    rules=None,
+    experiment=EXPERIMENT,
+    nb_reps=reps,
+    theta_range=bins,
+)
+# -
+
+
+# # Figure 4
+#
+# Median number of oracle calls for $\theta \in \Theta_1$ and
+# fixed error rate $\varepsilon = 10^{-3}$ for different statistical
+# amplitude estimation routines. Each section of the histogram is
+# a region of width $\pi/120$ with the median number of oracle
+# calls calculated from 30 values of true value $\theta_0$ selected
+# uniformly at random. The prior for each iteration is taken to
+# be $N(\theta_0, 1)$ and success probability $1 - \alpha$ with
+# $\alpha = 0.01$.
+#
+
+# + tags=[]
+# parameters
+reps = 100
+
+# resolution in theta
+width = np.pi / 240
+start = 0
+end = np.pi / 24
+bins = np.arange(start, end + width / 2, width)
+
+# Create an array to hold the samples
+true_thetas = np.zeros((len(bins) - 1, reps))
+
+# Draw samples from each distribution
+for i in range(len(bins) - 1):
+    true_thetas[i] = np.random.uniform(bins[i], bins[i + 1], size=reps)
+
+# true_theta for experiments
+true_theta = true_thetas.flatten()
+
+# create parameters dict
+parameters = {
+    "reps": 1,  # repetition/theta, but that's 1 since we flattened
+    "true_theta": true_theta,
+    "max_iter": max_iter,
+}
+
+# + tags=[]
+results_dir = "results/simulations/ExAE-smart/"
+
+results_exae = run_experiments_parameters(
+    experiment=EXPERIMENT,
+    run_or_load=run_or_load,
+    results_dir=results_dir,
+    parameters=parameters,
+    experiment_f=run_one_experiment_exae,
+)
+
+results_dir = "results/simulations/IAE/"
+
+results_iae = run_experiments_parameters(
+    experiment=EXPERIMENT,
+    run_or_load=run_or_load,
+    results_dir=results_dir,
+    parameters=parameters,
+    experiment_f=run_one_experiment_iae,
+)
+
+# + tags=[]
+fig, ax = plt.subplots(figsize=(10, 7), dpi=300)
+
+
+def plot_bars(results, bins, ax, rules=None, *args, **kwargs):
+    """Plot the bars in a bar plot."""
+    width = bins[1] - bins[0]
+
+    bar_width = width * 0.98
+
+    thetas = [(bins[i] + bins[i + 1]) / 2 for i in range(len(bins) - 1)]
+
+    if rules is None:
+        rules = {"zeta": 0}
+
+    results_sliced = get_results_slice(results, rules=rules)
+
+    queries = np.array(
+        [res.num_oracle_queries for k, res in results_sliced.items()]
+    ).reshape(len(bins) - 1, -1)
+
+    queries = queries.reshape(len(bins) - 1, -1)
+
+    # quantiles
+    queries_q1 = np.quantile(queries, 0.25, axis=1)
+    queries_q2 = np.quantile(queries, 0.5, axis=1)
+    queries_q3 = np.quantile(queries, 0.75, axis=1)
+
+    up_err = queries_q3 - queries_q2
+    down_err = queries_q2 - queries_q1
+
+    ax.errorbar(
+        thetas,
+        queries_q2,
+        yerr=[down_err, up_err],
+        linestyle="",
+        marker="x",
+    )
+
+    return ax.bar(
+        thetas, queries_q2, width=bar_width, alpha=0.5, *args, **kwargs
+    )
+
+
+# EXAE
+plot_bars(results_exae, bins, ax, rules=None, label="ExAE")
+
+# IAE
+plot_bars(results_iae, bins, ax, rules=None, label="IAE")
+
+# axis
+ax.set_xlabel(r"$\theta$")
+ax.set_ylabel("Oracle calls")
+ax.set_ylim(1, None)
+ax.set_yscale("log")
+
+ax.legend()
+
+format_with_pi_high_res = partial(format_with_pi, max_denominator=1296)
+
+ax.xaxis.set_major_locator(plt.MultipleLocator(np.pi / 120))
+ax.xaxis.set_minor_locator(plt.MultipleLocator(np.pi / 240))
+ax.xaxis.set_major_formatter(plt.FuncFormatter(format_with_pi_high_res))
+
+
+# + tags=[]
+# parameters
+reps = 50
+
+# resolution in theta
+width = np.pi / 120
+bins = np.arange(0, np.pi / 2 + width / 2, width)
+
+# Create an array to hold the samples
+true_thetas = np.zeros((len(bins) - 1, reps))
+
+# Draw samples from each distribution
+for i in range(len(bins) - 1):
+    true_thetas[i] = np.random.uniform(bins[i], bins[i + 1], size=reps)
+
+# true_theta for experiments
+true_theta = true_thetas.flatten()
+
+# create parameters dict
+parameters = {
+    "reps": 1,  # repetition/theta, but that's 1 since we flattened
+    "true_theta": true_theta,
+    "max_iter": max_iter,
+}
+
+# + tags=[]
+results_dir = "results/simulations/IAE/"
+
+results_iae = run_experiments_parameters(
+    experiment=EXPERIMENT,
+    run_or_load=run_or_load,
+    results_dir=results_dir,
+    parameters=parameters,
+    experiment_f=run_one_experiment_iae,
+)
+
+# + tags=[]
+circular_bar(
+    results_iae,
     save=False,
     show=True,
     rules=None,
