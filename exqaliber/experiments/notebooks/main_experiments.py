@@ -223,10 +223,12 @@ def circular_bar(
     # plot experiment
     method = experiment["method"]
     epsilon = experiment["epsilon_target"]
+    max_iter = experiment["max_iter"]
     textstr = f"""
         $\\epsilon={epsilon:.2e}$\n
         $n={nb_reps}$\n
-        method={method}
+        method={method}\n
+        max-iter={max_iter:.0e}
     """
 
     props = dict(boxstyle="round", facecolor="wheat", alpha=0.5)
@@ -264,6 +266,8 @@ circular_bar(
 )
 # -
 
+
+# # PREVIOUS EXPERIMENTS FOR REFERENCE
 
 # # Similar to fig 7 from QCWare paper
 #
