@@ -12,7 +12,6 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import animation
-from matplotlib.widgets import Slider
 from scipy.stats import norm
 
 try:
@@ -267,7 +266,7 @@ def convergence_plot(
     axs[1].set_title(r"Estimation of $\theta$")
 
     # Powers plot
-    y = result.powers
+    y = 2 * np.array(result.powers) + 1
     axs[2].plot(x, y)
 
     text_x = (1 / 10) * max(x)
@@ -276,9 +275,10 @@ def convergence_plot(
     axs[2].text(text_x, text_y, text)
 
     axs[2].set_xlim(0, n_iter)
+    axs[2].set_yscale("log")
 
     axs[2].set_xlabel("Iteration")
-    axs[2].set_ylabel(r"$k$")
+    axs[2].set_ylabel(r"$\lambda$")
 
     axs[2].set_title(r"Oracle calls $k$")
 
@@ -433,29 +433,45 @@ def accuracy_plot_linear(
 
 
 def error_in_estimate_2d_hist(
-    results_multiple_thetas: list,
-    theta_range: np.ndarray,
-    experiment: dict,
+    results: dict,
     save: bool = False,
     show: bool = True,
+    rules: dict = None,
+    experiment: dict = None,
+    val: float = np.pi / 2,
 ):
     """Plot the error in the estimate."""
+    if isinstance(
+        results["parameters"]["epsilon_target"],
+        (list, tuple, set, np.ndarray),
+    ):
+        if "epsilon_target" in rules.keys():
+            epsilon_target = rules["epsilon_target"]
+        else:
+            raise "Choose one epsilon target for circular histogram."
+
+    if rules is None:
+        rules = {"zeta": 0}
+    # get queries
+    results_sliced = get_results_slice(results, rules=rules)
+
+    thetas = np.array([res.true_theta for res in results_sliced.values()])
     estimations = np.array(
-        [
-            [res.estimation for res in result]
-            for result in results_multiple_thetas
-        ]
+        [res.final_theta for res in results_sliced.values()]
     )
-    estimations = estimations % (2 * np.pi)
-    thetas = theta_range % (2 * np.pi)
 
-    nb_reps = len(estimations[0])
+    theta_range = results["parameters"]["true_theta"]
 
-    thetas_repeated = np.vstack([thetas] * nb_reps).T
-    errors = estimations - thetas_repeated
+    nb_reps = results["parameters"]["reps"]
+
+    errors = estimations - thetas
+    # wrapping around the circle
+    thetas = np.mod(thetas, 2 * np.pi)
+    theta_range = np.mod(theta_range, 2 * np.pi)
+    errors = np.mod(errors + np.pi, 2 * np.pi) - np.pi
 
     # data
-    width = np.pi / (len(theta_range) + 1)
+    width = np.max(theta_range[1:]) / len(theta_range)
     min_y = errors.min()
     max_y = errors.max()
 
@@ -463,59 +479,72 @@ def error_in_estimate_2d_hist(
     fig, axs = plt.subplots(2, 2, figsize=(12, 9))
 
     # Left figures
-    val = thetas[2]
-
-    epsilon_target = experiment.get("epsilon_target")
-
     # top figure
     bins_top = np.linspace(-3 * epsilon_target, 3 * epsilon_target, 100)
-    i = np.argwhere(thetas == val)
+    i = np.argwhere(theta_range == val)
 
-    axs[0, 0].hist(errors[i].flatten(), bins=bins_top)
+    axs[0, 0].hist(errors.reshape(-1, nb_reps)[i].flatten(), bins=bins_top)
 
     # bottom figure
     bins_bottom = np.linspace(min_y, max_y, 100)
-    axs[1, 0].hist(errors[i].flatten(), bins=bins_bottom)
+    axs[1, 0].hist(errors.reshape(-1, nb_reps)[i].flatten(), bins=bins_bottom)
 
     # Right figures
     # top figure
-    x_bins = np.arange(-width / 2, np.pi + width / 2, width)
+    x_bins = np.linspace(
+        -width / 2, np.pi + width / 2, len(theta_range) + 1, endpoint=True
+    )
     y_bins = bins_top
     bins = [x_bins, y_bins]
 
     axs[0, 1].hist2d(
-        thetas_repeated.flatten(),
-        errors.flatten(),
+        thetas,
+        errors,
         bins=bins,
         cmin=1,
         cmax=nb_reps,
         norm=mpl.colors.LogNorm(),
     )
-    vline_top = axs[0, 1].axvline(
-        val, ymin=-1, ymax=1, linestyle="--", color="red"
+    axs[0, 1].axvline(val, ymin=-1, ymax=1, linestyle="--", color="red")
+
+    # 1-alpha conf interval
+    alpha = experiment["alpha"]
+    label = rf"{100*(1-alpha):.0f}% conf. interval"
+    errors_reshaped = errors.reshape(-1, nb_reps)
+    q_upp = np.quantile(errors_reshaped, (1 - alpha / 2), axis=1)
+    q_down = np.quantile(errors_reshaped, alpha / 2, axis=1)
+
+    axs[0, 1].fill_between(
+        theta_range, q_upp, q_down, alpha=0.4, color="red", label=label
     )
+    axs[0, 1].legend()
 
     # bottom figure
-    x_bins = np.arange(-width / 2, np.pi + width / 2, width)
+    x_bins = np.linspace(
+        -width / 2, np.pi + width / 2, len(theta_range) + 1, endpoint=True
+    )
     y_bins = bins_bottom
     bins = [x_bins, y_bins]
 
     h2 = axs[1, 1].hist2d(
-        thetas_repeated.flatten(),
-        errors.flatten(),
+        thetas,
+        errors,
         bins=bins,
         cmin=1,
         cmax=nb_reps,
         norm=mpl.colors.LogNorm(),
     )
-    vline_bottom = axs[1, 1].axvline(
-        val, ymin=y_bins.min(), ymax=y_bins.max(), linestyle="--", color="red"
+    axs[1, 1].axvline(val, ymin=min_y, ymax=max_y, linestyle="--", color="red")
+
+    axs[1, 1].fill_between(
+        theta_range, q_upp, q_down, alpha=0.4, color="red", label=label
     )
+    axs[1, 1].legend()
 
     # X-axis right
     for ax in axs[:, 1]:
         ax.set_xlabel(r"$\theta$")
-        ax.set_xlim(0, np.pi)
+        ax.set_xlim(-width / 2, np.pi + width / 2)
 
         ax.xaxis.set_major_locator(plt.MultipleLocator(np.pi / 4))
         ax.xaxis.set_minor_locator(plt.MultipleLocator(np.pi / 8))
@@ -532,16 +561,18 @@ def error_in_estimate_2d_hist(
     for ax in axs[:, 0]:
         ax.set_xlabel("Error in estimate")
 
-        ax.set_ylim(1, None)
+        ax.set_ylim(0.5, None)
         ax.set_yscale("log")
         ax.set_ylabel("Frequency")
 
     axs[0, 0].set_title(rf"Errors in estimates for $\theta=${val:.3f}")
 
     # Finishing figure
+    experiment_epsilon = experiment.copy()
+    experiment_epsilon["epsilon_target"] = epsilon_target
     title = (
         f"Error in estimate of theta "
-        f"\n{experiment_string(experiment, True)}"
+        f"\n{experiment_string(experiment_epsilon, True)}"
     )
     plt.suptitle(title)
 
@@ -549,53 +580,6 @@ def error_in_estimate_2d_hist(
     # make room for colorbar and slider
     fig.subplots_adjust(bottom=0.1, right=0.95)
     fig.colorbar(h2[3], ax=axs[:, 1], label="Runs")
-
-    # Slider
-
-    valmin = thetas[0]
-    valmax = thetas[-1]
-    valstep = thetas[1] - thetas[0]
-
-    x0 = axs[1, 1].get_position().x0
-    x1 = axs[1, 1].get_position().x1 - x0
-
-    slider_ax = fig.add_axes([x0, 0.03, x1, 0.03])
-    slider = Slider(
-        slider_ax,
-        label=r"$\theta$",
-        valmin=valmin,
-        valmax=valmax,
-        valstep=valstep,
-        valinit=val,
-    )
-
-    # update function
-    def update(val):
-        # Left figures
-
-        # top figure
-        i = np.argwhere(thetas == val)
-        axs[0, 0].cla()
-        axs[0, 0].hist(errors[i].flatten(), bins=bins_top)
-
-        axs[1, 0].cla()
-        axs[1, 0].hist(errors[i].flatten(), bins=bins_bottom)
-
-        # Axes left
-        for ax in axs[:, 0]:
-            ax.set_xlabel("Error in estimate")
-
-            ax.set_ylim(1, None)
-            ax.set_yscale("log")
-            ax.set_ylabel("Frequency")
-
-        axs[0, 0].set_title(rf"Errors in estimates for $\theta=${val:.3f}")
-
-        # Right figures
-        vline_bottom.set_xdata(val)
-        vline_top.set_xdata(val)
-
-    slider.on_changed(update)
 
     if save:
         plt.savefig(save, dpi=300)

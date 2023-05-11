@@ -182,6 +182,16 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
                     self._zeta,
                 )
                 lamda = np.argmax(variance_reduction_factors)
+            case int():
+                n = np.min([analytical_lamda, method])
+                lamdas = np.arange(0, 2 * analytical_lamda + n + 1)
+                variance_reduction_factors = Normal.eval_lambdas(
+                    lamdas,
+                    prior_distribution.mean,
+                    prior_distribution.standard_deviation,
+                    self._zeta,
+                )
+                lamda = np.argsort(variance_reduction_factors)[::-1][n]
             case _:
                 lamda = analytical_lamda
 
@@ -366,9 +376,11 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
             The estimation problem to run. If a float, simulate sampling
             from the probability distribution instead of generating a
             quantum circuit.
-        output : str, {'sparse', 'full'}, optional
+        output : Union[str, List[str]] {'sparse', 'full'}, optional
             The level of detail for the returned measurement detail. By
             default 'full', returning all of the information.
+            Alternatively, specify a single property or list of
+            properties of the Result object.
         max_iter : int, optional
             The maximum number of iterations to run the algorithm for
             before terminating. By default, 0, and runs until the width
@@ -622,6 +634,11 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
             result.distributions = prior_distributions
             result.powers = powers
             result.measurement_results = measurement_results
+        elif isinstance(output, str) and output != "sparse":
+            setattr(result, output, locals()[output])
+        elif isinstance(output, list) and output != "sparse":
+            for attr in output:
+                setattr(result, output, locals()[attr])
 
         return result
 
