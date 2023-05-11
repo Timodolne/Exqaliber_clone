@@ -340,11 +340,7 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
                 loglik = loglik + np.log(np.cos(angle) ** 2) * i_experiment[1]
             return -loglik
 
-        nevals = max(
-            10000, int(np.pi * 1000 * max(binomial_measurement_results.keys()))
-        )
-        if nevals > np.pi * 0.5 / error_tol:
-            nevals = int(np.pi * 0.5 / error_tol)
+        nevals = int(np.pi * 0.5 / error_tol)
 
         if plot_results:
             est_theta, est_theta_val, x, y = brute(
@@ -600,7 +596,9 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
         # result.post_processing = estimation_problem.post_processing
 
         if post_processing:
-            result.mle_estimate = self._compute_fast_mle(binomial_measurements)
+            result.mle_estimate = self._compute_fast_mle(
+                binomial_measurements, error_tol=self.epsilon_target
+            )
 
         result.num_oracle_queries = num_oracle_queries
 
