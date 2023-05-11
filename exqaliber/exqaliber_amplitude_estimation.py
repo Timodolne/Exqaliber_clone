@@ -2,8 +2,10 @@
 
 # from typing import cast
 
-from typing import Union
+from typing import Dict, List, Union
 
+import matplotlib.pyplot as plt
+import numba
 import numpy as np
 from qiskit import ClassicalRegister, QuantumCircuit
 from qiskit.algorithms.amplitude_estimators import (
@@ -13,6 +15,7 @@ from qiskit.algorithms.amplitude_estimators import (
 )
 from qiskit.algorithms.exceptions import AlgorithmError
 from qiskit.primitives import BaseSampler
+from scipy.optimize import brute
 from scipy.stats import norm
 
 from exqaliber.bayesian_updates.distributions.normal import Normal
@@ -243,26 +246,160 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
 
         return circuit
 
+    @staticmethod
+    def _compute_mle(
+        measurement_results: List[float],
+        circuit_depth: List[float],
+        error_tol: float = 1e-6,
+        plot_results: bool = False,
+    ):
+        """Compute the MLE for the given schedule and schedule results.
+
+        Converts this form to one suitable for the _compute_fast_mle
+        method.
+
+        Parameters
+        ----------
+        measurement_results : List[float]
+            Measurement outcomes for each circuit run. Should be a list
+            of {0,1} values.
+        circuit_depth : List[float]
+            Depth (k) of the corresponding circuits for each
+            measurement.
+        error_tol: float, optional
+            Error tolerance for the final estimate
+        plot_results : bool, optional
+            Whether to plot the log likelihood function, by default
+            False.
+
+        Returns
+        -------
+        float
+            MLE estimate from the measured circuits.
+        """
+        count_dict = {}
+
+        for i_depth, i_mmt_result in zip(circuit_depth, measurement_results):
+
+            if i_depth not in count_dict:
+                count_dict[i_depth] = [0, 0]
+
+            count_dict[i_depth][i_mmt_result] += 1
+
+        return ExqaliberAmplitudeEstimation._compute_fast_mle(
+            count_dict, error_tol=error_tol, plot_results=plot_results
+        )
+
+    @staticmethod
+    def _compute_fast_mle(
+        binomial_measurement_results: Dict[int, List[int]],
+        error_tol: float = 1e-6,
+        plot_results: bool = False,
+    ):
+        """Compute the MLE for the given schedule and schedule results.
+
+        Parameters
+        ----------
+        binomial_measurement_results : Dict[int, List[int]]
+            Map of measurement outcomes from a series of binomial
+            distributions. Each element is of the form
+            depth: [# 0's, # 1's]
+        circuit_depth : List[float]
+            Depth (k) of the corresponding circuits for each
+            measurement.
+        error_tol: float, optional
+            Error tolerance for the final estimate
+        plot_results : bool, optional
+            Whether to plot the log likelihood function, by default
+            False.
+
+        Returns
+        -------
+        float
+            MLE estimate from the measured circuits.
+        """
+        # search range
+        eps = 1e-15  # to avoid invalid value in log
+        search_range = [0 + eps, np.pi / 2 - eps]
+
+        experiment_result_array = np.array(
+            [
+                [i_depth] + i_results
+                for i_depth, i_results in binomial_measurement_results.items()
+            ]
+        )
+
+        @numba.njit()
+        def loglikelihood(theta):
+            # loglik contains the first `it` terms of
+            # the full loglikelihood
+            loglik = np.zeros(1)
+            for i_experiment in experiment_result_array:
+                angle = (2 * i_experiment[0] + 1) * theta / 2
+                loglik = loglik + np.log(np.sin(angle) ** 2) * i_experiment[2]
+                loglik = loglik + np.log(np.cos(angle) ** 2) * i_experiment[1]
+            return -loglik
+
+        nevals = max(
+            10000, int(np.pi * 1000 * max(binomial_measurement_results.keys()))
+        )
+        if nevals > np.pi * 0.5 / error_tol:
+            nevals = int(np.pi * 0.5 / error_tol)
+
+        if plot_results:
+            est_theta, est_theta_val, x, y = brute(
+                loglikelihood, [search_range], Ns=nevals, full_output=True
+            )
+
+            plt.plot(x, y)
+            plt.axhline(y=est_theta_val, linestyle="--", color="gray")
+            plt.show()
+        else:
+            est_theta = brute(
+                loglikelihood, [search_range], Ns=nevals, full_output=False
+            )
+
+        return est_theta[0]
+
     def estimate(
         self,
         estimation_problem: Union[EstimationProblem, float],
         output: str = "full",
         max_iter: int = 0,
+        post_processing: bool = False,
     ) -> "ExqaliberAmplitudeEstimationResult":
         """Run amplitude estimation algorithm on estimation problem.
 
-        Args
-        ----
-            estimation_problem: The estimation problem.
+        Parameters
+        ----------
+        estimation_problem : Union[EstimationProblem, float]
+            The estimation problem to run. If a float, simulate sampling
+            from the probability distribution instead of generating a
+            quantum circuit.
+        output : Union[str, List[str]] {'sparse', 'full'}, optional
+            The level of detail for the returned measurement detail. By
+            default 'full', returning all of the information.
+            Alternatively, specify a single property or list of
+            properties of the Result object.
+        max_iter : int, optional
+            The maximum number of iterations to run the algorithm for
+            before terminating. By default, 0, and runs until the width
+            of the interval is to the desired precision.
+        post_processing : bool, optional
+            Whether to run post-processing on the full set of
+            measurement results.
 
         Returns
         -------
-            An amplitude estimation results object.
+        ExqaliberAmplitudeEstimationResult
+            Amplitude estimation results for the algorithm.
 
         Raises
         ------
-            ValueError: A quantum instance or Sampler must be provided.
-            AlgorithmError: Sampler job run error.
+            ValueError:
+                A quantum instance or Sampler must be provided.
+            AlgorithmError:
+                Sampler job run error.
         """
         # read estimation problem
         if isinstance(estimation_problem, float):
@@ -287,7 +424,9 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
         sigma_tolerance = self.epsilon_target / norm.ppf(1 - self._alpha / 2)
 
         # initialize memory variables
-        powers = [0]  # list of powers k: Q^k, (called 'k' in paper)
+        powers = []  # list of powers k: Q^k, (called 'k' in paper)
+        measurement_results = []
+        binomial_measurements: Dict[int, List[int, int]] = dict()
         num_oracle_queries = 0
         theta_min_0, theta_max_0 = prior.confidence_interval(self._alpha)
         theta_intervals = [[theta_min_0, theta_max_0]]
@@ -410,6 +549,13 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
                 p = 0.5 * (1 - noise * np.cos(lamda * self._true_theta))
                 measurement_outcome = np.random.binomial(1, p)
 
+            measurement_results.append(measurement_outcome)
+
+            if k not in binomial_measurements:
+                binomial_measurements[k] = [0, 0]
+
+            binomial_measurements[k][measurement_outcome] += 1
+
             prior = prior_distributions[-1]
 
             # Update current belief
@@ -452,6 +598,10 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
         result.epsilon_target = self.epsilon_target
         result.zeta = self._zeta
         # result.post_processing = estimation_problem.post_processing
+
+        if post_processing:
+            result.mle_estimate = self._compute_fast_mle(binomial_measurements)
+
         result.num_oracle_queries = num_oracle_queries
 
         result.final_theta = final_theta
@@ -483,6 +633,7 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
             result.theta_intervals = theta_intervals
             result.distributions = prior_distributions
             result.powers = powers
+            result.measurement_results = measurement_results
         elif isinstance(output, str) and output != "sparse":
             setattr(result, output, locals()[output])
         elif isinstance(output, list) and output != "sparse":
@@ -502,10 +653,12 @@ class ExqaliberAmplitudeEstimationResult(AmplitudeEstimatorResult):
         self._epsilon_estimated = None
         self._epsilon_estimated_processed = None
         self._estimate_intervals = None
+        self._mle_estimate = None
         self._theta_intervals = None
         self._powers = None
         self._confidence_interval_processed = None
         self._standard_deviation = None
+        self._measurement_results = None
 
     @property
     def standard_deviation(self) -> float:
@@ -573,6 +726,16 @@ class ExqaliberAmplitudeEstimationResult(AmplitudeEstimatorResult):
         self._estimate_intervals = value
 
     @property
+    def mle_estimate(self) -> float:
+        """Return the MLE estimate of the final theta."""
+        return self._mle_estimate
+
+    @mle_estimate.setter
+    def mle_estimate(self, value: float) -> float:
+        """Set the MLE estimate of the final theta."""
+        self._mle_estimate = value
+
+    @property
     def theta_intervals(self) -> list[list[float]]:
         """Return conf intervals for the angles in each iteration."""
         return self._theta_intervals
@@ -613,6 +776,16 @@ class ExqaliberAmplitudeEstimationResult(AmplitudeEstimatorResult):
     def distributions(self, distributions: list[Normal]) -> None:
         """Set the list of distributions."""
         self._distributions = distributions
+
+    @property
+    def measurement_results(self) -> list[Normal]:
+        """Return the full list of measurement results."""
+        return self._measurement_results
+
+    @measurement_results.setter
+    def measurement_results(self, measurement_results: list[Normal]) -> None:
+        """Set the list of measurement results."""
+        self._measurement_results = measurement_results
 
 
 def _chernoff_confint(
