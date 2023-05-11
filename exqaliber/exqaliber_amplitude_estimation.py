@@ -356,6 +356,7 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
         estimation_problem: Union[EstimationProblem, float],
         output: str = "full",
         max_iter: int = 0,
+        post_processing: bool = False,
     ) -> "ExqaliberAmplitudeEstimationResult":
         """Run amplitude estimation algorithm on estimation problem.
 
@@ -397,6 +398,7 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
         # initialize memory variables
         powers = []  # list of powers k: Q^k, (called 'k' in paper)
         measurement_results = []
+        binomial_measurements: Dict[int, List[int, int]] = dict()
         num_oracle_queries = 0
         theta_min_0, theta_max_0 = prior.confidence_interval(self._alpha)
         theta_intervals = [[theta_min_0, theta_max_0]]
@@ -520,6 +522,12 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
                 measurement_outcome = np.random.binomial(1, p)
 
             measurement_results.append(measurement_outcome)
+
+            if k not in binomial_measurements:
+                binomial_measurements[k] = [0, 0]
+
+            binomial_measurements[k][measurement_outcome] += 1
+
             prior = prior_distributions[-1]
 
             # Update current belief
@@ -562,6 +570,10 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
         result.epsilon_target = self.epsilon_target
         result.zeta = self._zeta
         # result.post_processing = estimation_problem.post_processing
+
+        if post_processing:
+            result.mle_estimate = self._compute_fast_mle(binomial_measurements)
+
         result.num_oracle_queries = num_oracle_queries
 
         result.final_theta = final_theta
@@ -608,6 +620,7 @@ class ExqaliberAmplitudeEstimationResult(AmplitudeEstimatorResult):
         self._epsilon_estimated = None
         self._epsilon_estimated_processed = None
         self._estimate_intervals = None
+        self._mle_estimate = None
         self._theta_intervals = None
         self._powers = None
         self._confidence_interval_processed = None
@@ -678,6 +691,16 @@ class ExqaliberAmplitudeEstimationResult(AmplitudeEstimatorResult):
     def estimate_intervals(self, value: list[list[float]]) -> None:
         """Set conf intervals for the estimate per iteration."""
         self._estimate_intervals = value
+
+    @property
+    def mle_estimate(self) -> float:
+        """Return the MLE estimate of the final theta."""
+        return self._mle_estimate
+
+    @mle_estimate.setter
+    def mle_estimate(self, value: float) -> float:
+        """Set the MLE estimate of the final theta."""
+        self._mle_estimate = value
 
     @property
     def theta_intervals(self) -> list[list[float]]:
