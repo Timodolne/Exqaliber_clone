@@ -36,6 +36,7 @@ from exqaliber.analytical_sampling import (
 )
 from exqaliber.experiments.amplitude_estimation_experiments import (
     circular_histogram,
+    format_with_pi,
     get_results_slice,
     run_experiments_parameters,
 )
@@ -56,10 +57,10 @@ show_results = True
 # parameters all experiments
 epsilon_target = 1e-3
 alpha = 1e-2
-prior_mean = "true_theta"
+prior_mean = "gaussian"
 prior_std = 1
 method = "greedy-smart"
-max_iter = 100_000
+max_iter = 1_000_000
 
 EXPERIMENT = {
     "epsilon_target": epsilon_target,
@@ -67,27 +68,208 @@ EXPERIMENT = {
     "prior_mean": prior_mean,
     "prior_std": prior_std,
     "method": method,
+    "max_iter": max_iter,
+}
+# -
+
+# # Figure 3
+#
+# Median number of iterations for different error rates $\varepsilon$.
+# Each section of the histogram is a region of width $\pi / 24$ with
+# the median number of oracle calls calculated from 30 values of
+# true value $\theta_0$ selected uniformly at random. The prior for
+# each iteration is taken to be $N(\theta_0, 1)$ and success
+# probability $1 - \alpha$ with $\alpha = 0.01$.
+#
+# * This should use median not mean
+# * Use radians
+# * Start with 0 on the left
+# * Should have lines for other error values
+# * Use uniform samples over each $\pi/24$ interval probably 30
+# samples per interval. (i.e. 720 samples total)
+#
+# Optional:
+#
+# * Change $\theta$ range to $(0, \pi / 2)$ or $(0, 2 \pi)$
+#
+
+# + tags=[]
+# parameters
+reps = 30
+
+# resolution in theta
+width = np.pi / 24
+bins = np.arange(0, np.pi / 2 + width / 2, width)
+
+# Create an array to hold the samples
+true_thetas = np.zeros((len(bins) - 1, reps))
+
+# Draw samples from each distribution
+for i in range(len(bins) - 1):
+    true_thetas[i] = np.random.uniform(bins[i], bins[i + 1], size=reps)
+
+# true_theta for experiments
+true_theta = true_thetas.flatten()
+
+# create parameters dict
+parameters = {
+    "reps": 1,  # repetition/theta, but that's 1 since we flattened
+    "true_theta": true_theta,
+    "max_iter": max_iter,
 }
 
 # + tags=[]
-# parameters sweep
-reps = 20
-resolution = 4
-theta_range = np.linspace(0, np.pi / 2, resolution, endpoint=True)
-# replace theta == 0.0 with 2pi
-theta_range[0] = 2 * np.pi
-epsilon_range = np.logspace(-6, -3, 7)
-noise_levels = [0, 1e-6, 1e-3]
+results_dir = "results/simulations/ExAE-smart/"
 
-parameters = {
-    "reps": reps,
-    "true_theta": theta_range,
-    "zeta": noise_levels,
-    "epsilon_target": epsilon_range,
-    "max_iter": 100_000,
-}
-parameters
+results_exae = run_experiments_parameters(
+    experiment=EXPERIMENT,
+    run_or_load=run_or_load,
+    results_dir=results_dir,
+    parameters=parameters,
+    experiment_f=run_one_experiment_exae,
+)
+
+
+# + tags=[]
+def circular_bar(
+    results: dict,
+    save: bool = False,
+    show: bool = True,
+    rules: dict = None,
+    experiment: dict = None,
+    nb_reps: int = None,
+    theta_range: np.array = None,
+):
+    """Plot the circular histogram of nb of queries."""
+    try:
+        if (
+            isinstance(
+                results["parameters"]["epsilon_target"],
+                (list, tuple, set, np.ndarray),
+            )
+            and "epsilon_target" not in rules.keys()
+        ):
+            raise "Choose one epsilon target for circular bar chart."
+    except KeyError:
+        pass
+
+    if rules is None:
+        rules = {"zeta": 0}
+    # get queries
+    results_sliced = get_results_slice(results, rules=rules)
+
+    thetas = np.array([theta for (theta, i) in results_sliced.keys()])
+    queries = np.array(
+        [res.num_oracle_queries for res in results_sliced.values()]
+    )
+
+    # parameters
+    nb_reps = results["parameters"]["reps"] if nb_reps is None else nb_reps
+    theta_range = (
+        results["parameters"]["true_theta"]
+        if theta_range is None
+        else theta_range
+    )
+
+    thetas = [
+        (theta_range[i] + theta_range[i + 1]) / 2
+        for i in range(len(theta_range) - 1)
+    ]
+
+    # figure
+    plt.figure(figsize=(7, 7), dpi=100)
+    ax = plt.subplot(projection="polar")
+
+    # data
+    width = theta_range[1] - theta_range[0]
+    queries = queries.reshape(len(theta_range) - 1, -1)
+
+    # quantiles
+    queries_q1 = np.quantile(queries, 0.25, axis=1)
+    queries_q2 = np.quantile(queries, 0.5, axis=1)
+    queries_q3 = np.quantile(queries, 0.75, axis=1)
+
+    up_err = queries_q3 - queries_q2
+    down_err = queries_q2 - queries_q1
+
+    # plot data
+    ax.bar(thetas, queries_q2, width=width)
+    ax.errorbar(
+        thetas,
+        queries_q2,
+        yerr=[down_err, up_err],
+        linestyle="",
+        marker="x",
+        c="r",
+    )
+
+    # axis
+    ax.set_xlim(0, np.pi / 2)
+    ax.set_rscale("symlog")
+    ax.grid(True)
+
+    zero_point = "W"
+    match zero_point:
+        case "W":
+            text_handles = (0.75, 0.95)
+        case "E":
+            ax.set_theta_direction(-1)
+            ax.set_theta_zero_location("E")
+            text_handles = (0.05, 0.95)
+    ax.xaxis.set_major_locator(plt.MultipleLocator(np.pi / 12))
+    ax.xaxis.set_minor_locator(plt.MultipleLocator(np.pi / 24))
+    ax.xaxis.set_major_formatter(plt.FuncFormatter(format_with_pi))
+
+    # plot experiment
+    method = experiment["method"]
+    epsilon = experiment["epsilon_target"]
+    max_iter = experiment["max_iter"]
+    theta_hat_str = r"\hat{{\theta}}"
+    textstr = (
+        f"$\\epsilon={epsilon:.2e}$\n"
+        f"$n={nb_reps}$\n"
+        f"method={method}\n"
+        f"max-iter={max_iter:.0e}\n"
+        f"${theta_hat_str}=${experiment['prior_mean']}"
+    )
+
+    props = dict(boxstyle="round", facecolor="wheat", alpha=0.5)
+    ax.text(
+        *text_handles,
+        textstr,
+        transform=ax.transAxes,
+        fontsize=11,
+        verticalalignment="top",
+        bbox=props,
+    )
+
+    # Plot title
+    title = "Number of iterations before convergence."
+    plt.title(title)
+
+    plt.tight_layout(pad=1.0)
+
+    if save:
+        plt.savefig(save, dpi=300)
+
+    if show:
+        plt.show()
+
+
+# + tags=[]
+circular_bar(
+    results_exae,
+    save=False,
+    show=True,
+    rules=None,
+    experiment=EXPERIMENT,
+    nb_reps=reps,
+    theta_range=bins,
+)
 # -
+
+
+# # PREVIOUS EXPERIMENTS FOR REFERENCE
 
 # # Similar to fig 7 from QCWare paper
 #
@@ -220,6 +402,8 @@ ax.legend()
 # + tags=[]
 markers = ["x", "o", "v"]
 colors = ["b", "r", "g"]
+
+noise_levels = np.concatenate(([0], np.logspace(-9, 3, 7)))
 
 fig, ax = plt.subplots(figsize=(10, 7), dpi=900)
 
@@ -616,4 +800,3 @@ powers_np[:] = np.nan
 
 # + tags=[]
 powers_np.shape
-# -
