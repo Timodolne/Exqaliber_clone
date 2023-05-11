@@ -360,18 +360,34 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
     ) -> "ExqaliberAmplitudeEstimationResult":
         """Run amplitude estimation algorithm on estimation problem.
 
-        Args
-        ----
-            estimation_problem: The estimation problem.
+        Parameters
+        ----------
+        estimation_problem : Union[EstimationProblem, float]
+            The estimation problem to run. If a float, simulate sampling
+            from the probability distribution instead of generating a
+            quantum circuit.
+        output : str, {'sparse', 'full'}, optional
+            The level of detail for the returned measurement detail. By
+            default 'full', returning all of the information.
+        max_iter : int, optional
+            The maximum number of iterations to run the algorithm for
+            before terminating. By default, 0, and runs until the width
+            of the interval is to the desired precision.
+        post_processing : bool, optional
+            Whether to run post-processing on the full set of
+            measurement results.
 
         Returns
         -------
-            An amplitude estimation results object.
+        ExqaliberAmplitudeEstimationResult
+            Amplitude estimation results for the algorithm.
 
         Raises
         ------
-            ValueError: A quantum instance or Sampler must be provided.
-            AlgorithmError: Sampler job run error.
+            ValueError:
+                A quantum instance or Sampler must be provided.
+            AlgorithmError:
+                Sampler job run error.
         """
         # read estimation problem
         if isinstance(estimation_problem, float):
