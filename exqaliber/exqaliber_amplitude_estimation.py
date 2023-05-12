@@ -357,6 +357,18 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
 
         return est_theta[0]
 
+    @staticmethod
+    def _compute_mle_variance(
+        binomial_measurements: Dict[int, List[int]], mle: float
+    ) -> float:
+        fisher_info = 0
+
+        for i_depth, i_mmt in binomial_measurements.items():
+            fisher_info += ((2 * i_depth + 1) ** 2 * sum(i_mmt)) / (
+                np.sin(mle) ** 4
+            )
+        return 1 / fisher_info
+
     def estimate(
         self,
         estimation_problem: Union[EstimationProblem, float],
@@ -599,6 +611,12 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
             result.mle_estimate = self._compute_fast_mle(
                 binomial_measurements, error_tol=self.epsilon_target
             )
+            result.mle_estimate_variance = self._compute_mle_variance(
+                binomial_measurements, result.mle_estimate
+            )
+            result.mle_estimate_epsilon = norm.ppf(
+                1 - self._alpha / 2
+            ) * np.sqrt(result.mle_estimate_variance)
 
         result.num_oracle_queries = num_oracle_queries
 
@@ -652,6 +670,8 @@ class ExqaliberAmplitudeEstimationResult(AmplitudeEstimatorResult):
         self._epsilon_estimated_processed = None
         self._estimate_intervals = None
         self._mle_estimate = None
+        self._mle_estimate_variance = None
+        self._mle_estimate_epsilon = None
         self._theta_intervals = None
         self._powers = None
         self._confidence_interval_processed = None
@@ -732,6 +752,26 @@ class ExqaliberAmplitudeEstimationResult(AmplitudeEstimatorResult):
     def mle_estimate(self, value: float) -> None:
         """Set the MLE estimate of the final theta."""
         self._mle_estimate = value
+
+    @property
+    def mle_estimate_variance(self) -> float:
+        """Return the variance of the MLE estimate."""
+        return self._mle_estimate_variance
+
+    @mle_estimate_variance.setter
+    def mle_estimate_variance(self, val: float) -> None:
+        """Set the variance of the MLE estimate."""
+        self._mle_estimate_variance = val
+
+    @property
+    def mle_estimate_epsilon(self) -> float:
+        """Return the epsilon accuracy of the MLE estimate."""
+        return self._mle_estimate_epsilon
+
+    @mle_estimate_epsilon.setter
+    def mle_estimate_epsilon(self, val: float) -> None:
+        """Set the epsilon accuracy of the MLE estimate."""
+        self._mle_estimate_epsilon = val
 
     @property
     def theta_intervals(self) -> list[list[float]]:
