@@ -295,6 +295,7 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
         binomial_measurement_results: Dict[int, List[int]],
         error_tol: float = 1e-6,
         plot_results: bool = False,
+        true_value: float = None,
     ):
         """Compute the MLE for the given schedule and schedule results.
 
@@ -312,6 +313,9 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
         plot_results : bool, optional
             Whether to plot the log likelihood function, by default
             False.
+        true_value : float, None
+            If plotting the results and this is provided, add a vertical
+            line at the true value of theta.
 
         Returns
         -------
@@ -349,6 +353,10 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
 
             plt.plot(x, y)
             plt.axhline(y=est_theta_val, linestyle="--", color="gray")
+
+            if true_value is not None:
+                plt.axvline(x=true_value, linestyle="--", color="grey")
+
             plt.show()
         else:
             est_theta = brute(
@@ -609,7 +617,9 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
 
         if post_processing:
             result.mle_estimate = self._compute_fast_mle(
-                binomial_measurements, error_tol=self.epsilon_target
+                binomial_measurements,
+                error_tol=self.epsilon_target,
+                true_value=self._true_theta,
             )
             result.mle_estimate_variance = self._compute_mle_variance(
                 binomial_measurements, result.mle_estimate
