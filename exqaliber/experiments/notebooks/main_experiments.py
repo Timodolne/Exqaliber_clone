@@ -95,6 +95,8 @@ EXPERIMENT = {
 #
 
 # + tags=[]
+np.random.seed(0)
+
 # parameters
 reps = 50
 
@@ -283,6 +285,8 @@ circular_bar(
 #
 
 # + tags=[]
+np.random.seed(0)
+
 # parameters
 reps = 100
 
@@ -396,6 +400,8 @@ ax.xaxis.set_major_formatter(plt.FuncFormatter(format_with_pi_high_res))
 
 
 # + tags=[]
+np.random.seed(0)
+
 # parameters
 reps = 50
 
