@@ -256,7 +256,7 @@ def circular_bar(
 
 circular_bar(
     results_exae,
-    save=False,
+    save="figures/ExAE-converge-half-circle.pdf",
     show=True,
     rules=None,
     experiment=EXPERIMENT,
@@ -393,6 +393,10 @@ format_with_pi_high_res = partial(format_with_pi, max_denominator=1296)
 ax.xaxis.set_major_locator(plt.MultipleLocator(np.pi / 120))
 ax.xaxis.set_minor_locator(plt.MultipleLocator(np.pi / 240))
 ax.xaxis.set_major_formatter(plt.FuncFormatter(format_with_pi_high_res))
+
+plt.savefig("figures/ExAE-converge-on-theta1.pdf", dpi=300)
+
+plt.show()
 
 
 # + tags=[]
@@ -580,6 +584,8 @@ ax.set_xlabel("iteration of algorithm")
 ax.set_ylabel(r"estimated $\sigma$")
 
 ax.set_title("Estimated standard devation per step")
+
+plt.savefig("figures/ExAE-var-per-step.pdf", dpi=300)
 
 plt.show()
 # -
