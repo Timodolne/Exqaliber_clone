@@ -369,6 +369,24 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
     def _compute_mle_variance(
         binomial_measurements: Dict[int, List[int]], mle: float
     ) -> float:
+        """Compute the variance of the mle estimator.
+
+        This computes the observed Fisher information at the mle.
+
+        Parameters
+        ----------
+        binomial_measurement_results : Dict[int, List[int]]
+            Map of measurement outcomes from a series of binomial
+            distributions. Each element is of the form
+            depth: [# 0's, # 1's]
+        mle : float
+            Maximum likelihood estimator
+
+        Returns
+        -------
+        float
+            Variance of the mle estimator
+        """
         fisher_info = 0
 
         for i_depth, i_mmt in binomial_measurements.items():
