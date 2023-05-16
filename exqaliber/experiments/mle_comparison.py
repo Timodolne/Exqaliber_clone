@@ -257,6 +257,21 @@ def plot_circular_actual_precision(
     plt.tight_layout(pad=1.0)
 
     plt.legend()
+
+    print(
+        "Original algorithm produces a more accurate estimate on average "
+        f"{np.mean(sae_results[:,1] < sae_with_mle_results[:,1])}"
+    )
+    print(
+        "Actual theta is within the confidence interval of original algorithm "
+        f"on average {np.mean(target_epsilon > sae_results[:,1])}"
+    )
+    print(
+        "Actual theta is within the confidence interval of mle algorithm on "
+        f"average "
+        f"{np.mean(target_epsilon > sae_with_mle_results[:,1])}"
+    )
+
     plt.show()
 
 
