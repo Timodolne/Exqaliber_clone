@@ -117,7 +117,7 @@ parameters = {
 results_dir = "results/simulations/ExAE-smart/"
 
 results_exae = run_experiments_parameters(
-    experiment=EXPERIMENT,
+    experiment=EXPERIMENT.copy(),
     run_or_load=run_or_load,
     results_dir=results_dir,
     parameters=parameters,
@@ -259,7 +259,7 @@ circular_bar(
     save="figures/ExAE-converge-half-circle.pdf",
     show=True,
     rules=None,
-    experiment=EXPERIMENT,
+    experiment=EXPERIMENT.copy(),
     nb_reps=reps,
     theta_range=bins,
 )
@@ -311,7 +311,7 @@ parameters = {
 results_dir = "results/simulations/ExAE-smart/"
 
 results_exae = run_experiments_parameters(
-    experiment=EXPERIMENT,
+    experiment=EXPERIMENT.copy(),
     run_or_load=run_or_load,
     results_dir=results_dir,
     parameters=parameters,
@@ -321,7 +321,7 @@ results_exae = run_experiments_parameters(
 results_dir = "results/simulations/IAE/"
 
 results_iae = run_experiments_parameters(
-    experiment=EXPERIMENT,
+    experiment=EXPERIMENT.copy(),
     run_or_load=run_or_load,
     results_dir=results_dir,
     parameters=parameters,
@@ -430,7 +430,7 @@ parameters = {
 results_dir = "results/simulations/IAE/"
 
 results_iae = run_experiments_parameters(
-    experiment=EXPERIMENT,
+    experiment=EXPERIMENT.copy(),
     run_or_load=run_or_load,
     results_dir=results_dir,
     parameters=parameters,
@@ -443,7 +443,7 @@ circular_bar(
     save=False,
     show=True,
     rules=None,
-    experiment=EXPERIMENT,
+    experiment=EXPERIMENT.copy(),
     nb_reps=reps,
     theta_range=bins,
 )
@@ -485,7 +485,7 @@ parameters = {
 results_dir = "results/simulations/ExAE-smart/"
 
 results_exae = run_experiments_parameters(
-    experiment=EXPERIMENT,
+    experiment=EXPERIMENT.copy(),
     run_or_load=run_or_load,
     results_dir=results_dir,
     parameters=parameters,
@@ -629,7 +629,7 @@ parameters = {
 results_dir = "results/simulations/ExAE-smart/"
 
 results_exae = run_experiments_parameters(
-    experiment=EXPERIMENT,
+    experiment=EXPERIMENT.copy(),
     run_or_load=run_or_load,
     results_dir=results_dir,
     parameters=parameters,
