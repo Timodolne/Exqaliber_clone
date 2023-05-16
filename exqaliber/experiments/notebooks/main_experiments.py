@@ -75,9 +75,9 @@ EXPERIMENT = {
 
 # # Figure 3
 #
-# Median number of iterations for different error rates $\varepsilon$.
-# Each section of the histogram is a region of width $\pi / 24$ with
-# the median number of oracle calls calculated from 30 values of
+# Median number of iterations for error rate $\varepsilon = 10^{-3}$.
+# Each section of the histogram is a region of width $\pi / 120$ with
+# the median number of oracle calls calculated from 50 values of
 # true value $\theta_0$ selected uniformly at random. The prior for
 # each iteration is taken to be $N(\theta_0, 1)$ and success
 # probability $1 - \alpha$ with $\alpha = 0.01$.
@@ -271,8 +271,8 @@ circular_bar(
 # Median number of oracle calls for $\theta \in \Theta_1$ and
 # fixed error rate $\varepsilon = 10^{-3}$ for different statistical
 # amplitude estimation routines. Each section of the histogram is
-# a region of width $\pi/120$ with the median number of oracle
-# calls calculated from 30 values of true value $\theta_0$ selected
+# a region of width $\pi/240$ with the median number of oracle
+# calls calculated from 100 values of true value $\theta_0$ selected
 # uniformly at random. The prior for each iteration is taken to
 # be $N(\theta_0, 1)$ and success probability $1 - \alpha$ with
 # $\alpha = 0.01$.
@@ -496,8 +496,8 @@ results_exae = run_experiments_parameters(
 # Median variance for fixed error rate $\varepsilon = 10^{-3}$
 # against time step for $\theta_0 \in \Theta_0$ and
 # $\theta_0 \in \Theta_1$. We sample $\theta_0$ from a uniform
-# distribution of $x$ and $50$ samples for $\Theta_0$ and
-# $ \Theta_1$ respectively. The prior for each iteration is
+# distribution of $100$ samples for both $\Theta_0$ and
+# $ \Theta_1$. The prior for each iteration is
 # taken to be $N(\theta_0, 1)$ and success probability
 # $1 - \alpha$ with $\alpha = 0.01$.
 
@@ -589,8 +589,8 @@ plt.show()
 # -
 # Median depth for fixed error rate $\varepsilon = 10^{-3}$ against
 # time step for $\theta_0 \in \Theta_0$ and $\theta_0 \in \Theta_1$.
-# We sample $\theta_0$ from a uniform distribution of $x$ and $50$
-# samples for $\Theta_0$ and $ \Theta_1$ respectively. The prior for
+# We sample $\theta_0$ from a uniform distribution of $100$
+# samples for both $\Theta_0$ and $ \Theta_1$. The prior for
 # each iteration is taken to be $N(\theta_0, 1)$ and success
 # probability $1 - \alpha$ with $\alpha = 0.01$.
 
@@ -728,7 +728,7 @@ plt.show()
 # MLAE and ExAE. We target precisions of
 # $\varepsilon = 10^{-3}, 10^{-4}, \ldots , 10^{-7}$, with each point a
 # single value of $\theta_0 \in \Theta_0$. We sample uniformly from
-# $\Theta_0$ for 30 values of $\theta_0$. Each value of $\theta_0$ is
+# $\Theta_0$ for 100 values of $\theta_0$. Each value of $\theta_0$ is
 # evaluated for all algorithms and each target $\varepsilon$. The prior
 # for each iteration is taken to be $N(\theta_0, 1)$ and success
 # probability $1 - \alpha$ with $\alpha = 0.01$.
@@ -737,7 +737,7 @@ plt.show()
 np.random.seed(0)
 
 # parameters
-reps = 30
+reps = 100
 max_iter = 1_000_000
 
 # definition of Theta_0
