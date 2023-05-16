@@ -326,5 +326,8 @@ def run_one_experiment_exae(experiment):
     max_iter = experiment.get("max_iter", 0)
 
     return noisy_exae.estimate(
-        experiment["true_theta"], output=output, max_iter=max_iter
+        experiment["true_theta"],
+        output=output,
+        max_iter=max_iter,
+        post_processing=experiment.get("post_processing", False),
     )

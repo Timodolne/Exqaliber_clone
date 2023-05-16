@@ -295,6 +295,7 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
         binomial_measurement_results: Dict[int, List[int]],
         error_tol: float = 1e-6,
         plot_results: bool = False,
+        true_value: float = None,
     ):
         """Compute the MLE for the given schedule and schedule results.
 
@@ -312,6 +313,9 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
         plot_results : bool, optional
             Whether to plot the log likelihood function, by default
             False.
+        true_value : float, None
+            If plotting the results and this is provided, add a vertical
+            line at the true value of theta.
 
         Returns
         -------
@@ -340,11 +344,7 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
                 loglik = loglik + np.log(np.cos(angle) ** 2) * i_experiment[1]
             return -loglik
 
-        nevals = max(
-            10000, int(np.pi * 1000 * max(binomial_measurement_results.keys()))
-        )
-        if nevals > np.pi * 0.5 / error_tol:
-            nevals = int(np.pi * 0.5 / error_tol)
+        nevals = int(np.pi * 0.5 / error_tol)
 
         if plot_results:
             est_theta, est_theta_val, x, y = brute(
@@ -353,6 +353,10 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
 
             plt.plot(x, y)
             plt.axhline(y=est_theta_val, linestyle="--", color="gray")
+
+            if true_value is not None:
+                plt.axvline(x=true_value, linestyle="--", color="grey")
+
             plt.show()
         else:
             est_theta = brute(
@@ -360,6 +364,36 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
             )
 
         return est_theta[0]
+
+    @staticmethod
+    def _compute_mle_variance(
+        binomial_measurements: Dict[int, List[int]], mle: float
+    ) -> float:
+        """Compute the variance of the mle estimator.
+
+        This computes the observed Fisher information at the mle.
+
+        Parameters
+        ----------
+        binomial_measurement_results : Dict[int, List[int]]
+            Map of measurement outcomes from a series of binomial
+            distributions. Each element is of the form
+            depth: [# 0's, # 1's]
+        mle : float
+            Maximum likelihood estimator
+
+        Returns
+        -------
+        float
+            Variance of the mle estimator
+        """
+        fisher_info = 0
+
+        for i_depth, i_mmt in binomial_measurements.items():
+            fisher_info += ((2 * i_depth + 1) ** 2 * sum(i_mmt)) / (
+                np.sin(mle) ** 4
+            )
+        return 1 / fisher_info
 
     def estimate(
         self,
@@ -600,7 +634,17 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
         # result.post_processing = estimation_problem.post_processing
 
         if post_processing:
-            result.mle_estimate = self._compute_fast_mle(binomial_measurements)
+            result.mle_estimate = self._compute_fast_mle(
+                binomial_measurements,
+                error_tol=self.epsilon_target,
+                true_value=self._true_theta,
+            )
+            result.mle_estimate_variance = self._compute_mle_variance(
+                binomial_measurements, result.mle_estimate
+            )
+            result.mle_estimate_epsilon = norm.ppf(
+                1 - self._alpha / 2
+            ) * np.sqrt(result.mle_estimate_variance)
 
         result.num_oracle_queries = num_oracle_queries
 
@@ -654,6 +698,8 @@ class ExqaliberAmplitudeEstimationResult(AmplitudeEstimatorResult):
         self._epsilon_estimated_processed = None
         self._estimate_intervals = None
         self._mle_estimate = None
+        self._mle_estimate_variance = None
+        self._mle_estimate_epsilon = None
         self._theta_intervals = None
         self._powers = None
         self._confidence_interval_processed = None
@@ -731,9 +777,29 @@ class ExqaliberAmplitudeEstimationResult(AmplitudeEstimatorResult):
         return self._mle_estimate
 
     @mle_estimate.setter
-    def mle_estimate(self, value: float) -> float:
+    def mle_estimate(self, value: float) -> None:
         """Set the MLE estimate of the final theta."""
         self._mle_estimate = value
+
+    @property
+    def mle_estimate_variance(self) -> float:
+        """Return the variance of the MLE estimate."""
+        return self._mle_estimate_variance
+
+    @mle_estimate_variance.setter
+    def mle_estimate_variance(self, val: float) -> None:
+        """Set the variance of the MLE estimate."""
+        self._mle_estimate_variance = val
+
+    @property
+    def mle_estimate_epsilon(self) -> float:
+        """Return the epsilon accuracy of the MLE estimate."""
+        return self._mle_estimate_epsilon
+
+    @mle_estimate_epsilon.setter
+    def mle_estimate_epsilon(self, val: float) -> None:
+        """Set the epsilon accuracy of the MLE estimate."""
+        self._mle_estimate_epsilon = val
 
     @property
     def theta_intervals(self) -> list[list[float]]:
