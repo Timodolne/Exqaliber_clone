@@ -453,6 +453,7 @@ np.random.seed(0)
 
 # parameters
 reps = 100
+max_iter = 100_000
 
 # definition of Theta_0
 start = np.pi / 24
@@ -579,6 +580,143 @@ ax.set_xlabel("iteration of algorithm")
 ax.set_ylabel(r"estimated $\sigma$")
 
 ax.set_title("Estimated standard devation per step")
+
+plt.show()
+# -
+# Median depth for fixed error rate $\varepsilon = 10^{-3}$ against
+# time step for $\theta_0 \in \Theta_0$ and $\theta_0 \in \Theta_1$.
+# We sample $\theta_0$ from a uniform distribution of $x$ and $50$
+# samples for $\Theta_0$ and $ \Theta_1$ respectively. The prior for
+# each iteration is taken to be $N(\theta_0, 1)$ and success
+# probability $1 - \alpha$ with $\alpha = 0.01$.
+
+# + tags=[]
+np.random.seed(0)
+
+# parameters
+reps = 100
+max_iter = 100_000
+
+# definition of Theta_0
+start = np.pi / 24
+end = np.pi / 2
+
+# Create an array to hold the samples
+true_thetas = np.zeros((2, reps))
+
+# Draw samples from each distribution
+true_thetas[0] = np.random.uniform(start, end, size=reps)
+true_thetas[1] = np.random.uniform(0, start, size=reps)
+
+# true_theta for experiments
+true_theta = true_thetas.flatten()
+
+# create parameters dict
+parameters = {
+    "reps": 1,  # repetition/theta, but that's 1 since we flattened
+    "true_theta": true_theta,
+    "max_iter": max_iter,
+    "output": "powers",
+}
+
+# + tags=[]
+results_dir = "results/simulations/ExAE-smart/"
+
+results_exae = run_experiments_parameters(
+    experiment=EXPERIMENT,
+    run_or_load=run_or_load,
+    results_dir=results_dir,
+    parameters=parameters,
+    experiment_f=run_one_experiment_exae,
+)
+
+# + tags=[]
+# %%time
+results_exae_sliced = get_results_slice(results_exae)
+
+powers_theta_0 = np.zeros((reps, max_iter + 1))
+powers_theta_1 = np.zeros_like(powers_theta_0)
+
+lens_theta_0 = np.zeros(reps)
+lens_theta_1 = np.zeros(reps)
+
+for i, (k, res) in enumerate(results_exae_sliced.items()):
+    powers = 2 * np.array(res.powers) + 1
+    if i < reps:
+        powers_theta_0[i][: len(powers)] = powers
+        powers_theta_0[i][len(powers) :] = powers[-1]
+        lens_theta_0[i] = len(powers)
+    else:
+        powers_theta_1[i - reps][: len(powers)] = powers
+        powers_theta_1[i - reps][len(powers) :] = powers[-1]
+        lens_theta_1[i - reps] = len(powers)
+
+# + tags=[]
+# %%time
+power_arrays = [powers_theta_0, powers_theta_1]
+
+percentiles_lst = []
+for powers_theta in power_arrays:
+    # percentiles
+    percentiles = np.nanquantile(powers_theta, [0.05, 0.5, 0.95], axis=0)
+
+    percentiles_lst.append(percentiles)
+
+# + tags=[]
+# fig::ExAE-depth-per-step
+
+fig, ax = plt.subplots(figsize=(10, 7), dpi=300)
+
+len_arrays = [lens_theta_0, lens_theta_1]
+labels = [r"$\Theta_0$", r"$\Theta_1$"]
+positions = [5, 2]
+
+legend = []
+
+for percentiles, len_theta, label, y in zip(
+    percentiles_lst, len_arrays, labels, positions
+):
+    up_err = percentiles[2] - percentiles[1]
+    down_err = percentiles[1] - percentiles[0]
+
+    line = ax.plot(percentiles[1], label=label)
+    legend.append(line[0])
+    line_color = line[0].get_color()
+
+    ax.fill_between(
+        range(max_iter + 1), percentiles[0], percentiles[2], alpha=0.5
+    )
+
+    boxprops = dict(facecolor="none", edgecolor=line_color)
+    medianprops = dict(color=line_color)
+    whiskerprops = dict(color=line_color)
+    capprops = dict(color=line_color)
+    flierprops = dict(markeredgecolor=line_color)
+    box = ax.boxplot(
+        [len_theta],
+        vert=False,
+        positions=[y],
+        patch_artist=True,
+        boxprops=boxprops,
+        widths=[0.2 * y],
+        medianprops=medianprops,
+        whiskerprops=whiskerprops,
+        capprops=capprops,
+        flierprops=flierprops,
+    )
+
+legend.append(ax.plot([], [], label="Iterations", c="black")[0])
+
+ax.legend(handles=legend)
+ax.set_yscale("log")
+ax.set_xscale("log")
+
+ax.set_xlabel("iteration of algorithm")
+ax.set_ylabel(r"Power $2\cdot k + 1$")
+
+ax.set_title("Power $k$ per step")
+
+plt.savefig("figures/ExAE-depth-per-step.pdf", dpi=300)
 
 plt.show()
 # -
