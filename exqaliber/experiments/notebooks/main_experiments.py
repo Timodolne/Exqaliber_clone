@@ -460,7 +460,7 @@ reps = 100
 max_iter = 100_000
 
 # definition of Theta_0
-start = np.pi / 24
+start = np.pi / 12
 end = np.pi / 2
 
 # Create an array to hold the samples
@@ -602,7 +602,7 @@ reps = 100
 max_iter = 100_000
 
 # definition of Theta_0
-start = np.pi / 24
+start = np.pi / 12
 end = np.pi / 2
 
 # Create an array to hold the samples
@@ -722,6 +722,146 @@ plt.savefig("figures/ExAE-depth-per-step.pdf", dpi=300)
 
 plt.show()
 # -
+# # Query complexity noiseless
+
+# Final precision versus total number of oracle queries used for IAE,
+# MLAE and ExAE. We target precisions of
+# $\varepsilon = 10^{-3}, 10^{-4}, \ldots , 10^{-7}$, with each point a
+# single value of $\theta_0 \in \Theta_0$. We sample uniformly from
+# $\Theta_0$ for 30 values of $\theta_0$. Each value of $\theta_0$ is
+# evaluated for all algorithms and each target $\varepsilon$. The prior
+# for each iteration is taken to be $N(\theta_0, 1)$ and success
+# probability $1 - \alpha$ with $\alpha = 0.01$.
+
+# + tags=[]
+np.random.seed(0)
+
+# parameters
+reps = 30
+max_iter = 1_000_000
+
+# definition of Theta_0
+start = np.pi / 12
+end = np.pi / 2
+
+# Draw samples from each distribution
+true_theta = np.random.uniform(start, end, size=reps)
+
+# Create array of epsilon_targets
+epsilon_target = np.logspace(-7, -3, 5)
+
+# create parameters dict
+parameters = {
+    "reps": 1,  # repetition/theta, but that's 1 since we flattened
+    "true_theta": true_theta,
+    "max_iter": max_iter,
+    "epsilon_target": epsilon_target,
+    "post_processing": True,
+}
+
+# + tags=[]
+results_dir = "results/simulations/ExAE-smart/"
+
+results_exae = run_experiments_parameters(
+    experiment=EXPERIMENT.copy(),
+    run_or_load=run_or_load,
+    results_dir=results_dir,
+    parameters=parameters,
+    experiment_f=run_one_experiment_exae,
+)
+# + tags=[]
+results_dir = "results/simulations/IAE/"
+
+results_iae = run_experiments_parameters(
+    experiment=EXPERIMENT,
+    run_or_load=run_or_load,
+    results_dir=results_dir,
+    parameters=parameters,
+    experiment_f=run_one_experiment_iae,
+)
+
+# + tags=[]
+# MLAE can't go too deep because of compute limitations
+epsilon_target = parameters.get("epsilon_target")
+min_epsilon = 5e-5
+
+if not np.all(epsilon_target >= min_epsilon):
+    parameters_mlae = parameters.copy()
+    print("Changing epsilon target, because MLAE can't go too deep.")
+    if isinstance(epsilon_target, np.ndarray):
+        epsilon_target = np.concatenate(
+            ([min_epsilon], epsilon_target[epsilon_target > min_epsilon])
+        )
+    else:
+        epsilon_target = max(epsilon_target, min_epsilon)
+    parameters_mlae["epsilon_target"] = epsilon_target
+else:
+    parameters_mlae = parameters.copy()
+
+results_dir = "results/simulations/MLAE/"
+
+results_mlae = run_experiments_parameters(
+    experiment=EXPERIMENT,
+    run_or_load=run_or_load,
+    results_dir=results_dir,
+    parameters=parameters_mlae,
+    experiment_f=run_one_experiment_mlae,
+)
+
+# + tags=[]
+# fig::query-comparison-noiseless
+
+rules = {"zeta": 0}
+plot_kwargs = {"marker": "x"}
+
+fig, ax = plt.subplots(figsize=(10, 7), dpi=300)
+
+# EXAE
+results_exae_sliced = get_results_slice(results_exae, rules=rules)
+abs_epsilons = [
+    np.abs(res.final_theta - res.true_theta % (2 * np.pi))
+    for k, res in results_exae_sliced.items()
+]
+oracle_calls = [
+    res.num_oracle_queries for k, res in results_exae_sliced.items()
+]
+ax.scatter(abs_epsilons, oracle_calls, label="ExAE w/MLE", **plot_kwargs)
+
+# IAE
+results_iae_sliced = get_results_slice(results_iae, rules=rules)
+abs_epsilons = [
+    np.abs(res.estimation_processed - res.true_theta % (2 * np.pi))
+    for k, res in results_iae_sliced.items()
+]
+oracle_calls = [
+    res.num_oracle_queries for k, res in results_iae_sliced.items()
+]
+ax.scatter(abs_epsilons, oracle_calls, label="IAE", **plot_kwargs)
+
+# MLAE
+results_mlae_sliced = get_results_slice(results_mlae, rules=rules)
+abs_epsilons = [
+    np.abs(res.theta - res.true_theta % (2 * np.pi))
+    for k, res in results_mlae_sliced.items()
+]
+oracle_calls = [
+    res.num_oracle_queries for k, res in results_mlae_sliced.items()
+]
+ax.scatter(abs_epsilons, oracle_calls, label="MLAE", **plot_kwargs)
+
+ax.set_xscale("log")
+ax.set_yscale("log")
+
+ax.set_xlabel(r"$\epsilon$")
+ax.set_ylabel("Oracle queries")
+
+ax.legend()
+
+plt.savefig("figures/query-comparison-noiseless.pdf", dpi=300)
+
+plt.show()
+# -
+
 # # PREVIOUS EXPERIMENTS FOR REFERENCE
 
 # # Similar to fig 7 from QCWare paper
