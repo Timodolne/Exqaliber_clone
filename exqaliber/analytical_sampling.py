@@ -285,7 +285,7 @@ class AnalyticalMLAE(MaximumLikelihoodAmplitudeEstimation):
 
         result.fisher_information = _compute_fisher_information(result)
         result.num_oracle_queries = result.shots * sum(
-            4 * k + 2 for k in result.evaluation_schedule
+            2 * k + 1 for k in result.evaluation_schedule
         )
 
         # compute and store confidence interval

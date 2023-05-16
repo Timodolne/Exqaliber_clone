@@ -862,6 +862,144 @@ plt.savefig("figures/query-comparison-noiseless.pdf", dpi=300)
 plt.show()
 # -
 
+# # Compare paths oracle calls
+
+# Confidence intervals for a single run of Canonical AE, IAE, MLAE
+# and ExAE with $\theta_0 = 1$. The prior for ExAE is taken
+# to be $N(\theta_0, 1)$ and success probability
+# $1 - \alpha$ with $\alpha = 0.01$.
+
+# + tags=[]
+np.random.seed(0)
+
+# parameters
+max_iter = 1_000_000
+true_theta = 1.0
+
+# Create epsilon_target
+epsilon_target = 1e-4
+
+# create parameters dict
+parameters = {
+    "reps": 1,
+    "true_theta": true_theta,
+    "max_iter": max_iter,
+    "epsilon_target": epsilon_target,
+    "post_processing": True,
+    "output": "full",
+}
+
+# + tags=[]
+results_dir = "results/simulations/ExAE-smart/"
+
+results_exae = run_experiments_parameters(
+    experiment=EXPERIMENT.copy(),
+    run_or_load=run_or_load,
+    results_dir=results_dir,
+    parameters=parameters,
+    experiment_f=run_one_experiment_exae,
+)
+
+results_dir = "results/simulations/IAE/"
+parameters_iae = parameters.copy()
+parameters_iae["shots"] = 16
+
+results_iae = run_experiments_parameters(
+    experiment=EXPERIMENT,
+    run_or_load=run_or_load,
+    results_dir=results_dir,
+    parameters=parameters,
+    experiment_f=run_one_experiment_iae,
+)
+
+results_dir = "results/simulations/MLAE/"
+parameters_mlae = parameters.copy()
+parameters_mlae["m"] = list(range(12, -1, -1))
+parameters_mlae["shots"] = 16
+
+results_mlae = run_experiments_parameters(
+    experiment=EXPERIMENT,
+    run_or_load=run_or_load,
+    results_dir=results_dir,
+    parameters=parameters_mlae,
+    experiment_f=run_one_experiment_mlae,
+)
+# + tags=[]
+# fig::compare-paths-oracle-calls
+
+fig, axs = plt.subplots(3, 1, figsize=(10, 10))
+
+# ExAE
+exae_result = results_exae[(0,)]
+conf_intervals = np.array(exae_result.theta_intervals[1:])
+exae_oracle_queries = 2 * np.array(exae_result.powers) + 1
+x_exae = exae_oracle_queries.cumsum()
+y_1 = conf_intervals[:, 0]
+y_2 = conf_intervals[:, 1]
+
+axs[0].fill_between(x_exae, y_1, y_2, alpha=0.5, label="Exqaliber AE")
+
+y = np.array(exae_result.theta_intervals[1:]).mean(axis=1)
+axs[0].plot(x_exae, y)
+
+# IAE
+iae_result = results_iae[(0,)]
+conf_intervals = np.array(iae_result.estimate_intervals_processed)
+iae_oracle_queries = parameters_iae["shots"] * (
+    2 * np.array(iae_result.powers) + 1
+)
+x_iae = iae_oracle_queries.cumsum()
+y_1 = conf_intervals[:, 0]
+y_2 = conf_intervals[:, 1]
+
+axs[1].fill_between(x_iae, y_1, y_2, alpha=0.5, label="Iterative AE")
+
+y = np.array(iae_result.estimate_intervals_processed).mean(axis=1)
+axs[1].plot(x_iae, y)
+
+# MLAE
+results_mlae_sliced = get_results_slice(results_mlae, rules={})
+conf_intervals = np.array(
+    [result.confidence_interval for result in results_mlae_sliced.values()]
+)[::-1]
+mlae_oracle_queries = np.array(
+    [result.num_oracle_queries for result in results_mlae_sliced.values()]
+)[::-1]
+x_mlae = mlae_oracle_queries.cumsum()
+y_1 = conf_intervals[:, 0]
+y_2 = conf_intervals[:, 1]
+
+axs[2].fill_between(x_mlae, y_1, y_2, alpha=0.5, label="MLAE")
+
+y = np.array(
+    [result.estimation_processed for result in results_mlae_sliced.values()]
+)[::-1]
+axs[2].plot(x_mlae, y)
+
+
+for ax in axs.flatten():
+    ax.legend()
+
+    # Axes
+    ax.set_xlim(1, max_iter)
+    ax.set_ylim(-np.pi, np.pi)
+    ax.set_xscale("log")
+    ax.set_xlabel("Oracle calls")
+    ax.set_ylabel(r"Estimate of $\theta$")
+
+    ax.yaxis.set_major_locator(plt.MultipleLocator(np.pi / 3))
+    ax.yaxis.set_minor_locator(plt.MultipleLocator(np.pi / 6))
+    ax.yaxis.set_major_formatter(plt.FuncFormatter(format_with_pi))
+
+# Title
+fig.suptitle("Estimation vs. oracle calls")
+
+plt.tight_layout()
+
+plt.savefig("figures/compare-paths-oracle-calls.pdf", dpi=300)
+
+plt.show()
+# -
 # # PREVIOUS EXPERIMENTS FOR REFERENCE
 
 # # Similar to fig 7 from QCWare paper

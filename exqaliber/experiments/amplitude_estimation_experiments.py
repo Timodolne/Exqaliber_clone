@@ -40,10 +40,14 @@ def format_with_pi(
     # check if the fraction matches
     if np.abs(x - frac * np.pi) < 1e-8:
         # whole fraction
-        if np.abs(frac.numerator) == 1:
-            if np.abs(frac.denominator) == 1:
+        if frac.numerator == 1:
+            if frac.denominator == 1:
                 return r"$\pi$"
             return rf"$\pi/{frac.denominator}$"
+        elif frac.numerator == -1:
+            if frac.denominator == 1:
+                return r"$-\pi$"
+            return rf"$-\pi/{frac.denominator}$"
         # multiple of pi
         elif frac.denominator == 1:
             return rf"${frac.numerator}\pi$"
