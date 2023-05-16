@@ -5,6 +5,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from exqaliber.analytical_sampling import run_one_experiment_exae
+from exqaliber.experiments.amplitude_estimation_experiments import (
+    format_with_pi,
+)
 from exqaliber.exqaliber_amplitude_estimation import (
     ExqaliberAmplitudeEstimationResult,
 )
@@ -195,5 +198,105 @@ def plot_figure_exae_actual_prec_vs_expected_prec() -> None:
     plot_sae_vs_mle_comparision(exae_prec, exae_post_proc_prec)
 
 
+def plot_circular_actual_precision(
+    sae_results: np.ndarray,
+    sae_with_mle_results: np.ndarray,
+    target_epsilon: float = 1e-3,
+) -> None:
+    """Plot the actual precision of the SAE algorithm by angle.
+
+    Parameters
+    ----------
+    sae_results : np.ndarray
+        Pairs of the form (target angle, distance from target angle),
+        for the base statistical amplitude estimation routine
+    sae_with_mle_results : np.ndarray
+        Pairs of the form (target angle, distance from target angle),
+        for the statistical amplitude estimation routine with mle
+        post-processing
+    target_epsilon : float, optional
+        Target precision of the algorithms for dashed line drawing, by
+        default 1e-3
+    """
+    plt.figure(figsize=(7, 7), dpi=100)
+    ax = plt.subplot(projection="polar")
+
+    # plot data
+    ax.scatter(
+        sae_results[:, 0],
+        np.log(sae_results[:, 1]),
+        color="blue",
+        label="Exqalibur",
+    )
+    ax.scatter(
+        sae_with_mle_results[:, 0],
+        np.log(sae_with_mle_results[:, 1]),
+        color="red",
+        label="Exqalibur w/ MLE",
+    )
+
+    # axis
+    ax.set_xlim(0, np.pi / 2)
+    ax.plot(
+        np.linspace(0, np.pi / 2, 100),
+        [np.log(target_epsilon)] * 100,
+        linestyle="dashed",
+        color="gray",
+    )
+    ax.text(np.pi / 24, np.log(target_epsilon), "Target precision")
+    ax.grid(True)
+
+    ax.xaxis.set_major_locator(plt.MultipleLocator(np.pi / 12))
+    ax.xaxis.set_minor_locator(plt.MultipleLocator(np.pi / 24))
+    ax.xaxis.set_major_formatter(plt.FuncFormatter(format_with_pi))
+
+    # Plot title
+    title = "Final precision of Statistical Amplitude Estimation estimate"
+    plt.title(title)
+
+    plt.tight_layout(pad=1.0)
+
+    plt.legend()
+    plt.show()
+
+
+def plot_figure_exae_actual_prec_over_theta() -> None:
+    """Plot 'fig::exae-actual-prec-over-theta'.
+
+    Actual precision of the final estimate for SAE with and without MLE
+    post-processing. We sample theta_0 Theta_0 from a uniform
+    distribution of $x$ and $50$ for a target precision of
+    epsilon = 10^-3. The prior for each iteration is taken to be
+    N(theta_0, 1) and success probability 1 - alpha with alpha = 0.01.
+
+    This is a circular scatter plot, where each point is an individual
+    sample at the given angle, and the radial value is the absolute
+    error.
+    """
+    results = get_experiment_data(samples_per_bin=500, epsilon_target=[1e-3])
+
+    exae_prec = np.array(
+        [
+            (
+                i_result.true_theta,
+                abs(i_result.true_theta - i_result.final_theta),
+            )
+            for i_result in results
+        ]
+    )
+
+    exae_post_proc_prec = np.array(
+        [
+            (
+                i_result.true_theta,
+                abs(i_result.true_theta - i_result.mle_estimate),
+            )
+            for i_result in results
+        ]
+    )
+    plot_circular_actual_precision(exae_prec, exae_post_proc_prec)
+
+
 if __name__ == "__main__":
+    plot_figure_exae_actual_prec_over_theta()
     plot_figure_exae_actual_prec_vs_expected_prec()
