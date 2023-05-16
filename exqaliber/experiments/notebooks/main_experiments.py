@@ -524,12 +524,12 @@ for i, (k, res) in enumerate(results_exae_sliced.items()):
 std_arrays = [stds_theta_0, stds_theta_1]
 
 # + tags=[]
-percentiles_lst = []
+quantiles_lst = []
 for stds_theta in std_arrays:
-    # percentiles
-    percentiles = np.nanpercentile(stds_theta, [0.05, 0.5, 0.95], axis=0)
+    # quantiles
+    quantiles = np.nanquantile(stds_theta, [0.05, 0.5, 0.95], axis=0)
 
-    percentiles_lst.append(percentiles)
+    quantiles_lst.append(quantiles)
 
 # + tags=[]
 # fig::ExAE-var-per-step
@@ -542,19 +542,17 @@ positions = [1e-2, 1e-1]
 
 legend = []
 
-for percentiles, len_theta, label, y in zip(
-    percentiles_lst, len_arrays, labels, positions
+for quantiles, len_theta, label, y in zip(
+    quantiles_lst, len_arrays, labels, positions
 ):
-    up_err = percentiles[2] - percentiles[1]
-    down_err = percentiles[1] - percentiles[0]
+    up_err = quantiles[2] - quantiles[1]
+    down_err = quantiles[1] - quantiles[0]
 
-    line = ax.plot(percentiles[1], label=label)
+    line = ax.plot(quantiles[1], label=label)
     legend.append(line[0])
     line_color = line[0].get_color()
 
-    ax.fill_between(
-        range(max_iter + 1), percentiles[0], percentiles[2], alpha=0.5
-    )
+    ax.fill_between(range(max_iter + 1), quantiles[0], quantiles[2], alpha=0.5)
 
     boxprops = dict(facecolor="none", edgecolor=line_color)
     medianprops = dict(color=line_color)
@@ -661,12 +659,12 @@ for i, (k, res) in enumerate(results_exae_sliced.items()):
 # %%time
 power_arrays = [powers_theta_0, powers_theta_1]
 
-percentiles_lst = []
+quantiles_lst = []
 for powers_theta in power_arrays:
-    # percentiles
-    percentiles = np.nanquantile(powers_theta, [0.05, 0.5, 0.95], axis=0)
+    # quantiles
+    quantiles = np.nanquantile(powers_theta, [0.05, 0.5, 0.95], axis=0)
 
-    percentiles_lst.append(percentiles)
+    quantiles_lst.append(quantiles)
 
 # + tags=[]
 # fig::ExAE-depth-per-step
@@ -679,19 +677,17 @@ positions = [5, 2]
 
 legend = []
 
-for percentiles, len_theta, label, y in zip(
-    percentiles_lst, len_arrays, labels, positions
+for quantiles, len_theta, label, y in zip(
+    quantiles_lst, len_arrays, labels, positions
 ):
-    up_err = percentiles[2] - percentiles[1]
-    down_err = percentiles[1] - percentiles[0]
+    up_err = quantiles[2] - quantiles[1]
+    down_err = quantiles[1] - quantiles[0]
 
-    line = ax.plot(percentiles[1], label=label)
+    line = ax.plot(quantiles[1], label=label)
     legend.append(line[0])
     line_color = line[0].get_color()
 
-    ax.fill_between(
-        range(max_iter + 1), percentiles[0], percentiles[2], alpha=0.5
-    )
+    ax.fill_between(range(max_iter + 1), quantiles[0], quantiles[2], alpha=0.5)
 
     boxprops = dict(facecolor="none", edgecolor=line_color)
     medianprops = dict(color=line_color)
