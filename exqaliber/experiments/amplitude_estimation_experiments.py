@@ -33,15 +33,15 @@ def format_with_pi(
     format_string: str = "",
 ):
     """Format a number as a fraction of pi when possible."""
-    if x < 1e-8:
+    if np.abs(x) < 1e-8:
         return f"{x:{format_string}}"
     frac = Fraction(x / np.pi).limit_denominator(max_denominator)
 
     # check if the fraction matches
     if np.abs(x - frac * np.pi) < 1e-8:
         # whole fraction
-        if frac.numerator == 1:
-            if frac.denominator == 1:
+        if np.abs(frac.numerator) == 1:
+            if np.abs(frac.denominator) == 1:
                 return r"$\pi$"
             return rf"$\pi/{frac.denominator}$"
         # multiple of pi
