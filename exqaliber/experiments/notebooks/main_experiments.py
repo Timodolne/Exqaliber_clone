@@ -905,7 +905,7 @@ parameters_iae = parameters.copy()
 parameters_iae["shots"] = 16
 
 results_iae = run_experiments_parameters(
-    experiment=EXPERIMENT,
+    experiment=EXPERIMENT.copy(),
     run_or_load=run_or_load,
     results_dir=results_dir,
     parameters=parameters,
@@ -918,7 +918,7 @@ parameters_mlae["m"] = list(range(12, -1, -1))
 parameters_mlae["shots"] = 16
 
 results_mlae = run_experiments_parameters(
-    experiment=EXPERIMENT,
+    experiment=EXPERIMENT.copy(),
     run_or_load=run_or_load,
     results_dir=results_dir,
     parameters=parameters_mlae,
@@ -1000,6 +1000,85 @@ plt.savefig("figures/compare-paths-oracle-calls.pdf", dpi=300)
 
 plt.show()
 # -
+# # Noisy experiments
+
+# ## Max depth
+
+# + tags=[]
+# fig::ExAE-noisy-max-depth
+# -
+
+# Depth of ExAE for $\theta_0 = 1$ at varying levels of decohering
+# noise characterised by $\lambda = 10^0, 10^{-1}, \ldots 10^{-6}$.
+# The prior for each iteration is taken to be $N(\theta_0, 1)$, we
+# target $\varepsilon = 10^{-3}$ and success probability $1 - \alpha$
+# with $\alpha = 0.01$.
+
+# + tags=[]
+np.random.seed(0)
+
+# parameters
+max_iter = 1_000_000
+true_theta = 1.0
+
+# Create epsilon_target
+epsilon_target = 1e-3
+
+# noise levels
+noise_levels = np.logspace(0, -6, 31)
+
+# create parameters dict
+parameters = {
+    "reps": 1,
+    "true_theta": true_theta,
+    "max_iter": max_iter,
+    "epsilon_target": epsilon_target,
+    "post_processing": True,
+    "zeta": noise_levels,
+    "output": "powers",
+}
+
+# + tags=[]
+results_dir = "results/simulations/ExAE-smart/"
+
+results_exae = run_experiments_parameters(
+    experiment=EXPERIMENT.copy(),
+    run_or_load=run_or_load,
+    results_dir=results_dir,
+    parameters=parameters,
+    experiment_f=run_one_experiment_exae,
+)
+
+# + tags=[]
+norm = mpl.colors.LogNorm(vmin=noise_levels[-1], vmax=noise_levels[0])
+cmap = mpl.cm.get_cmap("viridis", len(noise_levels))
+
+fig, ax = plt.subplots(1)
+
+results_exae_sliced = get_results_slice(results_exae, rules={})
+
+for res in results_exae_sliced.values():
+    powers = 2 * np.array(res.powers) + 1
+
+    ax.plot(powers, c=cmap(norm(res.zeta)), alpha=0.5)
+
+ax.set_xscale("log")
+ax.set_yscale("log")
+
+ax.set_xlabel("iteration")
+ax.set_ylabel("oracle calls")
+
+fig.colorbar(
+    mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, label="noise level"
+)
+
+ax.set_title("Exqaliber amplitude estimation")
+
+plt.savefig("figures/ExAE-noisy-max-depth.pdf", dpi=300)
+
+plt.show()
+# -
+
 # # PREVIOUS EXPERIMENTS FOR REFERENCE
 
 # # Similar to fig 7 from QCWare paper
