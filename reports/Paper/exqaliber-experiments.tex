@@ -1,122 +1,102 @@
 \section{Experimentation}
 %Describe experiments and performance measures
 %Two measures of interest, time to solution and quality of solutions
-
 We conduct a series of experiments for the noiseless and noisy simulations of our algorithm in this section. We empirically compare against the IAE and MLAE algorithms. As the update steps for these algorithms are equivalent to sampling from a Bernoulli distribution for a given choice of $\theta_0$ and noise level we sample directly from the Bernoulli distribution instead of simulating the dynamics of a quantum system for each algorithm. This algorithm has also been implemented and tested using Qiskit \cite{Qiskit}, with a view for future experiments with quantum simulators and quantum hardware.
 
 
-\subsection{Simulation experiments}
-\subsubsection{Noiseless experiments}
-First, we explore the convergence time for a range $\theta \in [0, \pi]$. Note that as shown in \cite{callison_2022_amp_with_jitter}, so-called exceptional points occur near to rational multiples of $\pi$, therefore we sample values of $\theta$ from continuous distributions instead of equally spaced angles. Figure \ref{fig::ExAE-converge-half-circle} shows that the convergence for $\theta$ close to $0$ and $\pi$ is several orders of magnitude larger than convergence for other values. For this reason, we consider partitioning the space $\Theta = [0, \pi]$ into the central region $\Theta_0 = [\frac{\pi}{12}, \frac{11 \pi}{12}]$ and the edge region $\Theta_1 = \Theta \setminus \Theta_0 = [0, \frac{\pi}{12}) \cup (\frac{11 \pi}{12}, \pi]$
+\subsection{Simulation}
+\subsubsection{Noiseless}
+First, we explore the convergence time for a range $\theta \in [0, \pi/2]$. Note that as shown in \cite{callison_2022_amp_with_jitter}, so-called exceptional points with poor convergence occur near to rational multiples of $\pi$, therefore we sample values of $\theta$ from continuous distributions instead of equally spaced angles. Figure \ref{fig::ExAE-converge-quarter-circle} shows that the convergence for $\theta$ close to $0$ is several orders of magnitude larger than convergence for other values. For this reason, we consider partitioning the space $\Theta = [0, \pi/2]$ into the central region $\Theta_0 = [\frac{\pi}{12}, \frac{5 \pi}{12}]$ and the edge region $\Theta_1 = \Theta \setminus \Theta_0 = [0, \frac{\pi}{12})$.
 
-\begin{figure}[htb]
+\begin{figure}[htbp]
 	\centering
-	\includegraphics[scale=0.5]{ExAE-converge-half-circle}
-	\caption{Median number of iterations for different error rates $\varepsilon$. Each section of the histogram is a region of width $\pi / 24$ with the median number of oracle calls calculated from 30 values of true value $\theta_0$ selected uniformly at random. The prior for each iteration is taken to be $N(\theta_0, 1)$ and success probability $1 - \alpha$ with $\alpha = 0.01$.}
-	\label{fig::ExAE-converge-half-circle}
+	\includegraphics[scale=0.2]{ExAE-converge-quarter-circle}
+	\caption{Median number of oracle calls for SAE to converge to a precision of $\varepsilon = 10^{-3}$, with 25\% and 75\% quartiles shown. Each bar is a region of width $\pi / 120$ with the median number of oracle calls calculated from 50 values of true value $\theta_0$ selected uniformly at random. The prior for each iteration is taken to be $N(\tilde{\theta}_0, 1)$, where $\tilde{\theta}_0$ is sampled from a $N(\theta_0, 0.1)$ distribution and success probability $1 - \alpha$ with $\alpha = 0.01$.}
+	\label{fig::ExAE-converge-quarter-circle}
 \end{figure}
 
-\begin{itemize}
+\begin{center}
 	\color{red}
-	\item This should use median not mean
-	\item Use radians
-	\item Start with 0 on the left
-	\item Should have lines for other error values
-	\item Use uniform samples over each $\pi/24$ interval probably 30 samples per interval. (i.e. 720 samples total)
-	\color{orange}
-	\item Change $\theta$ range to $(0, \pi / 2)$ or $(0, 2 \pi)$
-\end{itemize}
-
-As seen in Figure \ref{fig::ExAE-converge-on-theta1}, the set $\Theta_1$ performs poorly for all methods that take a statistical approach. This region contains points where the variance reduction factor approach 0, with the extreme points where $\theta= 0, \frac{\pi}{2}$. 
-
+	(The following is all conjecture as we don't have a comparison graph.) \\
+As seen in Figure \ref{fig::ExAE-converge-on-theta1}, the set $\Theta_1$ performs poorly for all methods that take a statistical approach. This region contains points where the variance reduction factor approaches 0, with the extreme points where $\theta= 0, \pi$. 
 \begin{itemize}
 	\color{red}
 	\item We should consider how the QoPrime and Power-law AE algorithms deal with $\Theta_1$
 	\item May need a gradient graph here?
-	\item Or graph of variance update ratios i.e. $\text{Var}{Y | \theta = 0} / \text{Var}{Y | \theta = 1}$ - where is this negative?
+	\item Or graph of variance update ratios - there are some times when it's negative for both, negative for neither or negative for only one.
 \end{itemize}
+\end{center}
 
-
-\begin{figure}[htb]
+\begin{figure}[htbp]
 	\centering
 	\caption{Median number of oracle calls for $\theta \in \Theta_1$ and fixed error rate $\varepsilon = 10^{-3}$ for different statistical amplitude estimation routines. Each section of the histogram is a region of width $\pi/120$ with the median number of oracle calls calculated from 30 values of true value $\theta_0$ selected uniformly at random. The prior for each iteration is taken to be $N(\theta_0, 1)$ and success probability $1 - \alpha$ with $\alpha = 0.01$.}
 	\label{fig::ExAE-converge-on-theta1}
 \end{figure}
 
-
-\begin{figure}[htb]
+\begin{figure}[htbp]
 	\centering
-	\caption{Median variance for fixed error rate $\varepsilon = 10^{-3}$ against time step for $\theta_0 \in \Theta_0$ and $\theta_0 \in \Theta_1$. We sample $\theta_0$ from a uniform distribution of $x$ and $50$ samples for $\Theta_0$ and $ \Theta_1$ respectively. The prior for each iteration is taken to be $N(\theta_0, 1)$ and success probability $1 - \alpha$ with $\alpha = 0.01$.  }
-	\label{fig::ExAE-var-per-step}
+	\includegraphics[scale=0.3]{ExAE-std-per-step}
+	\caption{Median standard deviation for fixed error rate $\varepsilon = 10^{-3}$ against time step for $\theta_0 \in \Theta_0$ and $\theta_0 \in \Theta_1$. We sample $\theta_0$ from a uniform distribution of $x$ and $50$ samples for $\Theta_0$ and $ \Theta_1$ respectively. The prior for each iteration is taken to be $N(\theta_0, 1)$ and success probability $1 - \alpha$ with $\alpha = 0.01$. The box plots show the Q1, Q2 and Q3 algorithm termination times for the recorded runs.}
+	\label{fig::ExAE-std-per-step}
 \end{figure}
 
-\begin{figure}[htb]
+\begin{figure}[htbp]
 	\centering
-	\caption{Median depth for fixed error rate $\varepsilon = 10^{-3}$ against time step for $\theta_0 \in \Theta_0$ and $\theta_0 \in \Theta_1$. We sample $\theta_0$ from a uniform distribution of $x$ and $50$ samples for $\Theta_0$ and $ \Theta_1$ respectively. The prior for each iteration is taken to be $N(\theta_0, 1)$ and success probability $1 - \alpha$ with $\alpha = 0.01$.}
+	\includegraphics[scale=0.3]{ExAE-depth-per-step}
+	\caption{Median depth for fixed error rate $\varepsilon = 10^{-3}$ against time step for $\theta_0 \in \Theta_0$ and $\theta_0 \in \Theta_1$. We sample $\theta_0$ from a uniform distribution of $x$ and $50$ samples for $\Theta_0$ and $ \Theta_1$ respectively. The prior for each iteration is taken to be $N(\theta_0, 1)$ and success probability $1 - \alpha$ with $\alpha = 0.01$. The box plots show the Q1, Q2 and Q3 algorithm termination times for the recorded runs.}
 	\label{fig::ExAE-depth-per-step}
 \end{figure}
 
 From now on, we restrict to considering $\theta \in \Theta_0$. 
 
-A source of potential error in this algorithm is the normal approximation made at each step. We posit that occasionally the variance decreases too fast due to this information loss, and deviates from the correct path. This can be seen in Figure, where we expect $(1-\alpha)\%$ of the points to lie above the diagonal. As a mitigation technique, we post-process the measurement data using the MLE estimator, and recover the accuracy we desire.
+A source of potential error in this algorithm is the normal approximation made at each step, which removes the theoretical guarantees of the Bernstein-von-Mises theorem. This can be seen in Figure \ref{fig::ExAE-actual-prec-vs-expected-prec}, where should expect $(1-\alpha)\%$ of the points to lie above the diagonal. As a mitigation technique, we post-process the measurement data using the MLE estimator, and recover some of the desired accuracy.
 
-\begin{figure}
+\begin{figure}[htbp]
 	\centering
-	\caption{Actual precision of the final estimate for SAE with and without MLE post-processing. We sample $\theta_0 \in \Theta_0$ from a uniform distribution of $x$ and $50$ for target precisions of $\varepsilon = 10^-3, 10^-4, \ldots, 10^-7 $. The prior for each iteration is taken to be $N(\theta_0, 1)$ and success probability $1 - \alpha$ with $\alpha = 0.01$.}
+	\includegraphics[scale=0.3]{ExAE-actual-prec-vs-expected-prec}
+	\caption{Actual precision of the final estimate for SAE with and without MLE post-processing. We sample $\theta_0 \in \Theta_0$ from a uniform distribution of $x$ and $50$ for target precisions of $\varepsilon = 10^{-3}, 10^{-4}, \ldots, 10^{-7} $. The prior for each iteration is taken to be $N(\theta_0, 1)$ and success probability $1 - \alpha$ with $\alpha = 0.01$.}
 	\label{fig::ExAE-actual-prec-vs-expected-prec}
 \end{figure}
 
-\begin{figure}
+\begin{figure}[htbp]
 	\centering
-	\caption{Actual precision of the final estimate for SAE with and without MLE post-processing. We sample $\theta_0 \in \Theta_0$ from a uniform distribution of $x$ and $50$ for a target precision of $\varepsilon = 10^-3$. The prior for each iteration is taken to be $N(\theta_0, 1)$ and success probability $1 - \alpha$ with $\alpha = 0.01$.}
+	\includegraphics[scale=0.2]{ExAE-actual-prec-over-theta}
+	\caption{Actual precision of the final estimate for SAE with and without MLE post-processing. We sample $\theta_0 \in \Theta_0$ from a uniform distribution of $x$ and $500$ for a target precision of $\varepsilon = 10^{-3}$. The prior for each iteration is taken to be $N(\theta_0, 1)$ and success probability $1 - \alpha$ with $\alpha = 0.01$.}
 	\label{fig::ExAE-actual-prec-over-theta}
 \end{figure}
 
-From now on, we consider selecting the depth at each step to be the minimiser of the posterior variance in an interval upper bounded by $\frac{1}{\sigma}$.
-\begin{itemize}
-	\color{red}
-	\item Do we still need this?
-	\item Should we now be throwing out the SAE by itself?
-\end{itemize}
+We compare the performance of SAE to IAE and MLAE, and observe that in the noiseless case we achieve similar query to IAE. However, there still remain some points for which SAE fails to satisfactorily converge.
 
-We compare the performance of ExAE to the statistical methods IAE and MLAE. 
-
-\begin{figure}[htb]
+\begin{figure}[htbp]
 	\centering
-	\includegraphics[scale=0.5]{query-converge-comparison}
-	\caption{Final precision versus total number of oracle queries used for IAE, MLAE and ExAE. We target precisions of $\varepsilon = 10^{-3}, 10^{-4}, \ldots , 10^{-7}$, with each point a single value of $\theta_0 \in \Theta_0$. We sample uniformly from $\Theta_0$ for 30 values of $\theta_0$. Each value of $\theta_0$ is evaluated for all algorithms and each target $\varepsilon$. The prior for each iteration is taken to be $N(\theta_0, 1)$ and success probability $1 - \alpha$ with $\alpha = 0.01$.}
+	\includegraphics[scale=0.5]{query-comparison-noiseless}
+	\caption{Actual precision versus total number of oracle queries used for IAE, MLAE and SAE. We target precisions of $\varepsilon = 10^{-3}, 10^{-4}, \ldots , 10^{-7}$, with each point a single value of $\theta_0 \in \Theta_0$ and take the final precision to be half the width of the confidence interval. We sample uniformly from $\Theta_0$ for 30 values of $\theta_0$. Each value of $\theta_0$ is evaluated for all algorithms and each target $\varepsilon$. The prior for each iteration is taken to be $N(\theta_0, 1)$ and success probability $1 - \alpha$ with $\alpha = 0.01$.}
 	\label{fig::query-comparison-noiseless}
 \end{figure}
 
 
-\begin{figure}[htb]
+\begin{figure}[htbp]
 	\centering
-	\includegraphics[scale=0.5]{compare-paths-oracle-calls}
-	\caption{Confidence intervals for a single run of Canonical AE, IAE, MLAE and ExAE with $\theta = \pi / 2$. The prior for ExAE is taken to be $N(\pi/2, 1)$ and success probability $1 - \alpha$ with $\alpha = 0.01$.}
+	\includegraphics[scale=0.3]{compare-paths-oracle-calls}
+	\caption{Confidence intervals for a single run of SAE, IAE and MLAE with $\theta_0 = 1$. The prior for SAE is taken to be $N(\pi/2, 1)$ and success probability $1 - \alpha$ with $\alpha = 0.01$. As IAE and MLAE use a fixed number of shots per step, the number of oracle calls does not start at 0.}
 	\label{fig::compare-paths-oracle-calls}
 \end{figure}
 
-\subsubsection{Decoherence noise experiments}
-
+\subsubsection{Decohering Noise}
 We explore the performance of our algorithm for a range of noise rates.
 
 As shown in Figure \ref{fig::ExAE-noisy-max-depth}, the algorithm will not go beyond a depth of $\sim \frac{1}{\lambda}$. 
 
-\begin{itemize}
-	\color{red}
-	\item Should have a graph of posterior distribution for different error rates. 
-\end{itemize}
-
-\begin{figure}[htb]
+\begin{figure}[htbp]
 	\centering
 	\includegraphics[scale=0.5]{ExAE-noisy-max-depth}
-	\caption{Depth of ExAE for $\theta_0 = \pi / 2$ at varying levels of decohering noise characterised by $\lambda = 10^0, 10^{-1}, \ldots 10^{-6}$. The prior for each iteration is taken to be $N(\pi /2, 1)$, we target $\varepsilon = 10^{-3}$ and success probability $1 - \alpha$ with $\alpha = 0.01$.}
+	\caption{Depth of SAE for $\theta_0 = 1$ at varying levels of decohering noise characterised by $\lambda = 10^0, 10^{-1}, \ldots 10^{-6}$. The prior for each iteration is taken to be $N(\pi /2, 1)$, we target $\varepsilon = 10^{-3}$ and success probability $1 - \alpha$ with $\alpha = 0.01$.}
 	\label{fig::ExAE-noisy-max-depth}
 \end{figure}
 
-\begin{figure}[htb]
+\begin{figure}[htbp]
 	\centering
-	\caption{Total number of oracle queries for ExAE with decohering noise characterised by $\lambda = 10^{-1}, 10^{-2}, \ldots, 10^{-7}$. Each point is a single value of $\theta_0 \in \Theta_0$. We sample uniformly from $\Theta_0$ for 30 values of $\theta_0$. Each value of $\theta_0$ is evaluated for all decohering noise values and each target $\varepsilon$. The prior for each iteration is taken to be $N(\theta_0, 1)$ and success probability $1 - \alpha$ with $\alpha = 0.01$.}
+	\caption{Total number of oracle queries for SAE with decohering noise characterised by $\lambda = 10^{-1}, 10^{-2}, \ldots, 10^{-7}$. Each point is a single value of $\theta_0 \in \Theta_0$. We sample uniformly from $\Theta_0$ for 30 values of $\theta_0$. Each value of $\theta_0$ is evaluated for all decohering noise values and each target $\varepsilon$. The prior for each iteration is taken to be $N(\theta_0, 1)$ and success probability $1 - \alpha$ with $\alpha = 0.01$.}
 	\label{fig::query-exae-noisy}
 \end{figure}
 
@@ -125,12 +105,13 @@ As shown in Figure \ref{fig::ExAE-noisy-max-depth}, the algorithm will not go be
 	\item Concerned that error comparisons make no sense here. These algorithms have no capacity to cope with noise so obviously they're bad - but others e.g. Hitachi, QoPrime, Power-law AE do
 \end{itemize}
 
-\begin{figure}[htb]
+\begin{figure}[htbp]
 	\centering
-	\caption{Final precision versus total number of oracle queries used for IAE, MLAE and ExAE with decohering noise characterised by $\lambda = 10^{-3}$. We target precisions of $\varepsilon = 10^{-3}, 10^{-4}, \ldots , 10^{-7}$, with each point a single value of $\theta_0 \in \Theta_0$. We sample uniformly from $\Theta_0$ for 30 values of $\theta_0$. Each value of $\theta_0$ is evaluated for all algorithms and each target $\varepsilon$. The prior for each iteration is taken to be $N(\theta_0, 1)$ and success probability $1 - \alpha$ with $\alpha = 0.01$.}
+	\caption{Final precision versus total number of oracle queries used for IAE, MLAE and SAE with decohering noise characterised by $\lambda = 10^{-3}$. We target precisions of $\varepsilon = 10^{-3}, 10^{-4}, \ldots , 10^{-7}$, with each point a single value of $\theta_0 \in \Theta_0$. We sample uniformly from $\Theta_0$ for 30 values of $\theta_0$. Each value of $\theta_0$ is evaluated for all algorithms and each target $\varepsilon$. The prior for each iteration is taken to be $N(\theta_0, 1)$ and success probability $1 - \alpha$ with $\alpha = 0.01$.}
 	\label{fig::query-comparison-noisy}
 \end{figure}
 
+\newpage
 
 
 
