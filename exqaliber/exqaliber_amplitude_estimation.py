@@ -174,7 +174,7 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
                 )
                 lamda = np.argmax(variance_reduction_factors)
             case "greedy-smart":
-                lamdas = np.arange(0, np.max([analytical_lamda, 200]))
+                lamdas = np.arange(1, np.max([analytical_lamda + 1, 200]), 2)
                 variance_reduction_factors = Normal.eval_lambdas(
                     lamdas,
                     prior_distribution.mean,
@@ -184,7 +184,7 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
                 lamda = np.argmax(variance_reduction_factors)
             case int():
                 n = np.min([analytical_lamda, method])
-                lamdas = np.arange(0, 2 * analytical_lamda + n + 1)
+                lamdas = np.arange(1, 2 * analytical_lamda + n + 1, 2)
                 variance_reduction_factors = Normal.eval_lambdas(
                     lamdas,
                     prior_distribution.mean,
