@@ -165,7 +165,7 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
             case "naive":
                 lamda = analytical_lamda
             case "greedy":
-                lamdas = np.arange(0, np.max([2 * analytical_lamda, 200]))
+                lamdas = np.arange(1, np.max([2 * analytical_lamda, 200]), 2)
                 variance_reduction_factors = Normal.eval_lambdas(
                     lamdas,
                     prior_distribution.mean,
@@ -280,7 +280,6 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
         count_dict = {}
 
         for i_depth, i_mmt_result in zip(circuit_depth, measurement_results):
-
             if i_depth not in count_dict:
                 count_dict[i_depth] = [0, 0]
 
