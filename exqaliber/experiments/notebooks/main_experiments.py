@@ -1018,7 +1018,7 @@ plt.show()
 np.random.seed(0)
 
 # parameters
-max_iter = 1_000_000
+max_iter = 100_000
 true_theta = 1.0
 
 # Create epsilon_target
@@ -1078,6 +1078,122 @@ plt.savefig("figures/ExAE-noisy-max-depth.pdf", dpi=300)
 
 plt.show()
 # -
+
+# ## Query ExAE Noisy
+
+# + tags=[]
+# fig::query-exae-noisy
+# -
+
+# Total number of oracle queries for ExAE with decohering noise
+# characterised by $\lambda = 10^{-1}, 10^{-2}, \ldots, 10^{-7}$.
+# Each point is a single value of $\theta_0 \in \Theta_0$. We sample
+# uniformly from $\Theta_0$ for 100 values of $\theta_0$. Each value
+# of $\theta_0$ is evaluated for all decohering noise values and
+# each target $\varepsilon$. The prior for each iteration is taken
+# to be $N(\theta_0, 1)$ and success probability $1 - \alpha$
+# with $\alpha = 0.01$.
+
+# + tags=[]
+np.random.seed(0)
+
+# parameters
+reps = 100
+max_iter = 1_000_000
+
+# definition of Theta_0
+start = np.pi / 12
+end = np.pi / 2
+
+# Draw samples from each distribution
+true_theta = np.random.uniform(start, end, size=reps)
+
+# Create epsilon_target
+epsilon_target = np.logspace(-6, -3, 4)
+
+# noise levels
+noise_levels = np.logspace(-1, -7, 4)
+
+# create parameters dict
+parameters = {
+    "reps": 1,
+    "true_theta": true_theta,
+    "max_iter": max_iter,
+    "epsilon_target": epsilon_target,
+    "post_processing": True,
+    "zeta": noise_levels,
+}
+
+# + tags=[]
+results_dir = "results/simulations/ExAE-smart/"
+
+results_exae = run_experiments_parameters(
+    experiment=EXPERIMENT.copy(),
+    run_or_load=run_or_load,
+    results_dir=results_dir,
+    parameters=parameters,
+    experiment_f=run_one_experiment_exae,
+)
+# + tags=[]
+fig, ax = plt.subplots()
+
+epsilon_targets = [1e-5, 1e-3]
+
+for zeta in noise_levels:
+    for epsilon_target in epsilon_targets:
+        rules = {"epsilon_target": epsilon_target, "zeta": zeta}
+        results_exae_sliced = get_results_slice(results_exae, rules=rules)
+
+        oracle_queries = np.array(
+            [
+                result.num_oracle_queries
+                for result in results_exae_sliced.values()
+            ]
+        )
+
+        x = [zeta] * len(oracle_queries)
+        color = "b" if epsilon_target == 1e-3 else "r"
+        # ax.scatter(x, oracle_queries, color=color, alpha=0.5)
+
+        boxprops = dict(facecolor="none", edgecolor=color)
+        medianprops = dict(color=color)
+        whiskerprops = dict(color=color)
+        capprops = dict(color=color)
+        flierprops = dict(markeredgecolor=color, alpha=0.2)
+        box = ax.boxplot(
+            [oracle_queries],
+            vert=True,
+            positions=[zeta],
+            patch_artist=True,
+            boxprops=boxprops,
+            widths=[0.5 * zeta],
+            medianprops=medianprops,
+            whiskerprops=whiskerprops,
+            capprops=capprops,
+            flierprops=flierprops,
+        )
+
+ax.set_xscale("log")
+ax.set_yscale("log")
+
+ax.set_ylabel("oracle calls")
+ax.set_xlabel(r"noise level $\zeta$")
+
+legend_handles = []
+legend_handles.append(
+    ax.scatter([], [], color="b", label=r"$\varepsilon = 10^{-3}$")
+)
+legend_handles.append(
+    ax.scatter([], [], color="r", label=r"$\varepsilon = 10^{-4}$")
+)
+
+ax.legend(handles=legend_handles)
+
+ax.set_title("Exqaliber AE query complexity and noise")
+
+plt.savefig("figures/query-exae-noisy.pdf", dpi=300)
+# -
+
 
 # # PREVIOUS EXPERIMENTS FOR REFERENCE
 
