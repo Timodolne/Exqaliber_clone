@@ -756,7 +756,11 @@ def get_results_slice(results, rules={}):
     index = {}
     for k, v in rules.items():
         if k in results["iterables"]:
-            index[results["iterables"].index(k)] = v
+            if not isinstance(v, (list, tuple, set, np.ndarray)):
+                index[results["iterables"].index(k)] = v
+            else:
+                for value in v:
+                    index[results["iterables"].index(k)] = value
         if k in results["fixed"]:
             continue
 
