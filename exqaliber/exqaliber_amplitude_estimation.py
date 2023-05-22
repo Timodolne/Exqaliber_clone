@@ -162,7 +162,7 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
             case "naive":
                 lamda = analytical_lamda
             case "greedy":
-                lamdas = np.arange(0, np.max([2 * analytical_lamda, 200]))
+                lamdas = np.arange(1, np.max([2 * analytical_lamda, 200]), 2)
                 variance_reduction_factors = Normal.eval_lambdas(
                     lamdas,
                     prior_distribution.mean,
