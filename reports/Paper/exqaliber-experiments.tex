@@ -10,7 +10,7 @@ First, we explore the convergence time for a range $\theta \in [0, \pi/2]$. As s
 
 \begin{figure}[htbp]
 	\centering
-	
+
 	\begin{subfigure}{0.45\textwidth}
 		\centering
 		\includegraphics[width=\linewidth]{ExAE-converge-quarter-circle}
@@ -21,11 +21,11 @@ First, we explore the convergence time for a range $\theta \in [0, \pi/2]$. As s
 	\begin{subfigure}{0.45\textwidth}
 		\centering
 		\includegraphics[width=\linewidth]{Iae-converge-quarter-circle}
-		\caption{Median number of oracle calls for IAE to converge to a precision of $\varepsilon = 10^{-3}$, with 25\% and 75\% quartiles shown. Each bar is a region of width $\pi / 120$ with the median number of oracle calls calculated from 50 values of true value $\theta_0$ selected uniformly at random, and a success probability $1 - \alpha$ with $\alpha = 0.01$.}
+		\caption{Median number of oracle calls for IAE to converge to a precision of $\varepsilon = 10^{-3}$, with 25\% and 75\% quartiles shown. Each bar is a region of width $\pi / 120$ with the median number of oracle calls calculated from 50 values of true value $\theta_0$ selected uniformly at random, and a success probability $1 - \alpha$ with $\alpha = 0.01$. \camille{It's actually from 1000 values. I can change that either in the figure, or in the caption.}}
 		\label{fig::Iae-converge-quarter-circle}
 	\end{subfigure}
 \end{figure}
-
+\camille{Misses a caption of the 'full' figure.}
 
 \begin{center}
 	\color{red}
@@ -47,7 +47,7 @@ As seen in Figure \ref{fig::ExAE-converge-on-theta1}, the set $\Theta_1$ perform
 	\label{fig::ExAE-depth-per-step}
 \end{figure}
 
-From now on, we restrict to considering $\theta \in \Theta_0$. 
+From now on, we restrict to considering $\theta \in \Theta_0$.
 
 A source of potential error in this algorithm is the normal approximation made at each step, which removes the theoretical guarantees of the Bernstein-von-Mises theorem. This can be seen in Figure \ref{fig::ExAE-actual-prec-vs-expected-prec}, where should expect $(1-\alpha)\%$ of the points to lie above the diagonal. As a mitigation technique, we post-process the measurement data using the MLE estimator, and recover some of the desired accuracy.
 
@@ -85,7 +85,7 @@ We compare the performance of SAE to IAE and MLAE, and observe that in the noise
 \subsubsection{Decohering Noise}
 We explore the performance of our algorithm for a range of noise rates.
 
-As shown in Figure \ref{fig::ExAE-noisy-max-depth}, the algorithm will not go beyond a depth of $\sim \frac{1}{\lambda}$. 
+As shown in Figure \ref{fig::ExAE-noisy-max-depth}, the algorithm will not go beyond a depth of $\sim \frac{1}{\lambda}$.
 
 \begin{figure}[htbp]
 	\centering
