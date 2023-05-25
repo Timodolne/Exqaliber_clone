@@ -4,6 +4,8 @@
 
 Quantum amplitude estimation (QAE) is a fundamental subroutine in many application areas including quantum chemistry, machine learning, finance, and more. It is the problem of,\textbf{} given access to an $(n+1)$-qubit oracle $\mathcal{A}$ such that $\mathcal{A} \ket{0} = \sqrt{a} \ket{\phi_1} \ket{1} + \sqrt{1-a} \ket{\phi_0} \ket{0}$, estimating $a$. This is a problem of great current interest due to its promise of a quantum quadratic speedup, including potentially on noisy near-term devices.
 
+\comment[id=cdv]{I don't think we should bring up the math in the first paragraph. Maybe we can keep it a bit more high-level.}
+
 The first such algorithm, proposed by Brassard et al. \cite{brassard_2002_q_amp_amp}, works by combining the quantum phase estimation (QPE) algorithm \cite{kitaev_1995_mmts_abelian_stab} with the Grover iteration operator. Although this achieves a provable quantum speedup, this approach is unsuitable for use on near-term devices primarily due to its large circuit depth stemming from (1) the quantum Fourier transform (QFT) \cite{coppersmith_2002_approximate_ft_for_q_factoring} and (2) the controlled unitaries required to prepare the input state of the QFT.
 
 Several recent approaches have studied algorithms achieving the same or similar asymptotic speedups without the use of the QFT, in particular by repeated sampling of the state after only repeated applications of the Grover operator \cite{aaronson_2021_q_approx_counting, suzuki_2020_amp_without_phase, wie_2019_simpler_q_counting}. The underlying motif of this paradigm is the learning of the amplitude by statistical sampling, which is in contrast to Brassard et al.'s method which allows for direct access to the amplitude with high probability. Each of these approaches has its own problems with regards to practical implementation on near-term devices; most notably, rapidly growing gate depths, large constant-factor overheads, and expensive controlled-Grover operations. All of these are problematic in the presence of noise as repeated applications of the Grover operator causes the state to decohohere; after which, without a noise model, information supposedly gained about the amplitude may be incorrect or skewed.
@@ -29,6 +31,8 @@ An important and general application of QAE is Monte Carlo estimation \cite{hein
 \]
 Montanaro \cite{montanaro_2015_q_MC_methods} presents a method for encoding this value in the amplitude of a quantum state, thereby reducing this problem to a case of amplitude estimation, which in turn offers a quadratic speedup for Monte Carlo estimation over classical methods.
 
+\comment[id=cdv]{Monte Carlo is a way to estimate a general integral, right? Not just the mean.}
+
 \subsubsection{Statistical amplitude estimation}
 %Introduce idea of statistical learning of parameter to reduce circuit length
 
@@ -47,6 +51,8 @@ as in Figure \ref{fig::amplitude_amplification}. In the subspace spanned by $\ke
 {\mathcal{U}}^m \mathcal{A} \ket{0} = \sin{ (2m+1) \theta } \ket{\phi_1} \ket{1} + \cos{ (2m+1) \theta } \ket{\phi_0} \ket{0}
 \]
 and so ${\mathcal{U}}^m$ takes the probability of measuring $\ket{\phi_1} \ket{1}$ from $\sin^2{\theta}$ to $\sin^2{(2m+1)\theta}$.
+
+\comment[id=cdv]{We should be consistent in using $k$ or $m$. Later, Joe and I talk about $k$.}
 
 \begin{figure}
 	\centering
@@ -85,6 +91,7 @@ In the ideal (fault-tolerant) model, the probability of measuring $\ket{\phi_1} 
 \[
 \sin^2{(2m+1) \theta } = \frac{1}{2} \left( 1 - \cos{ (4m+2) \theta } \right).
 \]
+\comment[id=cdv]{Here we have the $4$ again, instead of the $2$.}
 If we assume that each iteration of $\mathcal{A}$ or its inverse dampens the oscillating term (which contains information about $\theta$) by some factor $e^{-\lambda}$, where $\lambda \geq 0$ is a constant corresponding to the noisiness of the system, then we can model the new probability of measuring $\ket{\phi_1}\ket{1}$ after $m$ iterations of $\mathcal{U}$ as
 \[
 \Pr(\ket{\phi_1} \ket{1}) = \frac{1}{2} \left( 1 - e^{- \lambda (2m+1)} \cos{ (4m+2) \theta } \right).

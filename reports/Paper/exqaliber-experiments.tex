@@ -6,32 +6,32 @@ We conduct a series of experiments for the noiseless and noisy simulations of ou
 
 \subsection{Simulation}
 \subsubsection{Noiseless}
-First, we explore the convergence time for a range $\theta \in [0, \pi/2]$. Note that as shown in \cite{callison_2022_amp_with_jitter}, so-called exceptional points with poor convergence occur near to rational multiples of $\pi$, therefore we sample values of $\theta$ from continuous distributions instead of equally spaced angles. Figure \ref{fig::ExAE-converge-quarter-circle} shows that the convergence for $\theta$ close to $0$ is several orders of magnitude larger than convergence for other values. For this reason, we consider partitioning the space $\Theta = [0, \pi/2]$ into the central region $\Theta_0 = [\frac{\pi}{12}, \frac{5 \pi}{12}]$ and the edge region $\Theta_1 = \Theta \setminus \Theta_0 = [0, \frac{\pi}{12})$.
+First, we explore the convergence time for a range $\theta \in [0, \pi/2]$. As shown in \cite{callison_2022_amp_with_jitter}, so-called exceptional points with poor convergence occur near to rational multiples of $\pi$, therefore we sample values of $\theta$ from continuous distributions instead of equally spaced angles. Figure \ref{fig::ExAE-converge-quarter-circle} shows that the convergence for $\theta$ close to $0$ is several orders of magnitude larger than convergence for other values. For this reason, we consider partitioning the space $\Theta = [0, \pi/2]$ into the central region $\Theta_0 = [\frac{\pi}{12}, \frac{5 \pi}{12}]$ and the edge region $\Theta_1 = \Theta \setminus \Theta_0 = [0, \frac{\pi}{12})$. Note that this is not the case for some
 
 \begin{figure}[htbp]
 	\centering
-	\includegraphics[scale=0.2]{ExAE-converge-quarter-circle}
-	\caption{Median number of oracle calls for SAE to converge to a precision of $\varepsilon = 10^{-3}$, with 25\% and 75\% quartiles shown. Each bar is a region of width $\pi / 120$ with the median number of oracle calls calculated from 50 values of true value $\theta_0$ selected uniformly at random. The prior for each iteration is taken to be $N(\tilde{\theta}_0, 1)$, where $\tilde{\theta}_0$ is sampled from a $N(\theta_0, 0.1)$ distribution and success probability $1 - \alpha$ with $\alpha = 0.01$.}
-	\label{fig::ExAE-converge-quarter-circle}
-\end{figure}
 
+	\begin{subfigure}{0.45\textwidth}
+		\centering
+		\includegraphics[width=\linewidth]{ExAE-converge-quarter-circle}
+		\caption{Median number of oracle calls for SAE to converge to a precision of $\varepsilon = 10^{-3}$, with 25\% and 75\% quartiles shown. Each bar is a region of width $\pi / 120$ with the median number of oracle calls calculated from 50 values of true value $\theta_0$ selected uniformly at random. The prior for each iteration is taken to be $N(\tilde{\theta}_0, 1)$, where $\tilde{\theta}_0$ is sampled from a $N(\theta_0, 0.1)$ distribution and success probability $1 - \alpha$ with $\alpha = 0.01$.}
+		\label{fig::ExAE-converge-quarter-circle}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.45\textwidth}
+		\centering
+		\includegraphics[width=\linewidth]{Iae-converge-quarter-circle}
+		\caption{Median number of oracle calls for IAE to converge to a precision of $\varepsilon = 10^{-3}$, with 25\% and 75\% quartiles shown. Each bar is a region of width $\pi / 120$ with the median number of oracle calls calculated from 50 values of true value $\theta_0$ selected uniformly at random, and a success probability $1 - \alpha$ with $\alpha = 0.01$}
+		\label{fig::Iae-converge-quarter-circle}
+	\end{subfigure}
+\end{figure}
+\comment[id=cdv]{Misses a caption of the 'full' figure.}
+\comment[id=cdv]{It's actually from 1000 values. I can change that either in the figure, or in the caption.}
 \begin{center}
 	\color{red}
 	(The following is all conjecture as we don't have a comparison graph.) \\
-As seen in Figure \ref{fig::ExAE-converge-on-theta1}, the set $\Theta_1$ performs poorly for all methods that take a statistical approach. This region contains points where the variance reduction factor approaches 0, with the extreme points where $\theta= 0, \pi$. 
-\begin{itemize}
-	\color{red}
-	\item We should consider how the QoPrime and Power-law AE algorithms deal with $\Theta_1$
-	\item May need a gradient graph here?
-	\item Or graph of variance update ratios - there are some times when it's negative for both, negative for neither or negative for only one.
-\end{itemize}
+As seen in Figure \ref{fig::ExAE-converge-on-theta1}, the set $\Theta_1$ performs poorly for all methods that take a statistical approach. This region contains points where the variance reduction factor approaches 0, with the extreme points where $\theta= 0, \pi$.
 \end{center}
-
-\begin{figure}[htbp]
-	\centering
-	\caption{Median number of oracle calls for $\theta \in \Theta_1$ and fixed error rate $\varepsilon = 10^{-3}$ for different statistical amplitude estimation routines. Each section of the histogram is a region of width $\pi/120$ with the median number of oracle calls calculated from 30 values of true value $\theta_0$ selected uniformly at random. The prior for each iteration is taken to be $N(\theta_0, 1)$ and success probability $1 - \alpha$ with $\alpha = 0.01$.}
-	\label{fig::ExAE-converge-on-theta1}
-\end{figure}
 
 \begin{figure}[htbp]
 	\centering
@@ -47,7 +47,7 @@ As seen in Figure \ref{fig::ExAE-converge-on-theta1}, the set $\Theta_1$ perform
 	\label{fig::ExAE-depth-per-step}
 \end{figure}
 
-From now on, we restrict to considering $\theta \in \Theta_0$. 
+From now on, we restrict to considering $\theta \in \Theta_0$.
 
 A source of potential error in this algorithm is the normal approximation made at each step, which removes the theoretical guarantees of the Bernstein-von-Mises theorem. This can be seen in Figure \ref{fig::ExAE-actual-prec-vs-expected-prec}, where should expect $(1-\alpha)\%$ of the points to lie above the diagonal. As a mitigation technique, we post-process the measurement data using the MLE estimator, and recover some of the desired accuracy.
 
@@ -82,10 +82,19 @@ We compare the performance of SAE to IAE and MLAE, and observe that in the noise
 	\label{fig::compare-paths-oracle-calls}
 \end{figure}
 
+For the SAE routine, we also calculate the expected and exact probability of the Bernoulli sample at each stage. \ref{fig::exae-expected-probability} is a typical example of a SAE run, where the probability is initially expected to be 0 for a substantial amount of time, before approaching $\frac{1}{2}$ for the remainder of the run.
+
+\begin{figure}[htpb]
+	\centering
+	\includegraphics[width=0.8\textwidth]{exae-expected-probability}
+	\caption{Exact and expected probability calculation for a single run of SAE.}
+	\label{fig::exae-expected-probability}
+\end{figure}
+
 \subsubsection{Decohering Noise}
 We explore the performance of our algorithm for a range of noise rates.
 
-As shown in Figure \ref{fig::ExAE-noisy-max-depth}, the algorithm will not go beyond a depth of $\sim \frac{1}{\lambda}$. 
+As shown in Figure \ref{fig::ExAE-noisy-max-depth}, the algorithm will not go beyond a depth of $\sim \frac{1}{\lambda}$.
 
 \begin{figure}[htbp]
 	\centering
@@ -96,6 +105,7 @@ As shown in Figure \ref{fig::ExAE-noisy-max-depth}, the algorithm will not go be
 
 \begin{figure}[htbp]
 	\centering
+	\missingfigure{}
 	\caption{Total number of oracle queries for SAE with decohering noise characterised by $\lambda = 10^{-1}, 10^{-2}, \ldots, 10^{-7}$. Each point is a single value of $\theta_0 \in \Theta_0$. We sample uniformly from $\Theta_0$ for 30 values of $\theta_0$. Each value of $\theta_0$ is evaluated for all decohering noise values and each target $\varepsilon$. The prior for each iteration is taken to be $N(\theta_0, 1)$ and success probability $1 - \alpha$ with $\alpha = 0.01$.}
 	\label{fig::query-exae-noisy}
 \end{figure}
@@ -107,6 +117,7 @@ As shown in Figure \ref{fig::ExAE-noisy-max-depth}, the algorithm will not go be
 
 \begin{figure}[htbp]
 	\centering
+	\missingfigure{}
 	\caption{Final precision versus total number of oracle queries used for IAE, MLAE and SAE with decohering noise characterised by $\lambda = 10^{-3}$. We target precisions of $\varepsilon = 10^{-3}, 10^{-4}, \ldots , 10^{-7}$, with each point a single value of $\theta_0 \in \Theta_0$. We sample uniformly from $\Theta_0$ for 30 values of $\theta_0$. Each value of $\theta_0$ is evaluated for all algorithms and each target $\varepsilon$. The prior for each iteration is taken to be $N(\theta_0, 1)$ and success probability $1 - \alpha$ with $\alpha = 0.01$.}
 	\label{fig::query-comparison-noisy}
 \end{figure}
