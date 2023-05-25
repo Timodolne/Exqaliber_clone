@@ -82,6 +82,15 @@ We compare the performance of SAE to IAE and MLAE, and observe that in the noise
 	\label{fig::compare-paths-oracle-calls}
 \end{figure}
 
+For the SAE routine, we also calculate the expected and exact probability of the Bernoulli sample at each stage. \ref{fig::exae-expected-probability} is a typical example of a SAE run, where the probability is initially expected to be 0 for a substantial amount of time, before approaching $\frac{1}{2}$ for the remainder of the run.
+
+\begin{figure}[htpb]
+	\centering
+	\includegraphics[width=0.8\textwidth]{exae-expected-probability}
+	\caption{Exact and expected probability calculation for a single run of SAE.}
+	\label{fig::exae-expected-probability}
+\end{figure}
+
 \subsubsection{Decohering Noise}
 We explore the performance of our algorithm for a range of noise rates.
 
