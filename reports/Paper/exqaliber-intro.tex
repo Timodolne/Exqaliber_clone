@@ -8,7 +8,7 @@ Quantum amplitude estimation (QAE) is a fundamental subroutine in many applicati
 
 The first such algorithm, proposed by Brassard et al. \cite{brassard_2002_q_amp_amp}, works by combining the quantum phase estimation (QPE) algorithm \cite{kitaev_1995_mmts_abelian_stab} with the Grover iteration operator. Although this achieves a provable quantum speedup, this approach is unsuitable for use on near-term devices primarily due to its large circuit depth stemming from (1) the quantum Fourier transform (QFT) \cite{coppersmith_2002_approximate_ft_for_q_factoring} and (2) the controlled unitaries required to prepare the input state of the QFT.
 
-Several recent approaches have studied algorithms achieving the same or similar asymptotic speedups without the use of the QFT, in particular by repeated sampling of the state after only repeated applications of the Grover operator \cite{aaronson_2021_q_approx_counting, suzuki_2020_amp_without_phase, wie_2019_simpler_q_counting}. The underlying motif of this paradigm is the learning of the amplitude by statistical sampling, which is in contrast to Brassard et al.'s method which allows for direct access to the amplitude with high probability. Each of these approaches has its own problems with regards to practical implementation on near-term devices; most notably, rapidly growing gate depths, large constant-factor overheads, and expensive controlled-Grover operations. All of these are problematic in the presence of noise as repeated applications of the Grover operator causes the state to decohere; after which, without a noise model, information supposedly gained about the amplitude may be incorrect or skewed.
+Several recent approaches have studied algorithms achieving the same or similar asymptotic speedups without the use of the QFT, by repeated sampling of the state after further applications of the Grover operator \cite{aaronson_2021_q_approx_counting, suzuki_2020_amp_without_phase, wie_2019_simpler_q_counting}. The underlying motif of this paradigm is the learning of the amplitude by statistical sampling, in contrast to Brassard et al.'s method which allows for direct access to the amplitude with high probability. Each of these approaches has its own problems with regards to practical implementation on near-term devices; most notably, rapidly growing gate depths, large constant-factor overheads, and expensive controlled-Grover operations. All of these are problematic in the presence of noise as repeated applications of the Grover operator causes the state to \comment[id=jlt]{Is this accurate? There's something I don't quite agree with in this description} decohere; after which, without a noise model, information supposedly gained about the amplitude may be incorrect or skewed.
 
 In this work, we present hybrid quantum-classical algorithms for QAE with a focus on minimal circuit depth and measurement counts, and taking into account the noisiness of near-term devices. {\color{purple} (tbc. after we know what's in the rest of the report)}
 
@@ -18,12 +18,12 @@ In this work, we present hybrid quantum-classical algorithms for QAE with a focu
 \begin{problem}[Quantum Amplitude Estimation]
 	Given some $(n+1)$-qubit oracle $\mathcal{A}$ which generates the state
 	\[
-	\mathcal{A} \ket{0} = \sqrt{a} \ket{\phi_1} \ket{1} + \sqrt{1-a} \ket{\phi_0} \ket{0},
+	\mathcal{A} \ket{0}^{\otimes n+1} = \sqrt{a} \ket{\phi_1} \ket{1} + \sqrt{1-a} \ket{\phi_0} \ket{0},
 	\]
 	where $\ket{\phi_1}$ and $\ket{\phi_0}$ are arbitrary normalised $n$-qubit states and $0 \leq a \leq  1$, quantum amplitude estimation (QAE) is the problem of estimating the unknown amplitude $\sqrt{a}$.
 \end{problem}
 
-The `naive', classical way to solve this problem is to simply prepare and measure this state many (say $N$) times, counting the number of times $\ket{\phi_1}\ket{1}$ was observed (say $K$), then define the estimate for $\sqrt{a}$ as $\sqrt{K/N}$. Chebyshev's inequality tells us that taking $N \in O(\varepsilon^{-2})$ samples is sufficient to approximate $\sqrt{a}$ within additive error $\varepsilon$ (with, say, 99\% confidence). Furthermore, this is asymptotically optimal \cite{dagum_2000_opt_alg_for_MC_est}. By contrast, in a manner which will be made more precise in following sections, quantum computers allow us to modify the state before measurement, which allows us to achieve the same degree of accuracy using only $O(\varepsilon^{-1})$ queries (known as the Heisenberg limit), achieving a quadratic quantum speedup \cite{brassard_2002_q_amp_amp}.
+The `naive', classical way to solve this problem is to simply prepare and measure this state $N$ times, counting the number of times $K$, that $\ket{\phi_1}\ket{1}$ was observed, then define the estimate for $\sqrt{a}$ as $\sqrt{K/N}$. Chebyshev's inequality tells us that taking $N \in O(\varepsilon^{-2})$ samples is sufficient to approximate $\sqrt{a}$ within additive error $\varepsilon$ (with, say, 99\% confidence). Furthermore, this is asymptotically optimal \cite{dagum_2000_opt_alg_for_MC_est}. By contrast, in a manner which will be made more precise in following sections, quantum computers allow us to modify the state before measurement, enabling us to achieve the same degree of accuracy using only $O(\varepsilon^{-1})$ queries (known as the Heisenberg limit), a quadratic quantum speedup \cite{brassard_2002_q_amp_amp}.
 
 An important and general application of QAE is Monte Carlo estimation \cite{heinrich_2002_q_sum_for_integration, montanaro_2015_q_MC_methods, suzuki_2020_amp_without_phase} - a method for estimating the mean value of a function via random sampling. More precisely, given some function $f : \{0,1\}^n \rightarrow [0,1]$, the task is to estimate the mean value
 \[
@@ -36,7 +36,7 @@ Montanaro \cite{montanaro_2015_q_MC_methods} presents a method for encoding this
 \subsubsection{Statistical amplitude estimation}
 \comment[id=jlt]{Are we calling all the non-canonical algorithms this? I've been using it to refer to only our algorithm - and I don't think anyone else has a claim to this name.}
 %Introduce idea of statistical learning of parameter to reduce circuit length
-
+\comment[id=jlt]{Rephrase this sentence?}
 Although the original QAE algorithm based on QPE is still the superior algorithm to run on a fault-tolerant quantum computer, the noisiness of near-term devices makes all algorithms utilising the QFT, including the aforementioned algorithm, very difficult to implement (primarily due to the large circuit depth). Thus, the current paradigm in the design of QAE algorithms is to sample the state after amplitude amplification of the state $\mathcal{A} \ket{0}$, refining the estimate for $\sqrt{a}$ and increasing confidence in the estimate with consecutive samples.
 
 By setting $\theta = \sin^{-1}{\sqrt{a}}$, we can rewrite the state as
@@ -67,6 +67,7 @@ and so ${\mathcal{U}}^m$ takes the probability of measuring $\ket{\phi_1} \ket{1
 	\label{fig::amplitude_amplification}
 \end{figure}
 
+\textbf{Feels like we're missing some things about post-processing here, that are later referred to in the algorithm section.}
 %\begin{figure}[H]
 %	\centering
 %	\begin{tikzpicture}
@@ -84,7 +85,7 @@ and so ${\mathcal{U}}^m$ takes the probability of measuring $\ket{\phi_1} \ket{1
 \subsubsection{Decoherent noise model}
 %Introduce model for decoherent noise and associated effects on statistical problem
 
-Performing Bayesian inference without a noise model on a device which in reality is noisy may cause incorrect information to be attained about the angle $\theta$. For example, if the true angle $\theta = 0$, then, if the system were truly noiseless, no number of Grover iterates should affect the state and make it possible to measure $\ket{\phi_1} \ket{1}$. However, in the realistic noisy case, depolarisation stemming from the application of gates may cause the probability of measuring $\ket{\phi_1} \ket{1}$ to rise above $0$ nonetheless. If we measure this state, without a noise model, our understanding of the angle effectively eliminates the case $\theta = 0$. The presence of a noise model mitigates this issue by effectively decreasing confidence in the measurement outcome as the number of Grover iterations increases, thereby retaining the possibility that the non-zero probability was the result of noise.
+Performing Bayesian inference without a noise model on a device which in reality is noisy may cause incorrect information to be attained about the angle $\theta$. For example, if the true angle $\theta = 0$, then, if the system were truly noiseless, no number of Grover iterates should affect the state and make it possible to measure $\ket{\phi_1} \ket{1}$. However, in the realistic noisy case, \comment[id=jlt]{same as earlier}depolarisation stemming from the application of gates may cause the probability of measuring $\ket{\phi_1} \ket{1}$ to rise above $0$ nonetheless. If we measure this state, without a noise model, our understanding of the angle effectively eliminates the case $\theta = 0$. The presence of a noise model mitigates this issue by effectively decreasing confidence in the measurement outcome as the number of Grover iterations increases, thereby retaining the possibility that the non-zero probability was the result of noise.
 
 In the presence of depolarising noise, it is reasonable to assume that consecutive applications of $\mathcal{A}$ and its inverse cause, on average, the probability of measuring $\ket{\phi_1}\ket{1}$ to tend to $\frac{1}{2}$, at which point no information about the original state is recoverable.
 
@@ -97,24 +98,24 @@ If we assume that each iteration of $\mathcal{A}$ or its inverse dampens the osc
 \[
 \Pr(\ket{\phi_1} \ket{1}) = \frac{1}{2} \left( 1 - e^{- \lambda (2m+1)} \cos{ (4m+2) \theta } \right).
 \]
-Here, the exponent contains the term $2m+1$ since we need one application of $\mathcal{A}$ to prepare the state, then each iteration of $\mathcal{U}$ requires one call to $\mathcal{A}$ and another to its inverse.
+\comment[id=jlt]{Feels like we're missing a noise channel explanation here. I'm expecting to see a density matrix etc.}Here, the exponent contains the term $2m+1$ since we need one application of $\mathcal{A}$ to prepare the state, then each iteration of $\mathcal{U}$ requires one call to $\mathcal{A}$ and another to its inverse.
 
 {\color{purple} (maybe write some more about what we do with this noise model - tbc. after the rest of the report is written)}
 
 \subsection{Related work}
 %Review of related work and papers
-
-Brassard et al. \cite{brassard_2002_q_amp_amp} were the authors of the first QAE algorithm, now often referred to as canonical QAE. The idea is that the Grover operator $\mathcal{U}$ as defined above contains the amplitude of the corresponding state in its eigenvalues, and thus the QPE algorithm can be used with $\mathcal{U}$ to extract this value. This method allows for direct access to the amplitude to within additive error $\varepsilon$ with high probability using $O(\varepsilon^{-1})$ queries to $\mathcal{A}$, which makes it still the superior algorithm for QAE on a fault-tolerance quantum computer. However, its reliance on controlled Grover iterates and the QFT make it very difficult to implement on near-term devices, which has inspired much subsequent work on QAE without the use of the QFT.
+\comment[id=jlt]{I reference a lot of these algorithms, so could do with the names IAE, MLAE in here}
+Brassard et al. \cite{brassard_2002_q_amp_amp} authored the first QAE algorithm, now often referred to as canonical QAE. The idea is that the Grover operator $\mathcal{U}$ as defined above contains the amplitude of the corresponding state in its eigenvalues, and thus the QPE algorithm can be used with $\mathcal{U}$ to extract this value. This method allows for direct access to the amplitude to within additive error $\varepsilon$ with high probability using $O(\varepsilon^{-1})$ queries to $\mathcal{A}$, which makes it still the superior algorithm for QAE on a fault-tolerant quantum computer. However, its reliance on controlled Grover iterates and the QFT make it very difficult to implement on near-term devices, which has inspired much subsequent work on QAE without the use of the QFT.
 
 Suzuki et al. \cite{suzuki_2020_amp_without_phase} propose a QFT-free QAE algorithm based on maximum likelihood estimation. Although lacking a rigorous proof, numerical simulation seems to show that their algorithm achieves the asymptotically optimal scaling of measurements. However, the scheme which achieves this scaling incurs an exponentially increasing number of Grover iterates at each step, which is problematic especially in the presence of noise. Furthermore, the choice of number of Grover iterates is not dependent on previous measurement outcomes, which suggests that there is further optimisation to be achieved in minimising the circuit depth.
 
-Wie \cite{wie_2019_simpler_q_counting} sketches another QFT-free QAE algorithm based on Hadamard tests, similar to that which is used in iterative phase estimation as presented by Kitaev \cite{kitaev_1995_mmts_abelian_stab}. Apart from also lacking a proof of optimality, Wie's algorithm uses the more expensive controlled-Grover operations.
+Wie \cite{wie_2019_simpler_q_counting} sketches another QFT-free QAE algorithm based on Hadamard tests, similar to their use in iterative phase estimation as presented by Kitaev \cite{kitaev_1995_mmts_abelian_stab}.\comment[id=jlt]{Rephrase? Currently feels a bit off like we're making disparaging comments about the alg} Apart from also lacking a proof of optimality, Wie's algorithm uses the more expensive controlled-Grover operations.
 
 Aaronson and Rall \cite{aaronson_2021_q_approx_counting} also present an algorithm for QFT-free QAE, and were the first to rigorously prove a quadratic speedup for such an algorithm. Although this algorithm achieves the optimal asymptotic complexity, large constant-factor overheads make it impractical for use even in the fault-tolerant case \cite{grinko_2021_iterative_qae}.
 
 Grinko et al. \cite{grinko_2021_iterative_qae} present an algorithm called iterative QAE which combines ideas from previous works and greedily chooses the number of Grover iterates at each step to maximise the quantum Fisher information. They prove that their algorithm is optimal up to a double-logarithmic factor and has much smaller constant factors than comparable algorithms.
 
-Giurgica-Tiron et al. \cite{giurgica_2022_low_depth_for_qae} design algorithms which interpolate between classical and quantum amplitude estimation algorithms with the aim of utilising parallelism to minimise overall circuit depth. Their algorithms achieve a query complexity of $ \tilde{O} \left( \varepsilon^{-(1 + \beta)} \right) $ where $\beta \in (0,1]$ is some parameter corresponding to the balance between classical and quantum queries.
+Giurgica-Tiron et al. \cite{giurgica_2022_low_depth_for_qae} design algorithms which interpolate between classical and quantum amplitude estimation algorithms with the aim of utilising parallelism to minimise overall circuit depth. Their algorithms achieve a query complexity of $ \tilde{O} \left( \varepsilon^{-(1 + \beta)} \right) $ where $\beta \in (0,1]$ is some parameter corresponding to the balance between classical and quantum queries. \comment[id=jlt]{Do we want to say anything about Power Law or QoPrime explicitly here? Feels like we should at least name check them.}
 
 Smith et al. \cite{smith_2023_adaptive_bayesian_qae} present an algorithm for QFT-free QPE (which can equivalently be used for QAE by replacing the unitary operator with the Grover iterate) which is also based on maximising Fisher information. They prove that it achieves the Heisenberg limit in the noiseless case, and prove that it achieves the best possible query complexity in the presence of depolarising noise.
 
