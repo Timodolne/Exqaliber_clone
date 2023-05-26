@@ -2,9 +2,10 @@
 \section{Algorithm}
 As discussed in \ref{sec::intro} the algorithm is made up of two parts, the sampling algorithms which provides a dynamic sampling scheme to reach the desired accuracy and the post-processing algorithm which generate the final estimate of $\theta$ in an offline fashion. The reason for this two stage approach is that maintaining a true representation of the current state and uncertainty during the sampling scheme is too computationally intensive so we utilise a low dimensional approximation. In most cases provides a high quality estimate which enables us to carry out an online optimisation of sample number and depth. Once all the samples are obtain rather than return the approximation, which does not have the full predictive power, we re-estimate $\theta$ utilising the full data set that we have obtained during the sampling. This means the errors introduced by the approximation procedure do not effect the final estimate.
 
-In this paper the novel work is in the sampling procedure and the associated modelling. For the post-processing we use the maximum likelihood estimate (MLE) originally described in \cite{MLE}. For this reason here we concentrate on the sampling algorithm and include a short introduction to the MLE at the end of this section.
+In this paper the novel work is in the sampling procedure and the associated modelling. For the post-processing we use the maximum likelihood estimate (MLE) originally described in \cite{MLE}. \comment[id=cdv]{Missing citation}For this reason here we concentrate on the sampling algorithm and include a short introduction to the MLE at the end of this section.
 
 \subsection{Sampling algorithm}
+\comment[id=cdv]{I like this pseudocode. However, when I read it through the story, I don't fully understand it, because the equations \ref{eqn::varfactor}, \ref{eqn::mean}, and \ref{eqn::var} come much later.}
 Here we describe the sampling algorithm and associated theoretical underpinning initially in the noiseless case and then introduce the adjustment required to deal with the introduction of depolarising noise. The fundamental idea is that we maintain a current state representing our belief about the value of the parameter of interest, $\mu$, and the current level of uncertainty, $\sigma^2$. Then at each step we decide if enough samples have been obtained, i.e. $\sigma^2$ is small enough for the required accuracy, or to generate another sample.
 
 If another sample is generated we need to select the depth at which to sampling circuit is executed and using the result update the state, i.e. our belief. In both cases we use a Bayesian framework to do this, see \ref{sec::bayes}. Within this framework, the uncertainty $\sigma^2$ is an estimate of the posterior variance for $\theta$ and $\mu$, the current belief of $\theta$, is an estimate of the posterior mean. At each step the next sampling depth is selected to minimise the expected posterior variance given the estimate of the current belief, i.e. the depth which in expectation moves us closest to terminating the sampling. After executing the sampling circuit, the state is updated by calculating the posterior mean and variance. This is where the main approximation is used, unfortunately maintaining and manipulating  an estimate of the true posterior distribution is computationally intensive so after every step we approximate the posterior distribution by a normal distribution. This is then used as the prior distribution for the next step, for more details see Section \ref{sec::bayes}.
@@ -24,7 +25,6 @@ Having described the algorithm we now provide a pseudocode specification of the 
 		\EndWhile
 	\end{algorithmic}
 \end{algorithm}
-
 
 \subsubsection{Bayesian framework}\label{sec::bayes}
 Through the design of this algorithm we have embraced a Bayesian approach \cite{} and used this to generate a sequential sampling algorithm. Note, an important difference from the standard sequential algorithms is that normally we are only interested in deciding when to stop sampling but here we also have control of the sampling distribution.
@@ -55,7 +55,7 @@ Var(\theta) &= TBA \label{eqn::postvac}\\
 
 The key advantage of the approach given in this work over the previous work, \cite{}, is the dynamic sampling scheme which utilises the current belief to minimise the work to obtain an estimate. To do this we look to maximise the information gain per sample or equivalently maximise the reduction in variance of our belief from each sample. The decision variable throughout is circuit depth for the next sample, i.e. the number applications of the Grover operators.
 
-To do this we utilise the expected reduction in variance, see equation \ref{eqn::postvar}. Given our current state , $(\mu,\sigma^2)$, we select the depth that minimises the equation \ref{eqn::postvac}, note the optimisation is over integers. Rather than directly minimise this instead we look to maximise the variance reduction factor,
+To do this we utilise the expected reduction in variance, see equation \ref{eqn::postvar}. Given our current state , $(\mu,\sigma^2)$, we select the depth that minimises the equation \ref{eqn::postvac}, note the optimisation is over integers\comment[id=cdv]{odd integers right?}. Rather than directly minimise this instead we look to maximise the variance reduction factor,
 \begin{equation} h(\mu,\sigma^2,d) =?? \label{eqn::varfactor}\end{equation}
 which is equivalent to minimising the expected variance. See figure \ref{} for an example of this function which is typical and integer points for which we are maximising over. There are a couple of features to note:
 \begin{itemize}
@@ -82,13 +82,13 @@ For the derivation see Appendix \ref{app::noise}.
 
 It is useful to note that we can model the algorithm as a Markov process on $\mathbb{R}^2$ with the state as $(\mu,\sigma^2)$. We can see this from equations \ref{eqn::mean} and \ref{eqn::var}, since the state update only depends on the current state, the depths which is again only a function of the current state and the random sample. This means that it obeys the Markov property, giving use a Markov process. If we look closely at equation \ref{eqn::var} we note that the update is multiplicative in nature. By taking the log of the variance, $\nu=\log(\sigma^2)$, we change this to additive process which provides us with a number of insights.
 
-Firstly, if we consider the expected decrease in $\nu$ by taking the log of equation \ref{eqn::postvac} at the optimal depth we find this is $o(1)$, see Appendix \ref{app::decrease} through out. This means that the number of circuit executions to reach an accuracy of order $\epsilon$ will be $-\log(\epsilon)$ and $\nu$ decreases linearly in the number of iterations. This is something we observe in the experimentations, see Section \ref{}.
+Firstly, if we consider the expected decrease in $\nu$ by taking the log of equation \ref{eqn::postvac} at the optimal depth we find this is $o(1)$, see Appendix \ref{app::decrease} through out. This means that the number of circuit executions to reach an accuracy of order $\epsilon$ will be $-\log(\epsilon)$\comment[id=cdv]{$1/\epsilon$, right?? Or we would have exponential speed-up over classical monte carlo.} and $\nu$ decreases linearly in the number of iterations. This is something we observe in the experimentations, see Section \ref{}.
 
 Secondly, by consider $\nu$ we can see why we need to calculate analytically the change in variance rather than use a sampling scheme. It is well known that the sample variance is an unbiased estimator of the true variance, i.e. $\mathbb{E}(S^2)=\sigma^2$ where $S^2$ is the sample variance, which would indicate that we can use a sample from the posterior distribution to estimate the variance. Unfortunately, this is not true as the $\log(S^2)$ is not an unbiased estimator of $\log(\sigma^2)$, we have $$ \mathbb{E}(\log(S^2)) = \mathbb{E}(\log(\sigma^2)) +\kappa, $$ where $\kappa>0$. For details, see Appendix \ref{app::logvar}. This means that if the sample variance is used to estimate the variance of the posterior we have a systematic drift which means the uncertainty is underestimated. This is not so problematic in the noiseless case as all steps of $\nu$ are order 1 but in the case with noise the step size decays with $\nu$ so the systematic drift dominates leading to under sampling.
 
 
 
-{\color{red} {\bf Note:} Can we prove something about optimality of greedy strategy given the maximum reduction factor and bounds on the value function? (we know bounded between inverse square and inverse)}
+{\color{red} {\bf Note:} Can we prove something about optimality of greedy strategy given the maximum reduction factor and bounds on the value function? (we know bounded between inverse square and inverse)}\comment[id=cdv]{I think we can make an argument that it's negligble, and that, if we wanted, we should be able to find the maximum analytically.}
 
 
 
