@@ -1,12 +1,12 @@
 \section{Experimentation}
 %Describe experiments and performance measures
 %Two measures of interest, time to solution and quality of solutions
-We conduct a series of experiments for the noiseless and noisy simulations of our algorithm in this section. We empirically compare against the IAE and MLAE algorithms. As the update steps for these algorithms are equivalent to sampling from a Bernoulli distribution for a given choice of $\theta_0$ and noise level we sample directly from the Bernoulli distribution instead of simulating the dynamics of a quantum system for each algorithm. This algorithm has also been implemented and tested using Qiskit \cite{Qiskit}, with a view for future experiments with quantum simulators and quantum hardware.
+We conduct a series of experiments for the noiseless and noisy simulations of our algorithm in this section. We empirically compare against the \comment[id=jlt]{Need referencing either the actual papers, or just saying the acronyms earlier}IAE and MLAE algorithms. As the update steps for these algorithms are equivalent to sampling from a Bernoulli distribution for a given choice of $\theta_0$ and noise level we sample directly from the Bernoulli distribution instead of simulating the dynamics of a quantum system for each algorithm. This algorithm has also been implemented and tested using Qiskit \cite{Qiskit}, with a view for future experiments with quantum simulators and quantum hardware.
 
 
 \subsection{Simulation}
 \subsubsection{Noiseless}
-First, we explore the convergence time for a range $\theta \in [0, \pi/2]$. As shown in \cite{callison_2022_amp_with_jitter}, so-called exceptional points with poor convergence occur near to rational multiples of $\pi$, therefore we sample values of $\theta$ from continuous distributions instead of equally spaced angles. Figure \ref{fig::ExAE-converge-quarter-circle} shows that the convergence for $\theta$ close to $0$ is several orders of magnitude larger than convergence for other values. For this reason, we consider partitioning the space $\Theta = [0, \pi/2]$ into the central region $\Theta_0 = [\frac{\pi}{12}, \frac{5 \pi}{12}]$ and the edge region $\Theta_1 = \Theta \setminus \Theta_0 = [0, \frac{\pi}{12})$. Note that this is not the case for some
+First, we explore the convergence time for $\theta \in [0, \pi/2]$. As shown in \cite{callison_2022_amp_with_jitter}, so-called exceptional points with poor convergence occur near to rational multiples of $\pi$, therefore we sample values of $\theta$ from continuous distributions instead of equally spaced angles. Figure \ref{fig::ExAE-converge-quarter-circle} shows that the convergence for $\theta$ close to $0$ is several orders of magnitude larger than convergence for other values. For this reason, we consider partitioning the space $\Theta = [0, \pi/2]$ into the central region $\Theta_0 = [\frac{\pi}{12}, \frac{5 \pi}{12}]$ and the edge region $\Theta_1 = \Theta \setminus \Theta_0 = [0, \frac{\pi}{12})$. This is region of poor convergence is inherent to the use of likelihood-based sampling regimes, and is not shared by IAE (see \ref{fig::Iae-converge-quarter-circle}).
 
 \begin{figure}[htbp]
 	\centering
@@ -49,7 +49,7 @@ As seen in Figure \ref{fig::ExAE-converge-on-theta1}, the set $\Theta_1$ perform
 
 From now on, we restrict to considering $\theta \in \Theta_0$.
 
-A source of potential error in this algorithm is the normal approximation made at each step, which removes the theoretical guarantees of the Bernstein-von-Mises theorem. This can be seen in Figure \ref{fig::ExAE-actual-prec-vs-expected-prec}, where should expect $(1-\alpha)\%$ of the points to lie above the diagonal. As a mitigation technique, we post-process the measurement data using the MLE estimator, and recover some of the desired accuracy.
+A source of potential error in this algorithm is the normal approximation made at each step, which removes the theoretical guarantees of the \comment[id=jlt]{This may need references to earlier in the algorithm section}Bernstein-von-Mises theorem. This can be seen in Figure \ref{fig::ExAE-actual-prec-vs-expected-prec}, where should expect $(1-\alpha)\%$ of the points to lie above the diagonal. As a mitigation technique, we post-process the measurement data using the MLE estimator, and recover some of the desired accuracy.
 
 \begin{figure}[htbp]
 	\centering
@@ -65,7 +65,7 @@ A source of potential error in this algorithm is the normal approximation made a
 	\label{fig::ExAE-actual-prec-over-theta}
 \end{figure}
 
-We compare the performance of SAE to IAE and MLAE, and observe that in the noiseless case we achieve similar query to IAE. However, there still remain some points for which SAE fails to satisfactorily converge.
+We compare the performance of SAE to IAE and MLAE, and observe that in the noiseless case we achieve similar numbers of oracle queries to IAE. However, there still remain some points for which SAE fails to satisfactorily converge.
 
 \begin{figure}[htbp]
 	\centering
