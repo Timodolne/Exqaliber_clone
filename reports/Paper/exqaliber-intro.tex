@@ -1,20 +1,26 @@
 
 \section{Introduction}
 %Basic introduction giving definition and contribution
+A number of key quantum subroutines, including both quantum phase estimation and amplitude estimation, in their standard forms  \cite{qpe,ae} require fault tolerant quantum computers. This requirement is due to their long circuit depth coupled with their lack of resilience to any noise. This requirement means their viability in the coming decade is very low and could prevent the potential of quantum computing be unrealised for many years to come. A recent trend in quantum algorithms development has started to explore other alternative formulations \cite{suzuki_2020_amp_without_phase,smith_2023_adaptive_bayesian_qae} with significantly lower requirements, due to both shorter circuits and potential for noise resilience. The fundamental idea is to use the quantum computer to cleverly generate samples from a range of distributions dependent on the information/parameter of interest and process these samples to provide an estimate for the parameter. For this reason we refer to this general approach for amplitude estimation as statistical amplitude estimation (SAE). This work builds these approaches to develop a new algorithm, Recursive Amplitude Estimation (RAE), through the utilisation a Bayesian framework to enable recursive approach sample collection. This enables us to produce an algorithm which both optimises the circuit execution in an online fashion reducing the total computational work to generate an estimate to a given accuracy but is also easily adaptable to the inclusion of noise.  
+
+
 
 Quantum amplitude estimation (QAE) is a fundamental subroutine in many application areas including quantum chemistry, machine learning, finance, and more. It is the problem of,\textbf{} given access to an $(n+1)$-qubit oracle $\mathcal{A}$ such that $\mathcal{A} \ket{0} = \sqrt{a} \ket{\phi_1} \ket{1} + \sqrt{1-a} \ket{\phi_0} \ket{0}$, estimating $a$. This is a problem of great current interest due to its promise of a quantum quadratic speedup, including potentially on noisy near-term devices.
 
 \comment[id=cdv]{I don't think we should bring up the math in the first paragraph. Maybe we can keep it a bit more high-level.}
+\comment[id=jc]{New paragraph added to deal with this}
 
-The first such algorithm, proposed by Brassard et al. \cite{brassard_2002_q_amp_amp}, works by combining the quantum phase estimation (QPE) algorithm \cite{kitaev_1995_mmts_abelian_stab} with the Grover iteration operator. Although this achieves a provable quantum speedup, this approach is unsuitable for use on near-term devices primarily due to its large circuit depth stemming from (1) the quantum Fourier transform (QFT) \cite{coppersmith_2002_approximate_ft_for_q_factoring} and (2) the controlled unitaries required to prepare the input state of the QFT.
+The first such algorithm, proposed by Brassard et al. \cite{brassard_2002_q_amp_amp}, works by combining the quantum phase estimation (QPE) algorithm \cite{kitaev_1995_mmts_abelian_stab} with the Grover iteration operator. Although this achieves a provable quantum speedup, this approach is unsuitable for use on near-term devices primarily due to its large circuit depth stemming from (1) the quantum Fourier transform (QFT) \cite{coppersmith_2002_approximate_ft_for_q_factoring} and (2) the controlled unitaries required to prepare the input state of the QFT but also its lack of resilience to noise.
 
-Several recent approaches have studied algorithms achieving the same or similar asymptotic speedups without the use of the QFT, by repeated sampling of the state after further applications of the Grover operator \cite{aaronson_2021_q_approx_counting, suzuki_2020_amp_without_phase, wie_2019_simpler_q_counting}. The underlying motif of this paradigm is the learning of the amplitude by statistical sampling, in contrast to Brassard et al.'s method which allows for direct access to the amplitude with high probability. Each of these approaches has its own problems with regards to practical implementation on near-term devices; most notably, rapidly growing gate depths, large constant-factor overheads, and expensive controlled-Grover operations. All of these are problematic in the presence of noise as repeated applications of the Grover operator causes the state to \comment[id=jlt]{Is this accurate? There's something I don't quite agree with in this description} decohere; after which, without a noise model, information supposedly gained about the amplitude may be incorrect or skewed.
+Several recent approaches have studied algorithms achieving the same or similar asymptotic speedups without the use of the QFT, by repeated sampling of the state after further applications of the Grover operator \cite{aaronson_2021_q_approx_counting, suzuki_2020_amp_without_phase, wie_2019_simpler_q_counting}. To indicate the reliance on sampling we refer to these as Statistical Amplitude Estimation (SAE). The underlying motif of this paradigm is the learning of the amplitude by statistical sampling, in contrast to Brassard et al.'s method which allows for direct access to the amplitude with high probability. For further details on the statistical approach see Section \ref{sec::SAE}.  
 
-In this work, we present hybrid quantum-classical algorithms for QAE with a focus on minimal circuit depth and measurement counts, and taking into account the noisiness of near-term devices. {\color{purple} (tbc. after we know what's in the rest of the report)}
+%Each of these approaches has its own problems with regards to practical implementation on near-term devices; most notably, rapidly growing gate depths, large constant-factor overheads, and expensive controlled-Grover operations. All of these are problematic in the presence of noise as repeated applications of the Grover operator causes the state to \comment[id=jlt]{Is this accurate? There's something I don't quite agree with in this description} decohere; after which, without a noise model, information supposedly gained about the amplitude may be incorrect or skewed.
+
+This work introduces Recursive Amplitude Estimation (RAE) which builds upon the previous work in SAE through the introduction two stage algorithms, the first stage is an online optimisation of the sample generation scheme and the second is a post-processing step to generate the final amplitude estimate. Details of this algorithm can be found in Section \ref{sec::alg}. The online optimisation utilises a Bayesian framework to enable a recursive estimate for both the amplitude and our current uncertainty which enables us to optimise the next quantum circuit to be run to maximise the information gain measured through the expected decrease in our uncertainty. Unfortunately, an approximation is required to reduce the computational burden of the online optimisation. A final post-processing step utilises all the obtained samples to obtain final amplitude estimation which removes the approximation errors. 
 
 \subsection{Amplitude estimation}
 %Details of the amplitude estimation and background on its use, including Quantum Monte Carlo
-
+A key subroutine in many quantum algorithms is the estimation of an unknown amplitude for a state generated by a given oracle. The challenge of estimating this amplitude is formally given by this problem:
 \begin{problem}[Quantum Amplitude Estimation]
 	Given some $(n+1)$-qubit oracle $\mathcal{A}$ which generates the state
 	\[
@@ -25,16 +31,16 @@ In this work, we present hybrid quantum-classical algorithms for QAE with a focu
 
 The `naive', classical way to solve this problem is to simply prepare and measure this state $N$ times, counting the number of times $K$, that $\ket{\phi_1}\ket{1}$ was observed, then define the estimate for $\sqrt{a}$ as $\sqrt{K/N}$. Chebyshev's inequality tells us that taking $N \in O(\varepsilon^{-2})$ samples is sufficient to approximate $\sqrt{a}$ within additive error $\varepsilon$ (with, say, 99\% confidence). Furthermore, this is asymptotically optimal \cite{dagum_2000_opt_alg_for_MC_est}. By contrast, in a manner which will be made more precise in following sections, quantum computers allow us to modify the state before measurement, enabling us to achieve the same degree of accuracy using only $O(\varepsilon^{-1})$ queries (known as the Heisenberg limit), a quadratic quantum speedup \cite{brassard_2002_q_amp_amp}.
 
-An important and general application of QAE is Monte Carlo estimation \cite{heinrich_2002_q_sum_for_integration, montanaro_2015_q_MC_methods, suzuki_2020_amp_without_phase} - a method for estimating the mean value of a function via random sampling. More precisely, given some function $f : \{0,1\}^n \rightarrow [0,1]$, the task is to estimate the mean value
+An important and general application of QAE is Monte Carlo estimation \cite{heinrich_2002_q_sum_for_integration, montanaro_2015_q_MC_methods, suzuki_2020_amp_without_phase} - a method for estimating an integral. A specific use case of this with applicability in finance and many other industries is an estimation of the mean value of a function through random sampling. More precisely, given some function $f : \{0,1\}^n \rightarrow [0,1]$, the task is to estimate the mean value
 \[
 \mathbb{E}[f(X)] = \frac{1}{2^n} \sum_{x=0}^{2^n-1} {f(x)}.
 \]
 Montanaro \cite{montanaro_2015_q_MC_methods} presents a method for encoding this value in the amplitude of a quantum state, thereby reducing this problem to a case of amplitude estimation, which in turn offers a quadratic speedup for Monte Carlo estimation over classical methods.
 
-\comment[id=cdv]{Monte Carlo is a way to estimate a general integral, right? Not just the mean.}
 
-\subsubsection{Statistical amplitude estimation}
-\comment[id=jlt]{Are we calling all the non-canonical algorithms this? I've been using it to refer to only our algorithm - and I don't think anyone else has a claim to this name.}
+
+\subsubsection{Statistical amplitude estimation} \label{sec::SAE}
+
 %Introduce idea of statistical learning of parameter to reduce circuit length
 \comment[id=jlt]{Rephrase this sentence?}
 Although the original QAE algorithm based on QPE is still the superior algorithm to run on a fault-tolerant quantum computer, the noisiness of near-term devices makes all algorithms utilising the QFT, including the aforementioned algorithm, very difficult to implement (primarily due to the large circuit depth). Thus, the current paradigm in the design of QAE algorithms is to sample the state after amplitude amplification of the state $\mathcal{A} \ket{0}$, refining the estimate for $\sqrt{a}$ and increasing confidence in the estimate with consecutive samples.
@@ -67,7 +73,7 @@ and so ${\mathcal{U}}^m$ takes the probability of measuring $\ket{\phi_1} \ket{1
 	\label{fig::amplitude_amplification}
 \end{figure}
 
-\textbf{Feels like we're missing some things about post-processing here, that are later referred to in the algorithm section.}
+
 %\begin{figure}[H]
 %	\centering
 %	\begin{tikzpicture}
@@ -143,5 +149,7 @@ The first algorithm for QAE, presented by Brassard et al. \cite{brassard_2002_q_
 %This should be written last and include a map for the rest of the paper
 
 {\color{purple} (to be written once we know what's in the rest of the paper)}
+
+ The key idea is the use of an online optimisation procedure to recursively generate a sampling strategy, both number of samples and  the circuit depth for each sample, to minimise the total work required  
 
 \newpage
