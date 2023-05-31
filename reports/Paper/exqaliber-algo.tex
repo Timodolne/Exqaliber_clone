@@ -1,12 +1,12 @@
 
 \section{Algorithm}
-\comment[id=jlt]{This needs filling in somewhere - we're not explicit enough about this yet.}As discussed in \ref{sec::intro} the algorithm is made up of two parts, the sampling algorithms which provides a dynamic sampling scheme to reach the desired accuracy and the post-processing algorithm which generate the final estimate of $\theta$ in an offline fashion. The reason for this two-stage approach is that maintaining a true representation of the current state and uncertainty during the sampling scheme is too computationally intensive so, we utilise a low dimensional approximation. In most cases, this provides a high quality estimate which enables us to carry out an online optimisation of \comment[id=jlt]{Not sure I understand what you mean by sample number.}sample number and depth. Once all the samples have been obtained, instead of returning the approximation, which does not have the full predictive power, we re-estimate $\theta$ with the full set of measurement data obtained during sampling. This means the errors introduced by the approximation procedure do not affect the final estimate.
+As discussed in \ref{sec::intro} the algorithm is made up of two parts, the sampling algorithms which provides a dynamic sampling scheme to reach the desired accuracy and the post-processing algorithm which generate the final estimate of $\theta$ in an offline fashion. The reason for this two-stage approach is that maintaining a true representation of the current state and uncertainty during the sampling scheme is too computationally intensive so, we utilise a low dimensional approximation. In most cases, this provides a high quality estimate which enables us to carry out an online optimisation of \comment[id=jlt]{Not sure I understand what you mean by sample number.}sample number and depth. Once all the samples have been obtained, instead of returning the approximation, which does not have the full predictive power, we re-estimate $\theta$ with the full set of measurement data obtained during sampling. This means the errors introduced by the approximation procedure do not affect the final estimate.
 
 In this paper, we demonstrate a novel method for generating a sample schedule dynamically by modelling an estimate of $\theta$ that is updated after each measurement. For the post-processing we use the maximum likelihood estimate (MLE) originally described in \cite{MLE}. For this reason here we concentrate on the sampling algorithm and include a short introduction to the MLE at the end of this section.
 \comment[id=jlt]{Think the above needs some more thought - I'm not clear that these two bits are distinct enough.}
 \subsection{Sampling algorithm}
 \comment[id=cdv]{I like this pseudocode. However, when I read it through the story, I don't fully understand it, because the equations \ref{eqn::varfactor}, \ref{eqn::mean}, and \ref{eqn::var} come much later.}
-Here, we describe the sampling algorithm and associated theoretical underpinning initially in the noiseless case and then introduce the adjustment required to \replaced[id=jlt]{adapt to}{deal with the introduction of} depolarising noise. The fundamental idea is \replaced[id=jlt]{to}{that we} maintain a current state representing our belief about the value of the parameter of interest, $\mu$, and the current level of uncertainty, $\sigma^2$. Then at each step we decide if enough samples have been obtained to \added[id=jlt]{terminate the process}, i.e. $\sigma^2$ is small enough for the required accuracy, or \replaced[id=jlt]{to continue to generate further samples}{generate another sample}.
+Here, we describe the sampling algorithm and associated theoretical underpinning initially in the noiseless case and then introduce the adjustment required to adapt to depolarising noise. The fundamental idea is to maintain a current state representing our belief about the value of the parameter of interest, $\mu$, and the current level of uncertainty, $\sigma^2$. Then at each step we decide if enough samples have been obtained to terminate the process, i.e. $\sigma^2$ is small enough for the required accuracy, or to continue to generate further samples.
 
 If another sample is generated, we need to select the depth at which the sampling circuit is executed and using the result, update the state, i.e. our belief. In both cases we use a Bayesian framework to do this, see \ref{sec::bayes}. Within this framework, the uncertainty $\sigma^2$ is an estimate of the posterior variance for $\theta$ and $\mu$, the current belief of $\theta$, is an estimate of the posterior mean. At each step, the next sampling depth is selected to minimise the expected posterior variance given the estimate of the current belief, i.e. the depth which, in expectation, moves us closest to terminating the sampling. After executing the sampling circuit, the state is updated by calculating the posterior mean and variance. Unfortunately, maintaining and manipulating an estimate of the true posterior distribution is computationally intensive so after every step we approximate the posterior distribution by a normal distribution. This is then used as the prior distribution for the next step, for more details see Section \ref{sec::bayes}.
 
@@ -32,7 +32,7 @@ Through the design of this algorithm we have embraced a Bayesian approach \cite{
 The fundamental feature of this approach is that at all stages we maintain a belief about our current knowledge of the unknown parameter, $\theta$, through a probability distribution, $\pi(\theta)$. This belief is updated after each sample using Bayes formula \cite{} and the current belief is used to make the decision of whether to
 stop or generate a new sample and in that case what depth to sample at.
 
-Unfortunately, keeping the full probability distribution is computationally infeasible so instead we approximate our belief by a normal distribution, i.e. $\pi(\theta) \tilde N(\mu,\sigma^2)$, which is fully described by two parameters: the mean, $\mu$, and the variance, $\sigma^2$. Therefore at each stage we approximate the posterior distribution, which becomes the prior when considering the next sample, by a normal distribution with the same variance and mean as the one step posterior distribution. Note that this mean and variance will not necessarily match the posterior mean and variance if all the obtained samples were considered, due to the repeated approximation.
+Unfortunately, keeping the full probability distribution is computationally infeasible so instead we approximate our belief by a normal distribution, i.e. $\pi(\theta) \sim N(\mu,\sigma^2)$, which is fully described by two parameters: the mean, $\mu$, and the variance, $\sigma^2$. Therefore at each stage we approximate the posterior distribution, which becomes the prior when considering the next sample, by a normal distribution with the same variance and mean as the one step posterior distribution. Note that this mean and variance will not necessarily match the posterior mean and variance if all the obtained samples were considered, due to the repeated approximation.
 
 The normal distribution is a sensible approximation since under suitable conditions, see \cite{}, in the limit of a large number of samples the posterior limits to a normal distribution. Further to this, using the normal distribution as our prior belief, we are able to use Bayes theorem to produce analytic expressions for a number of key posterior parameters including the posterior mean and variance and expected posterior variance, see Section \ref{sec::postprop}. This is important as we could obtain estimates of these through sampling schemes \cite{}, but as we discuss in Section \ref{sec::model}, this leads to a systematic bias.
 
@@ -45,9 +45,19 @@ Though using a normal approximation will generally provide a good ongoing estima
 \subsubsection{Posterior properties}\label{sec::postprop}
 Two key steps in the algorithm are calculating the expected posterior variance, $Var(\theta)$ for a single sample, which is used to decide on the next sample depth and calculating the posterior mean and variance, $\mathbb{E}\left[\theta|X=x\right]$ and $Var(\theta|X=x)$. As we have already seen in the pseudocode these play a significant role in our algorithm. Under the assumption that the prior follows a normal distribution with known mean and variance, we can obtain closed-form expressions for all three quantities. Our derivation follows closely the work described in \cite{} which considers a class of likelihoods of the same form as we see in this work. Details of the derivation can be found in Appendix \ref{app::noiseless} and here we only include the final formulae for use with the algorithm.
 \begin{align}
-Var(\theta) &= TBA \label{eqn::postvac}\\
-\mathbb{E} \left[ \theta|X=x\right]= g_1(\mu,\sigma^2,x,d) &= TBA \label{eqn::mean}\\
- Var(\theta|X=x)=g_2(\mu,\sigma^2,x,d) &= TBA \label{eqn::var}
+	\begin{split}
+		\text{Var}(\theta) &= \sigma^2 \left(  1 - \sigma^2 \frac{4\left( 2d+1 \right) ^2 e^{-4\left( 2d+1 \right) ^2 \sigma^2}\sin^2 \left( 2\left( 2d+1 \right) \mu \right) }{1- e^{-4\left( 2d+1 \right)^2 \sigma^2 } \cos^2\left( 2\left( 2d+1 \right) \mu \right)  } \right)\\
+				   &= \sigma^2\left(1 - \sigma^2 \mathcal{V}  \right) \label{eqn::postvac}\\
+	\end{split} \\
+\begin{split}
+	\mathbb{E} \left[ \theta|X=x\right] &= g_1(\mu,\sigma^2,x,d) \\
+					    &= \mu - \left( -1 \right) ^{x}e^{- 2\left( 2d+1 \right) ^2 \sigma^2} \frac{ 2 \left( 2d+1 \right) \sigma^2 \sin\left( 2\left( 2d+2 \right) \mu \right) }{1 + \left( -1 \right) ^{x} e^{-2\left( 2d+1 \right) ^2 \sigma^2} \cos\left( 2\left( 2d+1 \right) \mu \right) } \label{eqn::mean}
+\end{split} \\
+\begin{split}
+	\text{Var}(\theta|X=x)&=g_2(\mu,\sigma^2,x,d) \\
+			      &= \sigma^2 \left\{\vphantom{\frac{\cos\left( 2\left( 2d+1 \right) \mu \right)  + \left( -1 \right) ^{x}e^{- 2\left( 2d+1 \right) ^2 \sigma^2}}{\left( 1 + \left( -1 \right) ^{x} e^{-2\left( 2d+1 \right)^2 \sigma^2 } \cos\left( 2\left( 2d+1 \right) \mu \right)  \right)^2 }}  1 - \left( -1 \right) ^{x}4\left( 2d+1 \right) ^2 \sigma^2 e^{- 2\left( 2d+1 \right) ^2 \sigma^2} \times  \right.  \\
+			      & \hspace{50pt} \left. \frac{\cos\left( 2\left( 2d+1 \right) \mu \right)  + \left( -1 \right) ^{x}e^{- 2\left( 2d+1 \right) ^2 \sigma^2}}{\left( 1 + \left( -1 \right) ^{x} e^{-2\left( 2d+1 \right)^2 \sigma^2 } \cos\left( 2\left( 2d+1 \right) \mu \right)  \right)^2 }  \right\} \label{eqn::var}
+\end{split}
 \end{align}
 
 \subsubsection{Selecting next sample depth}
@@ -55,26 +65,32 @@ Var(\theta) &= TBA \label{eqn::postvac}\\
 The key advantage of the approach given in this work over the previous work, \cite{}, is the dynamic sampling scheme which utilises the current belief to minimise the work to obtain an estimate. To do this we look to maximise the information gain per sample or equivalently maximise the reduction in variance of our belief from each sample. The decision variable throughout is, the circuit depth $d$, for the next sample, i.e. the number of applications of the Grover operators.
 
 To do this, we utilise the expected reduction in variance, see equation \ref{eqn::postvar}. Given our current state, $(\mu,\sigma^2)$, we select the depth that minimises Equation \ref{eqn::postvac}. Note that the optimisation is over all non-negative integers. Rather than directly minimise this instead we look to maximise the variance reduction factor,
-\begin{equation} h(\mu,\sigma^2,d) =?? \label{eqn::varfactor}\end{equation}
+\begin{equation}
+h(\mu,\sigma^2,d) = \mathcal{V} = \frac{4 \left( 2d+1 \right) ^2 e^{ - 4\left( 2d+1 \right) ^2 \sigma^2} \sin^2\left( 2 \left( 2d+1 \right) \mu \right) }{1- e^{-4\left( 2d+1 \right) ^2\sigma^2}\cos^2\left( 2\left( 2d+1 \right) \mu \right) } \label{eqn::varfactor}
+\end{equation}
+
 which is equivalent to minimising the expected variance. See Figure \ref{} for an example of this function which is typical and integer points for which we are maximising over. There are a few features to note:
 \begin{itemize}
-	\item The various reduction function is bounded $...$ which is maximised by $...$. This reflects the scaling seen in the fixed strategy and in a number of works relating to quantum phase estimation \cite{}.
+	\item The various reduction function is bounded by $4\left( 2d+1 \right) ^2 e^{-4 \left( 2d+1 \right) ^2 \sigma^2}$ which is maximised by $2\left( 2d+1 \right)  = \frac{1}{\sigma} $ i.e., $d = O\left( \sigma^{-1} \right) $. This reflects the scaling seen in the fixed strategy and in a number of works relating to quantum phase estimation \cite{}.
 	\item The true maximum of integers might be a distance from the maximum of the bounding function due to the sinusoidal nature. Importantly, it is not necessarily either integer value which neighbours the bounding maximum.
-	\item The issue with selecting the bounding maximum is partially observed in this work, \cite{}. The driving factor is the gradient of the probability function for the Bernoulli distribution, near probability 0 and 1 this is small but nearer 1/2 this maximised which improves the ability to discriminate different values of $\theta$. This is something that can be clearly be observed in our experiments, see Section \ref{sec::?} and Figure \ref{fig::?}.
+	\item The issue with selecting the bounding maximum is partially observed in this work, \cite{}. The driving factor is the gradient of the probability function for the Bernoulli distribution, near probabilities of 0 or 1 this is small, but nearer 1/2 this is maximised which improves the ability to discriminate different values of $\theta$. This is something that can be clearly be observed in our experiments, see Section \ref{sec::?} and Figure \ref{fig::?}.
 \end{itemize}
 
 \subsubsection{Adjustments for noise}
 When we incorporate decoherence noise, we incorporate an extra parameter $\lambda$ which represents the noise level of the quantum computer. We assume in this work that the value of this parameter has been previously ascertained through other means. For reference, we repeat here the probability of measuring a value 1 as a function of $\theta$ and $\lambda$,
-$$\mathbb{P}(X=1| \theta, \lambda)=\text{To be added to be consistent.}$$
+$$\mathbb{P}(X=1| \theta, \lambda)= \frac{1}{2}\left( 1 - e^{-\left( 2d+1 \right) \lambda} \cos\left( 2\left( 2d+1 \right) \theta \right)  \right)  $$
 For more further details of this see Section \ref{sec::?}.
 
 As mentioned previously, the basic sampling algorithm does not change, only the functions $h, g_1, g_2$ in order to accommodate the change in the measurement probability. These become
 \begin{align}
-	h(\mu,\sigma^2,d, \lambda) &= TBA \label{eqn::npostvac}\\
-	g_1(\mu,\sigma^2,x,d, \lambda) &= TBA \label{eqn::nmean}\\
-	g_2(\mu,\sigma^2,x,d, \lambda) &= TBA \label{eqn::nvar}
+	h(\mu,\sigma^2,d, \lambda) & = \frac{4 \left( 2d+1 \right) ^2 e^{-2\left( 2d+1 \right) \lambda} e^{ - 4\left( 2d+1 \right) ^2 \sigma^2} \sin^2\left( 2 \left( 2d+1 \right) \mu \right) }{1-e^{-2\left( 2d+1 \right) \lambda} e^{-4\left( 2d+1 \right) ^2\sigma^2}\cos^2\left( 2\left( 2d+1 \right) \mu \right) } \label{eqn::nvarfactor} \\
+	g_1(\mu,\sigma^2,x,d, \lambda) &= \mu - \left( -1 \right) ^{x}e^{-\left( 2d+1 \right) \lambda}e^{- 2\left( 2d+1 \right) ^2 \sigma^2} \frac{ 2 \left( 2d+1 \right) \sigma^2 \sin\left( 2\left( 2d+2 \right) \mu \right) }{1 + \left( -1 \right) ^{x}e^{-\left( 2d+1 \right) \lambda} e^{-2\left( 2d+1 \right) ^2 \sigma^2} \cos\left( 2\left( 2d+1 \right) \mu \right) } \label{eqn::nmean} \\
+\begin{split}
+	g_2(\mu,\sigma^2,x,d, \lambda)  &= \sigma^2 \left\{\vphantom{\frac{\cos\left( 2\left( 2d+1 \right) \mu \right)  + \left( -1 \right) ^{x}e^{- 2\left( 2d+1 \right) ^2 \sigma^2}}{\left( 1 + \left( -1 \right) ^{x} e^{-2\left( 2d+1 \right)^2 \sigma^2 } \cos\left( 2\left( 2d+1 \right) \mu \right)  \right)^2 }}  1 - \left( -1 \right) ^{x}4\left( 2d+1 \right) ^2 \sigma^2 e^{-\left( 2d+1 \right) \lambda}e^{- 2\left( 2d+1 \right) ^2 \sigma^2} \times  \right.  \\
+			      & \hspace{50pt} \left. \frac{\cos\left( 2\left( 2d+1 \right) \mu \right)  + \left( -1 \right) ^{x}e^{-\left( 2d+1 \right) \lambda}e^{- 2\left( 2d+1 \right) ^2 \sigma^2}}{\left( 1 + \left( -1 \right) ^{x}e^{-\left( 2d+1 \right) \lambda} e^{-2\left( 2d+1 \right)^2 \sigma^2 } \cos\left( 2\left( 2d+1 \right) \mu \right)  \right)^2 }  \right\} \label{eqn::nvar}
+\end{split}
 \end{align}
-Note that we implicitly recover the original functions by setting $ \lambda = 0$.
+Note that we recover the original functions by setting $ \lambda = 0$.
 For the derivation see Appendix \ref{app::noise}.
 
 
@@ -82,13 +98,13 @@ For the derivation see Appendix \ref{app::noise}.
 
 It is useful to note that we can model the algorithm as a Markov process on $\mathbb{R}^2$ with the state as $(\mu,\sigma^2)$. We can see this from equations \ref{eqn::mean} and \ref{eqn::var}, since the state update only depends on the current state, the depths which is again only a function of the current state and the random sample. This means that it obeys the Markov property, giving use a Markov process. If we look closely at equation \ref{eqn::var} we note that the update is multiplicative in nature. By taking the log of the variance, $\nu=\log(\sigma^2)$, we change this to additive process which provides us with a number of insights.
 
-Firstly, if we consider the expected decrease in $\nu$ by taking the log of Equation \ref{eqn::postvac} at the optimal depth, we find this is \comment[id=jlt]{Sure this is the right one?(I haven't thought about it)}$o(1)$ throughout, see Appendix \ref{app::decrease}. This means that the number of circuit executions to reach an accuracy of order $\epsilon$ will be $-\log(\epsilon)$\comment[id=cdv]{$1/\epsilon$, right?? Or we would have exponential speed-up over classical monte carlo.} and $\nu$ decreases linearly in the number of iterations. This is something we observe in the experimentations, see Section \ref{}.
+Firstly, if we consider the expected decrease in $\nu$ by taking the log of Equation \ref{eqn::postvac} at the optimal depth, we find this is \comment[id=jlt]{Sure this is the right type of O?(I haven't thought about it)}$o(1)$ throughout, see Appendix \ref{app::decrease}. This means that the number of circuit executions to reach an accuracy of order $\epsilon$ will be $-\log(\epsilon)$ and $\nu$ decreases linearly in the number of iterations. This is something we observe in the experimentations, see Section \ref{}.
 
 Secondly, by consider $\nu$ we can see why we need to calculate analytically the change in variance rather than use a sampling scheme. It is well known that the sample variance is an unbiased estimator of the true variance, i.e. $\mathbb{E}\left[S^2\right]=\sigma^2$ where $S^2$ is the sample variance, which would indicate that we can use a sample from the posterior distribution to estimate the variance. Unfortunately, this is not true as the $\log(S^2)$ is not an unbiased estimator of $\log(\sigma^2)$, we have $$ \mathbb{E}\left[\log(S^2)\right] = \mathbb{E}\left[\log(\sigma^2)\right] +\kappa, $$ where $\kappa>0$. For details, see Appendix \ref{app::logvar}. This means that if the sample variance is used to estimate the variance of the posterior, we have a systematic drift hence the uncertainty is underestimated. This is not so problematic in the noiseless case as all steps of $\nu$ are \comment[id=jlt]{o(1) here too? Or whichever the correct version is}order 1 but in the case with noise the step size decays with $\nu$ so the systematic drift dominates leading to under sampling.
 
 
 
-{\color{red} {\bf Note:} Can we prove something about optimality of greedy strategy given the maximum reduction factor and bounds on the \comment[id=jlt]{Value function is phase 2 - unless you're being implicit}value function? (we know bounded between inverse square and inverse)}\comment[id=cdv]{I think we can make an argument that it's negligble, and that, if we wanted, we should be able to find the maximum analytically.}
+{\color{red} {\bf Note:} Can we prove something about optimality of greedy strategy given the maximum reduction factor and bounds on the \comment[id=jlt]{Value function is phase 2 - unless you're being implicit}value function? (we know bounded between inverse square and inverse)}\comment[id=cdv]{I think we can make an argument that it's negligible, and that, if we wanted, we should be able to find the maximum analytically.}
 
 
 

@@ -1,7 +1,7 @@
-\section{Experimentation}
+\section{Experimentation} \label{sec::experiments}
 %Describe experiments and performance measures
 %Two measures of interest, time to solution and quality of solutions
-We conduct a series of experiments for the noiseless and noisy simulations of our algorithm in this section. We empirically compare against the \comment[id=jlt]{Need referencing either the actual papers, or just saying the acronyms earlier}IAE and MLAE algorithms. As the update steps for these algorithms are equivalent to sampling from a Bernoulli distribution for a given choice of $\theta_0$ and noise level we sample directly from the Bernoulli distribution instead of simulating the dynamics of a quantum system for each algorithm. This algorithm has also been implemented and tested using Qiskit \cite{Qiskit}, with a view for future experiments with quantum simulators and quantum hardware.
+We conduct a series of experiments for the noiseless and noisy simulations of our algorithm in this section. We empirically compare against the IAE and MLAE algorithms. As the update steps for these algorithms are equivalent to sampling from a Bernoulli distribution for a given choice of $\theta_0$ and noise level we sample directly from the Bernoulli distribution instead of simulating the dynamics of a quantum system for each algorithm. This algorithm has also been implemented and tested using Qiskit \cite{Qiskit}, with a view for future experiments with quantum simulators and quantum hardware.
 
 
 \subsection{Simulation}
@@ -14,7 +14,7 @@ First, we explore the convergence time for $\theta \in [0, \pi/2]$. As shown in 
 	\begin{subfigure}{0.45\textwidth}
 		\centering
 		\includegraphics[width=\linewidth]{ExAE-converge-quarter-circle}
-		\caption{Median number of oracle calls for SAE to converge to a precision of $\varepsilon = 10^{-3}$, with 25\% and 75\% quartiles shown. Each bar is a region of width $\pi / 120$ with the median number of oracle calls calculated from 50 values of true value $\theta_0$ selected uniformly at random. The prior for each iteration is taken to be $N(\tilde{\theta}_0, 1)$, where $\tilde{\theta}_0$ is sampled from a $N(\theta_0, 0.1)$ distribution and success probability $1 - \alpha$ with $\alpha = 0.01$.}
+		\caption{Median number of oracle calls for RAE to converge to a precision of $\varepsilon = 10^{-3}$, with 25\% and 75\% quartiles shown. Each bar is a region of width $\pi / 120$ with the median number of oracle calls calculated from 50 values of true value $\theta_0$ selected uniformly at random. The prior for each iteration is taken to be $N(\tilde{\theta}_0, 1)$, where $\tilde{\theta}_0$ is sampled from a $N(\theta_0, 0.1)$ distribution and success probability $1 - \alpha$ with $\alpha = 0.01$.}
 		\label{fig::ExAE-converge-quarter-circle}
 	\end{subfigure}
 	\hfill
@@ -54,23 +54,23 @@ A source of potential error in this algorithm is the normal approximation made a
 \begin{figure}[htbp]
 	\centering
 	\includegraphics[scale=0.3]{ExAE-actual-prec-vs-expected-prec}
-	\caption{Actual precision of the final estimate for SAE with and without MLE post-processing. We sample $\theta_0 \in \Theta_0$ from a uniform distribution of $x$ and $50$ for target precisions of $\varepsilon = 10^{-3}, 10^{-4}, \ldots, 10^{-7} $. The prior for each iteration is taken to be $N(\theta_0, 1)$ and success probability $1 - \alpha$ with $\alpha = 0.01$.}
+	\caption{Actual precision of the final estimate for RAE with and without MLE post-processing. We sample $\theta_0 \in \Theta_0$ from a uniform distribution of $x$ and $50$ for target precisions of $\varepsilon = 10^{-3}, 10^{-4}, \ldots, 10^{-7} $. The prior for each iteration is taken to be $N(\theta_0, 1)$ and success probability $1 - \alpha$ with $\alpha = 0.01$.}
 	\label{fig::ExAE-actual-prec-vs-expected-prec}
 \end{figure}
 
 \begin{figure}[htbp]
 	\centering
 	\includegraphics[scale=0.2]{ExAE-actual-prec-over-theta}
-	\caption{Actual precision of the final estimate for SAE with and without MLE post-processing. We sample $\theta_0 \in \Theta_0$ from a uniform distribution of $x$ and $500$ for a target precision of $\varepsilon = 10^{-3}$. The prior for each iteration is taken to be $N(\theta_0, 1)$ and success probability $1 - \alpha$ with $\alpha = 0.01$.}
+	\caption{Actual precision of the final estimate for RAE with and without MLE post-processing. We sample $\theta_0 \in \Theta_0$ from a uniform distribution of $x$ and $500$ for a target precision of $\varepsilon = 10^{-3}$. The prior for each iteration is taken to be $N(\theta_0, 1)$ and success probability $1 - \alpha$ with $\alpha = 0.01$.}
 	\label{fig::ExAE-actual-prec-over-theta}
 \end{figure}
 
-We compare the performance of SAE to IAE and MLAE, and observe that in the noiseless case we achieve similar numbers of oracle queries to IAE. However, there still remain some points for which SAE fails to satisfactorily converge.
+We compare the performance of RAE to IAE and MLAE, and observe that in the noiseless case we achieve similar numbers of oracle queries to IAE. However, there still remain some points for which RAE fails to satisfactorily converge.
 
 \begin{figure}[htbp]
 	\centering
 	\includegraphics[scale=0.5]{query-comparison-noiseless}
-	\caption{Actual precision versus total number of oracle queries used for IAE, MLAE and SAE. We target precisions of $\varepsilon = 10^{-3}, 10^{-4}, \ldots , 10^{-7}$, with each point a single value of $\theta_0 \in \Theta_0$ and take the final precision to be half the width of the confidence interval. We sample uniformly from $\Theta_0$ for 30 values of $\theta_0$. Each value of $\theta_0$ is evaluated for all algorithms and each target $\varepsilon$. The prior for each iteration is taken to be $N(\theta_0, 1)$ and success probability $1 - \alpha$ with $\alpha = 0.01$.}
+	\caption{Actual precision versus total number of oracle queries used for IAE, MLAE and RAE. We target precisions of $\varepsilon = 10^{-3}, 10^{-4}, \ldots , 10^{-7}$, with each point a single value of $\theta_0 \in \Theta_0$ and take the final precision to be half the width of the confidence interval. We sample uniformly from $\Theta_0$ for 30 values of $\theta_0$. Each value of $\theta_0$ is evaluated for all algorithms and each target $\varepsilon$. The prior for each iteration is taken to be $N(\theta_0, 1)$ and success probability $1 - \alpha$ with $\alpha = 0.01$.}
 	\label{fig::query-comparison-noiseless}
 \end{figure}
 
@@ -78,16 +78,16 @@ We compare the performance of SAE to IAE and MLAE, and observe that in the noise
 \begin{figure}[htbp]
 	\centering
 	\includegraphics[scale=0.3]{compare-paths-oracle-calls}
-	\caption{Confidence intervals for a single run of SAE, IAE and MLAE with $\theta_0 = 1$. The prior for SAE is taken to be $N(\pi/2, 1)$ and success probability $1 - \alpha$ with $\alpha = 0.01$. As IAE and MLAE use a fixed number of shots per step, the number of oracle calls does not start at 0.}
+	\caption{Confidence intervals for a single run of RAE, IAE and MLAE with $\theta_0 = 1$. The prior for RAE is taken to be $N(\pi/2, 1)$ and success probability $1 - \alpha$ with $\alpha = 0.01$. As IAE and MLAE use a fixed number of shots per step, the number of oracle calls does not start at 0.}
 	\label{fig::compare-paths-oracle-calls}
 \end{figure}
 
-For the SAE routine, we also calculate the expected and exact probability of the Bernoulli sample at each stage. \ref{fig::exae-expected-probability} is a typical example of a SAE run, where the probability is initially expected to be 0 for a substantial amount of time, before approaching $\frac{1}{2}$ for the remainder of the run.
+For the RAE routine, we also calculate the expected and exact probability of the Bernoulli sample at each stage. \ref{fig::exae-expected-probability} is a typical example of a RAE run, where the probability is initially expected to be 0 for a substantial amount of time, before approaching $\frac{1}{2}$ for the remainder of the run.
 
 \begin{figure}[htpb]
 	\centering
 	\includegraphics[width=0.8\textwidth]{exae-expected-probability}
-	\caption{Exact and expected probability calculation for a single run of SAE.}
+	\caption{Exact and expected probability calculation for a single run of RAE.}
 	\label{fig::exae-expected-probability}
 \end{figure}
 
@@ -99,14 +99,14 @@ As shown in Figure \ref{fig::ExAE-noisy-max-depth}, the algorithm will not go be
 \begin{figure}[htbp]
 	\centering
 	\includegraphics[scale=0.5]{ExAE-noisy-max-depth}
-	\caption{Depth of SAE for $\theta_0 = 1$ at varying levels of decohering noise characterised by $\lambda = 10^0, 10^{-1}, \ldots 10^{-6}$. The prior for each iteration is taken to be $N(\pi /2, 1)$, we target $\varepsilon = 10^{-3}$ and success probability $1 - \alpha$ with $\alpha = 0.01$.}
+	\caption{Depth of RAE for $\theta_0 = 1$ at varying levels of decohering noise characterised by $\lambda = 10^0, 10^{-1}, \ldots 10^{-6}$. The prior for each iteration is taken to be $N(\pi /2, 1)$, we target $\varepsilon = 10^{-3}$ and success probability $1 - \alpha$ with $\alpha = 0.01$.}
 	\label{fig::ExAE-noisy-max-depth}
 \end{figure}
 
 \begin{figure}[htbp]
 	\centering
 	\missingfigure{}
-	\caption{Total number of oracle queries for SAE with decohering noise characterised by $\lambda = 10^{-1}, 10^{-2}, \ldots, 10^{-7}$. Each point is a single value of $\theta_0 \in \Theta_0$. We sample uniformly from $\Theta_0$ for 30 values of $\theta_0$. Each value of $\theta_0$ is evaluated for all decohering noise values and each target $\varepsilon$. The prior for each iteration is taken to be $N(\theta_0, 1)$ and success probability $1 - \alpha$ with $\alpha = 0.01$.}
+	\caption{Total number of oracle queries for RAE with decohering noise characterised by $\lambda = 10^{-1}, 10^{-2}, \ldots, 10^{-7}$. Each point is a single value of $\theta_0 \in \Theta_0$. We sample uniformly from $\Theta_0$ for 30 values of $\theta_0$. Each value of $\theta_0$ is evaluated for all decohering noise values and each target $\varepsilon$. The prior for each iteration is taken to be $N(\theta_0, 1)$ and success probability $1 - \alpha$ with $\alpha = 0.01$.}
 	\label{fig::query-exae-noisy}
 \end{figure}
 
@@ -118,7 +118,7 @@ As shown in Figure \ref{fig::ExAE-noisy-max-depth}, the algorithm will not go be
 \begin{figure}[htbp]
 	\centering
 	\missingfigure{}
-	\caption{Final precision versus total number of oracle queries used for IAE, MLAE and SAE with decohering noise characterised by $\lambda = 10^{-3}$. We target precisions of $\varepsilon = 10^{-3}, 10^{-4}, \ldots , 10^{-7}$, with each point a single value of $\theta_0 \in \Theta_0$. We sample uniformly from $\Theta_0$ for 30 values of $\theta_0$. Each value of $\theta_0$ is evaluated for all algorithms and each target $\varepsilon$. The prior for each iteration is taken to be $N(\theta_0, 1)$ and success probability $1 - \alpha$ with $\alpha = 0.01$.}
+	\caption{Final precision versus total number of oracle queries used for IAE, MLAE and RAE with decohering noise characterised by $\lambda = 10^{-3}$. We target precisions of $\varepsilon = 10^{-3}, 10^{-4}, \ldots , 10^{-7}$, with each point a single value of $\theta_0 \in \Theta_0$. We sample uniformly from $\Theta_0$ for 30 values of $\theta_0$. Each value of $\theta_0$ is evaluated for all algorithms and each target $\varepsilon$. The prior for each iteration is taken to be $N(\theta_0, 1)$ and success probability $1 - \alpha$ with $\alpha = 0.01$.}
 	\label{fig::query-comparison-noisy}
 \end{figure}
 
