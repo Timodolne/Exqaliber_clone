@@ -32,7 +32,7 @@ Through the design of this algorithm we have embraced a Bayesian approach \cite{
 The fundamental feature of this approach is that at all stages we maintain a belief about our current knowledge of the unknown parameter, $\theta$, through a probability distribution, $\pi(\theta)$. This belief is updated after each sample using Bayes formula \cite{} and the current belief is used to make the decision of whether to
 stop or generate a new sample and in that case what depth to sample at.
 
-Unfortunately, keeping the full probability distribution is computationally infeasible so instead we approximate our belief by a normal distribution, i.e. $\pi(\theta) \tilde N(\mu,\sigma^2)$, which is fully described by two parameters: the mean, $\mu$, and the variance, $\sigma^2$. Therefore at each stage we approximate the posterior distribution, which becomes the prior when considering the next sample, by a normal distribution with the same variance and mean as the one step posterior distribution. Note that this mean and variance will not necessarily match the posterior mean and variance if all the obtained samples were considered, due to the repeated approximation.
+Unfortunately, keeping the full probability distribution is computationally infeasible so instead we approximate our belief by a normal distribution, i.e. $\pi(\theta) \sim N(\mu,\sigma^2)$, which is fully described by two parameters: the mean, $\mu$, and the variance, $\sigma^2$. Therefore at each stage we approximate the posterior distribution, which becomes the prior when considering the next sample, by a normal distribution with the same variance and mean as the one step posterior distribution. Note that this mean and variance will not necessarily match the posterior mean and variance if all the obtained samples were considered, due to the repeated approximation.
 
 The normal distribution is a sensible approximation since under suitable conditions, see \cite{}, in the limit of a large number of samples the posterior limits to a normal distribution. Further to this, using the normal distribution as our prior belief, we are able to use Bayes theorem to produce analytic expressions for a number of key posterior parameters including the posterior mean and variance and expected posterior variance, see Section \ref{sec::postprop}. This is important as we could obtain estimates of these through sampling schemes \cite{}, but as we discuss in Section \ref{sec::model}, this leads to a systematic bias.
 
@@ -45,9 +45,19 @@ Though using a normal approximation will generally provide a good ongoing estima
 \subsubsection{Posterior properties}\label{sec::postprop}
 Two key steps in the algorithm are calculating the expected posterior variance, $Var(\theta)$ for a single sample, which is used to decide on the next sample depth and calculating the posterior mean and variance, $\mathbb{E}\left[\theta|X=x\right]$ and $Var(\theta|X=x)$. As we have already seen in the pseudocode these play a significant role in our algorithm. Under the assumption that the prior follows a normal distribution with known mean and variance, we can obtain closed-form expressions for all three quantities. Our derivation follows closely the work described in \cite{} which considers a class of likelihoods of the same form as we see in this work. Details of the derivation can be found in Appendix \ref{app::noiseless} and here we only include the final formulae for use with the algorithm.
 \begin{align}
-Var(\theta) &= TBA \label{eqn::postvac}\\
-\mathbb{E} \left[ \theta|X=x\right]= g_1(\mu,\sigma^2,x,d) &= TBA \label{eqn::mean}\\
- Var(\theta|X=x)=g_2(\mu,\sigma^2,x,d) &= TBA \label{eqn::var}
+	\begin{split}
+		\text{Var}(\theta) &= \sigma^2 \left(  1 - \sigma^2 \frac{4\left( 2d+1 \right) ^2 e^{-4\left( 2d+1 \right) ^2 \sigma^2}\sin^2 \left( 2\left( 2d+1 \right) \mu \right) }{1- e^{-4\left( 2d+1 \right)^2 \sigma^2 } \cos^2\left( 2\left( 2d+1 \right) \mu \right)  } \right)\\
+				   &= \sigma^2\left(1 - \sigma^2 \mathcal{V}  \right) \label{eqn::postvac}\\
+	\end{split} \\
+\begin{split}
+	\mathbb{E} \left[ \theta|X=x\right] &= g_1(\mu,\sigma^2,x,d) \\
+					    &= \mu - \left( -1 \right) ^{x}e^{- 2\left( 2d+1 \right) ^2 \sigma^2} \frac{ 2 \left( 2d+1 \right) \sigma^2 \sin\left( 2\left( 2d+2 \right) \mu \right) }{1 + \left( -1 \right) ^{x} e^{-2\left( 2d+1 \right) ^2 \sigma^2} \cos\left( 2\left( 2d+1 \right) \mu \right) } \label{eqn::mean}
+\end{split} \\
+\begin{split}
+	\text{Var}(\theta|X=x)&=g_2(\mu,\sigma^2,x,d) \\
+			      &= \sigma^2 \left\{\vphantom{\frac{\cos\left( 2\left( 2d+1 \right) \mu \right)  + \left( -1 \right) ^{x}e^{- 2\left( 2d+1 \right) ^2 \sigma^2}}{\left( 1 + \left( -1 \right) ^{x} e^{-2\left( 2d+1 \right)^2 \sigma^2 } \cos\left( 2\left( 2d+1 \right) \mu \right)  \right)^2 }}  1 - \left( -1 \right) ^{x}4\left( 2d+1 \right) ^2 \sigma^2 e^{- 2\left( 2d+1 \right) ^2 \sigma^2} \times  \right.  \\
+			      & \hspace{50pt} \left. \frac{\cos\left( 2\left( 2d+1 \right) \mu \right)  + \left( -1 \right) ^{x}e^{- 2\left( 2d+1 \right) ^2 \sigma^2}}{\left( 1 + \left( -1 \right) ^{x} e^{-2\left( 2d+1 \right)^2 \sigma^2 } \cos\left( 2\left( 2d+1 \right) \mu \right)  \right)^2 }  \right\} \label{eqn::var}
+\end{split}
 \end{align}
 
 \subsubsection{Selecting next sample depth}
@@ -55,26 +65,32 @@ Var(\theta) &= TBA \label{eqn::postvac}\\
 The key advantage of the approach given in this work over the previous work, \cite{}, is the dynamic sampling scheme which utilises the current belief to minimise the work to obtain an estimate. To do this we look to maximise the information gain per sample or equivalently maximise the reduction in variance of our belief from each sample. The decision variable throughout is, the circuit depth $d$, for the next sample, i.e. the number of applications of the Grover operators.
 
 To do this, we utilise the expected reduction in variance, see equation \ref{eqn::postvar}. Given our current state, $(\mu,\sigma^2)$, we select the depth that minimises Equation \ref{eqn::postvac}. Note that the optimisation is over all non-negative integers. Rather than directly minimise this instead we look to maximise the variance reduction factor,
-\begin{equation} h(\mu,\sigma^2,d) =?? \label{eqn::varfactor}\end{equation}
+\begin{equation}
+h(\mu,\sigma^2,d) = \mathcal{V} = \frac{4 \left( 2d+1 \right) ^2 e^{ - 4\left( 2d+1 \right) ^2 \sigma^2} \sin^2\left( 2 \left( 2d+1 \right) \mu \right) }{1- e^{-4\left( 2d+1 \right) ^2\sigma^2}\cos^2\left( 2\left( 2d+1 \right) \mu \right) } \label{eqn::varfactor}
+\end{equation}
+
 which is equivalent to minimising the expected variance. See Figure \ref{} for an example of this function which is typical and integer points for which we are maximising over. There are a few features to note:
 \begin{itemize}
-	\item The various reduction function is bounded $...$ which is maximised by $...$. This reflects the scaling seen in the fixed strategy and in a number of works relating to quantum phase estimation \cite{}.
+	\item The various reduction function is bounded by $4\left( 2d+1 \right) ^2 e^{-4 \left( 2d+1 \right) ^2 \sigma^2}$ which is maximised by $2\left( 2d+1 \right)  = \frac{1}{\sigma} $ i.e., $d = O\left( \sigma^{-1} \right) $. This reflects the scaling seen in the fixed strategy and in a number of works relating to quantum phase estimation \cite{}.
 	\item The true maximum of integers might be a distance from the maximum of the bounding function due to the sinusoidal nature. Importantly, it is not necessarily either integer value which neighbours the bounding maximum.
-	\item The issue with selecting the bounding maximum is partially observed in this work, \cite{}. The driving factor is the gradient of the probability function for the Bernoulli distribution, near probability 0 and 1 this is small but nearer 1/2 this maximised which improves the ability to discriminate different values of $\theta$. This is something that can be clearly be observed in our experiments, see Section \ref{sec::?} and Figure \ref{fig::?}.
+	\item The issue with selecting the bounding maximum is partially observed in this work, \cite{}. The driving factor is the gradient of the probability function for the Bernoulli distribution, near probabilities of 0 or 1 this is small, but nearer 1/2 this is maximised which improves the ability to discriminate different values of $\theta$. This is something that can be clearly be observed in our experiments, see Section \ref{sec::?} and Figure \ref{fig::?}.
 \end{itemize}
 
 \subsubsection{Adjustments for noise}
 When we incorporate decoherence noise, we incorporate an extra parameter $\lambda$ which represents the noise level of the quantum computer. We assume in this work that the value of this parameter has been previously ascertained through other means. For reference, we repeat here the probability of measuring a value 1 as a function of $\theta$ and $\lambda$,
-$$\mathbb{P}(X=1| \theta, \lambda)=\text{To be added to be consistent.}$$
+$$\mathbb{P}(X=1| \theta, \lambda)= \frac{1}{2}\left( 1 - e^{-\left( 2d+1 \right) \lambda} \cos\left( 2\left( 2d+1 \right) \theta \right)  \right)  $$
 For more further details of this see Section \ref{sec::?}.
 
 As mentioned previously, the basic sampling algorithm does not change, only the functions $h, g_1, g_2$ in order to accommodate the change in the measurement probability. These become
 \begin{align}
-	h(\mu,\sigma^2,d, \lambda) &= TBA \label{eqn::npostvac}\\
-	g_1(\mu,\sigma^2,x,d, \lambda) &= TBA \label{eqn::nmean}\\
-	g_2(\mu,\sigma^2,x,d, \lambda) &= TBA \label{eqn::nvar}
+	h(\mu,\sigma^2,d, \lambda) & = \frac{4 \left( 2d+1 \right) ^2 e^{-2\left( 2d+1 \right) \lambda} e^{ - 4\left( 2d+1 \right) ^2 \sigma^2} \sin^2\left( 2 \left( 2d+1 \right) \mu \right) }{1-e^{-2\left( 2d+1 \right) \lambda} e^{-4\left( 2d+1 \right) ^2\sigma^2}\cos^2\left( 2\left( 2d+1 \right) \mu \right) } \label{eqn::nvarfactor} \\
+	g_1(\mu,\sigma^2,x,d, \lambda) &= \mu - \left( -1 \right) ^{x}e^{-\left( 2d+1 \right) \lambda}e^{- 2\left( 2d+1 \right) ^2 \sigma^2} \frac{ 2 \left( 2d+1 \right) \sigma^2 \sin\left( 2\left( 2d+2 \right) \mu \right) }{1 + \left( -1 \right) ^{x}e^{-\left( 2d+1 \right) \lambda} e^{-2\left( 2d+1 \right) ^2 \sigma^2} \cos\left( 2\left( 2d+1 \right) \mu \right) } \label{eqn::nmean} \\
+\begin{split}
+	g_2(\mu,\sigma^2,x,d, \lambda)  &= \sigma^2 \left\{\vphantom{\frac{\cos\left( 2\left( 2d+1 \right) \mu \right)  + \left( -1 \right) ^{x}e^{- 2\left( 2d+1 \right) ^2 \sigma^2}}{\left( 1 + \left( -1 \right) ^{x} e^{-2\left( 2d+1 \right)^2 \sigma^2 } \cos\left( 2\left( 2d+1 \right) \mu \right)  \right)^2 }}  1 - \left( -1 \right) ^{x}4\left( 2d+1 \right) ^2 \sigma^2 e^{-\left( 2d+1 \right) \lambda}e^{- 2\left( 2d+1 \right) ^2 \sigma^2} \times  \right.  \\
+			      & \hspace{50pt} \left. \frac{\cos\left( 2\left( 2d+1 \right) \mu \right)  + \left( -1 \right) ^{x}e^{-\left( 2d+1 \right) \lambda}e^{- 2\left( 2d+1 \right) ^2 \sigma^2}}{\left( 1 + \left( -1 \right) ^{x}e^{-\left( 2d+1 \right) \lambda} e^{-2\left( 2d+1 \right)^2 \sigma^2 } \cos\left( 2\left( 2d+1 \right) \mu \right)  \right)^2 }  \right\} \label{eqn::nvar}
+\end{split}
 \end{align}
-Note that we implicitly recover the original functions by setting $ \lambda = 0$.
+Note that we recover the original functions by setting $ \lambda = 0$.
 For the derivation see Appendix \ref{app::noise}.
 
 
@@ -88,7 +104,7 @@ Secondly, by consider $\nu$ we can see why we need to calculate analytically the
 
 
 
-{\color{red} {\bf Note:} Can we prove something about optimality of greedy strategy given the maximum reduction factor and bounds on the \comment[id=jlt]{Value function is phase 2 - unless you're being implicit}value function? (we know bounded between inverse square and inverse)}\comment[id=cdv]{I think we can make an argument that it's negligble, and that, if we wanted, we should be able to find the maximum analytically.}
+{\color{red} {\bf Note:} Can we prove something about optimality of greedy strategy given the maximum reduction factor and bounds on the \comment[id=jlt]{Value function is phase 2 - unless you're being implicit}value function? (we know bounded between inverse square and inverse)}\comment[id=cdv]{I think we can make an argument that it's negligible, and that, if we wanted, we should be able to find the maximum analytically.}
 
 
 
