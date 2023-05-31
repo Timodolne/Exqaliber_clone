@@ -1,2 +1,90 @@
-\section{Technical details}
-Details of technical work if needed
+\section{Posterior statistics}
+In this appendix, we calculate all statistics of interest for the posterior distribution.
+\subsection{Noiseless}
+\label{app::noiseless}
+In the noiseless case, we consider a prior distribution $\pi(\theta) \sim N(\mu, \sigma^2)$ and our sampling distribution $X \sim \text{Ber}(\frac{1}{2} (1 - \cos((4d+2) \theta))$. First, let us calculate all the moments of the posterior distribution, given the measurement:
+\[
+	\mathbb{E}\left[ \theta^{m} | X = x \right] = \frac{\int_{- \infty}^{\infty} \theta^{m} \left( 1 + \left( -1 \right) ^{x} \cos\left( 2\left( 2d + 1 \right) \theta \right)  \right) e^{-\frac{1}{2 \sigma^2} \left( \theta - \mu \right) ^2} \text{d}\theta}{\int_{- \infty}^{\infty} \left( 1 + \left( -1 \right) ^{x} \cos\left( 2\left( 2d + 1 \right) \theta \right)  \right) e^{-\frac{1}{2 \sigma^2} \left( \theta - \mu \right) ^2} \text{d}\theta}
+.\]
+Thus, the integrals of interest take the form.
+\[
+I_m(\theta) = \int_{- \infty}^{\infty} \theta^{m} \left( 1 + \left( -1 \right) ^{x} \cos\left( 2 \left( 2 d + 1 \right) \theta \right)  \right) e^{- \frac{1}{2 \sigma^2} \left( \theta - \mu \right) ^2}\text{d}\theta
+.\]
+For the following, we're going to define the Fourier transform $\hat{f}\left( \omega \right) $ to be given by
+\[
+	\hat{f}\left( \omega \right) = \int_{- \infty}^{\infty} f(x) e^{ - i \omega x}\text{d}x = \mathcal{F}\left\{ f(x) \right\} ,
+\]
+for some function $f(x)$. We also recall the following facts about the Fourier transform:
+\begin{align}
+&	\mathcal{F}\left\{ f(x-a) \right\} \mapsto e^{- i a \omega}\hat{f}(\omega)\label{eqn::fourier-trans}	\\
+&	\mathcal{F}\left\{ f(ax) \right\}   \mapsto \frac{1}{|a|}\hat{f}(\frac{\omega}{a}) \label{eqn::fourier-mult} \\
+&	\mathcal{F}\left\{ x^{n}f(x) \right\}  \mapsto i^{n} \frac{\text{d}^{n} \hat{f}(\omega)}{\text{d}\omega^{n}} \label{eqn::fourier-power} \\
+&	\mathcal{F} \left\{ e^{- x^2} \right\}  = \sqrt{\pi} e^{- \frac{\omega^2}{4}}. \label{eqn::fourier-gauss}
+\end{align}
+We can now rewrite $I_m(\theta)$ to be in a suitable Fourier form,
+\[
+	I_m(\theta) = \sqrt{2 \pi \sigma^2} \mathbb{E}_{\pi(\theta)}\left[ \theta^{m} \right]  + \frac{ \left( -1 \right)^{x} }{2}\int_{- \infty}^{\infty} \theta^{m} \left( e^{2(2d + 1)i \theta} + e^{ - 2(2d+1)i\theta}\right) e^{- \frac{1}{2 \sigma^2} \left( \theta - \mu \right) ^2}\text{d}\theta
+.\]
+Consider
+\begin{align*}
+& \int_{-\infty}^{\infty}e^{-\frac{\theta^2}{2 \sigma^2}}e^{- i \omega \theta} \text{d}\theta = \sqrt{2 \pi \sigma^2} e^{-\frac{\sigma^2 \omega^2}{2}}, & \text{by } (\ref{eqn::fourier-gauss}) \text{ and } (\ref{eqn::fourier-power})\text{, taking }a = \frac{1}{\sqrt{2 \sigma^2} }, \\
+&	\int_{- \infty}^{\infty} e^{- \frac{1}{2 \sigma ^2}\left( \theta-\mu \right)^2  } e^{ -i \omega \theta}\text{d} \theta = \sqrt{2 \pi \sigma^2}   e^{- i \mu\omega}e^{- \frac{\sigma^2 \omega^2}{2}}, & \text{by } (\ref{eqn::fourier-trans}), \text{ taking } a = \mu, \\
+& \int_{- \infty}^{\infty} \theta^{m}e^{-\frac{1}{2 \sigma^2}\left( \theta - \mu \right)^2 }e^{ - i \omega \theta}\text{d}\theta = i^{m}\frac{\text{d}^{m}}{\text{d}\omega^{m}}\left( \sqrt{2\pi \sigma^2}  e^{- i \mu \omega} e^{- \frac{\sigma^2 \omega^2}{2}} \right), & \text{by } (\ref{eqn::fourier-power}), \\
+& \int_{- \infty}^{\infty} \theta^{m} e^{-\frac{1}{2 \sigma^2}\left( \theta - \mu \right)^2 } e^{i \omega \theta}\text{d}\theta = (-i)^{m}\frac{\text{d}^{m}}{\text{d}\omega^{m}}\left( \sqrt{2 \pi \sigma^2}  e^{ i \mu \omega} e^{- \frac{\sigma^2 \omega^2}{2}} \right), & \text{by } \omega \mapsto - \omega. \\
+\end{align*}
+From which we conclude
+\[
+	I_m(\theta) = \sqrt{2 \pi \sigma^2} \left[ \mathbb{E}_{\pi(\theta)}\left[ \theta^{m} \right] + \left( -1 \right)^{x}   \left. \frac{\text{d}^{m}}{\text{d}\omega^{m}}\right\vert_{\omega = 2(2d+1)}\left( \frac{e^{i \mu \omega} + \left( -1 \right)^{m}e^{- i \mu \omega}}{2 i^{m}}  e^{ - \frac{\sigma^2 \omega^2}{2}} \right)   \right]
+.\]
+In particular,
+\begin{align*}
+	I_0\left( \theta \right) &= \sqrt{2 \pi \sigma^2} \left( 1 + \left( -1 \right) ^{x}e^{- 2 \left( 2d+1 \right)^2 \sigma^2} \cos\left( 2\left( 2d+1 \right) \mu \right)  \right] \\
+	I_1(\theta) &= \sqrt{2 \pi \sigma^2}\left[ \mu + (-1)^{x} \left. \frac{\text{d}}{\text{d} \omega}  \right\vert_{\omega =2(2d+1) } \left( \sin \left( \mu \omega \right)  e^{ - \frac{\sigma^2 \omega^2}{2}} \right)  \right]  \\
+		    &= \sqrt{2\pi \sigma^2} \left[ \mu + \left( -1 \right) ^{x}e^{ - 2\left( 2d+1 \right) ^2 \sigma^2} \left( \mu \cos\left( 2\left( 2d+1 \right) \mu \right)  - 2\left( 2d+1 \right) \sigma^2 \sin \left( 2\left( 2d+1 \right) \mu \right)  \right) \right] \\
+		I_2\left( \theta \right) & = \sqrt{2 \pi \sigma^2} \left[ \sigma^2 + \mu^2 - \left( -1 \right) ^{x} \left. \frac{\text{d}^2}{\text{d}\omega^2} \right\vert_{\omega = 2\left( 2d+1 \right) }\left( \cos\left( \mu \omega \right) e^{- \frac{\sigma^2 \omega^2}{2}} \right)  \right]\\
+					 &= \sqrt{2 \pi\sigma^2} \left[ \sigma^2 + \mu^2 + \left( -1 \right) ^{x} e^{- 2\left( 2d+1 \right) ^2 \sigma^2}\left( \left( \mu^2 + \sigma^2- 4\left( 2d+1 \right) ^2\sigma^{4} \right) \cos\left( 2\left( 2d+1 \right) \mu \right) \right. \right. \\
+					 & \hspace{225pt} \left. \left.   - 4\left( 2d+1 \right) \mu\sigma^2 \sin\left( 2\left( 2d+1 \right) \mu \right)  \right) \right]
+\end{align*}
+
+Hence
+\begin{align}
+	\mathbb{E}\left[ \theta | X = x \right] & = \mu - \left( -1 \right) ^{x}e^{ - 2\left( 2d+1 \right) ^2 \sigma^2} \frac{2 \left( 2d+1 \right) \sigma^2 \sin \left( 2\left( 2d+1 \right) \mu \right) 	}{1 + \left( -1 \right) ^{x}e^{ - 2 \left( 2d+1 \right) ^2 \sigma^2} \cos\left( 2\left( 2d+1 \right) \mu \right) } \\
+	\text{Var}\left( \theta | X= x \right) &= \sigma^2\left( 1 - \left( -1 \right) ^{x}4\left( 2d+1 \right) ^2 \sigma^2 e^{ - 2 \left( 2d+1 \right) ^2 \sigma^2} \frac{\cos\left( 2\left( 2d+1 \right) \mu \right)  + \left( -1 \right) ^{x}e^{ - 2 \left( 2d+1 \right) ^2 \sigma^2}}{\left( 1 + \left( -1 \right) ^{x} e^{- 2 \left( 2d+1 \right) ^2 \sigma^2} \cos \left( 2 \left( 2d+1 \right) \mu \right)  \right) ^2} \right) \\
+					       &=\sigma^2 \left( 1 - \sigma^2 \mathcal{V}_x  \right),
+\end{align}
+where we define
+\[
+	\mathcal{V}_x = \left( -1 \right) ^{x} 4\left( 2d+1 \right) ^2 e^{ - 2 \left( 2d+1 \right) ^2 \sigma^2} \frac{\cos\left( 2\left( 2d+1 \right) \mu \right) + \left( -1 \right) ^{x} e^{ - 2 \left( 2d+1 \right) ^2 \sigma^2}}{\left( 1 + \left( -1 \right) ^{x} e^{ - 2 \left( 2d+1 \right) ^2 \sigma^2} \cos\left( 2 \left( 2d+1 \right) \mu \right)  \right) ^2}
+.\]
+If we note that $\mathbb{P}\left( X = x \right) = \frac{I_0\left( \theta, x \right)}{2\sqrt{2 \pi \sigma^2} } $, then we recover $\mathbb{E}[\theta] = \mu$. Similarly, we obtain
+\[
+	\text{Var}\left( \theta \right) = \sigma^2\left( 1 - \sigma^2 \mathcal{V} \right)
+,\]
+where
+\begin{align*}
+	\mathcal{V} &= \mathbb{P}\left( X = 0 \right) \mathcal{V}_0 + \mathbb{P}\left( X = 1 \right) \mathcal{V}_1 \\
+		    &= \frac{ 2\left( 2d+1 \right) ^2 e^{ - 2 \left( 2d+1 \right) ^2 \sigma^2}}{1 - e^{ - 4 \left( 2d+1 \right) ^2 \sigma^2} \cos\left( 2\left( 2d+1 \right) \mu \right) } \times \\
+		    &	\qquad \left\{   \left( \cos\left( 2 \left( 2d+1 \right) \mu \right) + e^{ - 2 \left( 2d+1 \right) ^2 \sigma^2} \right) \left( 1 - e^{ - 2\left( 2d+1 \right) ^2 \sigma^2}\cos\left( 2\left( 2d+1 \right) \mu \right)  \right) \right. \\
+		    & \qquad \left. - \left( \cos\left( 2\left( 2d+1 \right) \mu \right) -e^{- 2 \left( 2d+1 \right) ^2 \sigma^2} \right) \left( 1 + e^{ - 2 \left( 2d+1 \right) ^2 \sigma^2}\cos\left( 2\left( 2d+1 \right) \mu \right)  \right)  \right\} \\
+		    &= \frac{4\left( 2d+1 \right) ^2 e^{ - 4\left( 2d+1 \right) ^2 \sigma^2} \sin^2 \left( 2\left( 2d+1 \right) \mu \right) }{1 - e^{ - 4\left( 2d+1 \right) ^2 \sigma^2} \cos^2 \left(  2 \left( 2d+1 \right) \mu \right) }
+\end{align*}
+
+
+\subsection{Noisy} \label{app:noise}
+In the noisy case, we consider the use of a depolarising quantum channel $\Phi\left( \cdot \right) $ with depolarising probability $p$. For any quantum state $\rho$, we have
+\[
+\Phi\left( \rho \right) = \left( 1- p \right) \rho + p\frac{\rho}{2^{n}}I, \quad 0 \le p \le 1 + \frac{1}{2^{2n} - 1}
+,\]
+where $I$ is the density matrix corresponding to the maximally mixed state on $2^{n}$ qubits. As the most error-prone part of the quantum circuit is the use of the state preparation routine $\mathcal{A}$, we consider only the probability that the state is properly prepared after each application of $\mathcal{A}$
+\[
+\prod_i \left( 1 - p_i \right) \approx e^{- \lambda}, \quad \text{for } \lambda = \sum_i p_i,
+\]
+for $\lambda \sim 1$ by a Poisson approximation, where  $p_i$ is the depolarising probability for each gate $A_i$ applied. Hence, we approximate the probability that we generate $\mathcal{U}^{d} \mathcal{A} \ket{0}^{\otimes n}$ as $e^{-\left( 2d+1 \right) \lambda}$ and generate the maximally mixed state otherwise. Therefore,
+\[
+	\mathbb{P}\left( X = x| \, \theta, \lambda \right) = \frac{1}{2}\left( 1 - \left( -1 \right) ^{x} e^{ - \left( 2d+1 \right) \lambda} \cos\left( 2\left( 2d+1 \right) \theta \right)   \right)
+.\]
+We note that this exponentially suppress the signal we get from our angle $\theta$
+
+\section{Multiplicative bias of the standard variance estimator} \label{app::logvar}
+
+\section{Multiplicative convergence of RAE} \label{app::decrease}
