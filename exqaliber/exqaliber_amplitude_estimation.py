@@ -4,6 +4,8 @@
 
 from typing import Dict, List, Union
 
+import dataclasses
+
 import matplotlib.pyplot as plt
 import numba
 import numpy as np
@@ -626,7 +628,7 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
         final_theta = prior_distributions[-1].mean
         estimation = np.sin(final_theta / 2) ** 2
 
-        result = ExqaliberAmplitudeEstimationResult()
+        result = ExqaliberAmplitudeEstimationResult(alpha=self._alpha)
         result.alpha = self._alpha
         result.epsilon_target = self.epsilon_target
         result.zeta = self._zeta
@@ -686,171 +688,71 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
         return result
 
 
+@dataclasses.dataclass
 class ExqaliberAmplitudeEstimationResult(AmplitudeEstimatorResult):
-    """The ``ExqaliberAmplitudeEstimation`` result object."""
+    r"""The ``ExqaliberAmplitudeEstimation`` result object.
 
-    def __init__(self) -> None:
+    Attributes
+    ----------
+    alpha : float
+        The confidence level of the estimate :math:`\alpha`.
+    epsilon_target : float
+        The specified precision of the final estimate.
+    epsilon_estimated : float
+        The estimated precision of the final estimate.
+    epsilon_estimated_processed : float
+        The estimated precision of the final estimate after
+        post-processing the result.
+    estimate_intervals : List[List[float]]
+        Confidence intervals of the estimate per step.
+    mle_estimate : float
+        The MLE estimate after processing all measurements.
+    mle_estimate_variance : float
+        The variance of the MLE estimate according to the observed
+        Fisher information.
+    mle_estimate_epsilon : float
+        The estimated precision according the mle_estimate_variance.
+    theta_intervals : List[List[float]]
+        The confidence intervals for theta at each stage.
+    powers : List[int]
+        The depth choice for Grover iterators at each stage.
+    confidence_interval_processed : List[List[float]]
+        Confidence intervals at each stage after post-processing.
+    standard_deviation : float
+        The standard deviation of the final estimate.
+    variance : float
+        The variance of the final estimate.
+    measurement_results: List[int]
+        The measurement outcome from each circuit execution, either 0 or
+        1.
+    distributions : List[Normal]
+        The distributions at each stage. The first element is the prior,
+        and the final distribution is the final posterior.
+    """
+
+    alpha: float = None
+    epsilon_target: float = None
+    epsilon_estimated: float = None
+    epsilon_estimated_processed: float = None
+    estimate_intervals: List[List[float]] = None
+    mle_estimate: float = None
+    mle_estimate_variance: float = None
+    mle_estimate_epsilon: float = None
+    theta_intervals: List[List[float]] = None
+    powers: List[int] = None
+    confidence_interval_processed: List[float] = None
+    standard_deviation: float = None
+    measurement_results: List[int] = None
+    distributions: List[Normal] = None
+
+    def __post_init__(self):
+        """Initialise parent class parameters."""
         super().__init__()
-        self._alpha = None
-        self._epsilon_target = None
-        self._epsilon_estimated = None
-        self._epsilon_estimated_processed = None
-        self._estimate_intervals = None
-        self._mle_estimate = None
-        self._mle_estimate_variance = None
-        self._mle_estimate_epsilon = None
-        self._theta_intervals = None
-        self._powers = None
-        self._confidence_interval_processed = None
-        self._standard_deviation = None
-        self._measurement_results = None
-
-    @property
-    def standard_deviation(self) -> float:
-        r"""Return the variance of the final estimate."""
-        return self._standard_deviation
-
-    @standard_deviation.setter
-    def standard_deviation(self, value: float) -> None:
-        r"""Set the variance of the final estimate."""
-        self._standard_deviation = value
 
     @property
     def variance(self) -> float:
         r"""Return the variance of the final estimate."""
         return self.standard_deviation**2
-
-    @property
-    def alpha(self) -> float:
-        r"""Return the confidence level :math:`\alpha`."""
-        return self._alpha
-
-    @alpha.setter
-    def alpha(self, value: float) -> None:
-        r"""Set the confidence level :math:`\alpha`."""
-        self._alpha = value
-
-    @property
-    def epsilon_target(self) -> float:
-        """Return the target half-width of the confidence interval."""
-        return self._epsilon_target
-
-    @epsilon_target.setter
-    def epsilon_target(self, value: float) -> None:
-        """Set the target half-width of the confidence interval."""
-        self._epsilon_target = value
-
-    @property
-    def epsilon_estimated(self) -> float:
-        """Return the estimated epsilon."""
-        return self._epsilon_estimated
-
-    @epsilon_estimated.setter
-    def epsilon_estimated(self, value: float) -> None:
-        """Set the estimated half-width of the confidence interval."""
-        self._epsilon_estimated = value
-
-    @property
-    def epsilon_estimated_processed(self) -> float:
-        """Return the post-processed epsilon."""
-        return self._epsilon_estimated_processed
-
-    @epsilon_estimated_processed.setter
-    def epsilon_estimated_processed(self, value: float) -> None:
-        """Set the post-processed epsilon."""
-        self._epsilon_estimated_processed = value
-
-    @property
-    def estimate_intervals(self) -> list[list[float]]:
-        """Return conf intervals for the estimate per iteration."""
-        return self._estimate_intervals
-
-    @estimate_intervals.setter
-    def estimate_intervals(self, value: list[list[float]]) -> None:
-        """Set conf intervals for the estimate per iteration."""
-        self._estimate_intervals = value
-
-    @property
-    def mle_estimate(self) -> float:
-        """Return the MLE estimate of the final theta."""
-        return self._mle_estimate
-
-    @mle_estimate.setter
-    def mle_estimate(self, value: float) -> None:
-        """Set the MLE estimate of the final theta."""
-        self._mle_estimate = value
-
-    @property
-    def mle_estimate_variance(self) -> float:
-        """Return the variance of the MLE estimate."""
-        return self._mle_estimate_variance
-
-    @mle_estimate_variance.setter
-    def mle_estimate_variance(self, val: float) -> None:
-        """Set the variance of the MLE estimate."""
-        self._mle_estimate_variance = val
-
-    @property
-    def mle_estimate_epsilon(self) -> float:
-        """Return the epsilon accuracy of the MLE estimate."""
-        return self._mle_estimate_epsilon
-
-    @mle_estimate_epsilon.setter
-    def mle_estimate_epsilon(self, val: float) -> None:
-        """Set the epsilon accuracy of the MLE estimate."""
-        self._mle_estimate_epsilon = val
-
-    @property
-    def theta_intervals(self) -> list[list[float]]:
-        """Return conf intervals for the angles in each iteration."""
-        return self._theta_intervals
-
-    @theta_intervals.setter
-    def theta_intervals(self, value: list[list[float]]) -> None:
-        """Set conf intervals for the angles in each iteration."""
-        self._theta_intervals = value
-
-    @property
-    def powers(self) -> list[int]:
-        """Return powers of the Grover operator in each iteration."""
-        return self._powers
-
-    @powers.setter
-    def powers(self, value: list[int]) -> None:
-        """Set the powers of the Grover operator in each iteration."""
-        self._powers = value
-
-    @property
-    def confidence_interval_processed(self) -> tuple[float, float]:
-        """Return the post-processed confidence interval."""
-        return self._confidence_interval_processed
-
-    @confidence_interval_processed.setter
-    def confidence_interval_processed(
-        self, value: tuple[float, float]
-    ) -> None:
-        """Set the post-processed confidence interval."""
-        self._confidence_interval_processed = value
-
-    @property
-    def distributions(self) -> list[Normal]:
-        """Return the full list of distributions."""
-        return self._distributions
-
-    @distributions.setter
-    def distributions(self, distributions: list[Normal]) -> None:
-        """Set the list of distributions."""
-        self._distributions = distributions
-
-    @property
-    def measurement_results(self) -> list[Normal]:
-        """Return the full list of measurement results."""
-        return self._measurement_results
-
-    @measurement_results.setter
-    def measurement_results(self, measurement_results: list[Normal]) -> None:
-        """Set the list of measurement results."""
-        self._measurement_results = measurement_results
 
 
 def _chernoff_confint(
