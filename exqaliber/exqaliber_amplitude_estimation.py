@@ -2,7 +2,7 @@
 
 # from typing import cast
 
-from typing import Dict, List, Union
+from typing import Dict, Union
 
 import dataclasses
 
@@ -250,8 +250,8 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
 
     @staticmethod
     def _compute_mle(
-        measurement_results: List[float],
-        circuit_depth: List[float],
+        measurement_results: list[float],
+        circuit_depth: list[float],
         error_tol: float = 1e-6,
         plot_results: bool = False,
     ):
@@ -262,10 +262,10 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
 
         Parameters
         ----------
-        measurement_results : List[float]
+        measurement_results : list[float]
             Measurement outcomes for each circuit run. Should be a list
             of {0,1} values.
-        circuit_depth : List[float]
+        circuit_depth : list[float]
             Depth (k) of the corresponding circuits for each
             measurement.
         error_tol: float, optional
@@ -293,7 +293,7 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
 
     @staticmethod
     def _compute_fast_mle(
-        binomial_measurement_results: Dict[int, List[int]],
+        binomial_measurement_results: Dict[int, list[int]],
         error_tol: float = 1e-6,
         plot_results: bool = False,
         true_value: float = None,
@@ -302,11 +302,11 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
 
         Parameters
         ----------
-        binomial_measurement_results : Dict[int, List[int]]
+        binomial_measurement_results : Dict[int, list[int]]
             Map of measurement outcomes from a series of binomial
             distributions. Each element is of the form
             depth: [# 0's, # 1's]
-        circuit_depth : List[float]
+        circuit_depth : list[float]
             Depth (k) of the corresponding circuits for each
             measurement.
         error_tol: float, optional
@@ -368,7 +368,7 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
 
     @staticmethod
     def _compute_mle_variance(
-        binomial_measurements: Dict[int, List[int]], mle: float
+        binomial_measurements: Dict[int, list[int]], mle: float
     ) -> float:
         """Compute the variance of the mle estimator.
 
@@ -376,7 +376,7 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
 
         Parameters
         ----------
-        binomial_measurement_results : Dict[int, List[int]]
+        binomial_measurement_results : Dict[int, list[int]]
             Map of measurement outcomes from a series of binomial
             distributions. Each element is of the form
             depth: [# 0's, # 1's]
@@ -411,7 +411,7 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
             The estimation problem to run. If a float, simulate sampling
             from the probability distribution instead of generating a
             quantum circuit.
-        output : Union[str, List[str]] {'sparse', 'full'}, optional
+        output : Union[str, list[str]] {'sparse', 'full'}, optional
             The level of detail for the returned measurement detail. By
             default 'full', returning all of the information.
             Alternatively, specify a single property or list of
@@ -461,7 +461,7 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
         # initialize memory variables
         powers = []  # list of powers k: Q^k, (called 'k' in paper)
         measurement_results = []
-        binomial_measurements: Dict[int, List[int, int]] = dict()
+        binomial_measurements: Dict[int, list[int, int]] = dict()
         num_oracle_queries = 0
         theta_min_0, theta_max_0 = prior.confidence_interval(self._alpha)
         theta_intervals = [[theta_min_0, theta_max_0]]
@@ -703,7 +703,7 @@ class ExqaliberAmplitudeEstimationResult(AmplitudeEstimatorResult):
     epsilon_estimated_processed : float
         The estimated precision of the final estimate after
         post-processing the result.
-    estimate_intervals : List[List[float]]
+    estimate_intervals : list[list[float]]
         Confidence intervals of the estimate per step.
     mle_estimate : float
         The MLE estimate after processing all measurements.
@@ -712,20 +712,20 @@ class ExqaliberAmplitudeEstimationResult(AmplitudeEstimatorResult):
         Fisher information.
     mle_estimate_epsilon : float
         The estimated precision according the mle_estimate_variance.
-    theta_intervals : List[List[float]]
+    theta_intervals : list[list[float]]
         The confidence intervals for theta at each stage.
-    powers : List[int]
+    powers : list[int]
         The depth choice for Grover iterators at each stage.
-    confidence_interval_processed : List[List[float]]
+    confidence_interval_processed : list[list[float]]
         Confidence intervals at each stage after post-processing.
     standard_deviation : float
         The standard deviation of the final estimate.
     variance : float
         The variance of the final estimate.
-    measurement_results: List[int]
+    measurement_results: list[int]
         The measurement outcome from each circuit execution, either 0 or
         1.
-    distributions : List[Normal]
+    distributions : list[Normal]
         The distributions at each stage. The first element is the prior,
         and the final distribution is the final posterior.
     """
@@ -734,16 +734,16 @@ class ExqaliberAmplitudeEstimationResult(AmplitudeEstimatorResult):
     epsilon_target: float = None
     epsilon_estimated: float = None
     epsilon_estimated_processed: float = None
-    estimate_intervals: List[List[float]] = None
+    estimate_intervals: list[list[float]] = None
     mle_estimate: float = None
     mle_estimate_variance: float = None
     mle_estimate_epsilon: float = None
-    theta_intervals: List[List[float]] = None
-    powers: List[int] = None
-    confidence_interval_processed: List[float] = None
+    theta_intervals: list[list[float]] = None
+    powers: list[int] = None
+    confidence_interval_processed: list[float] = None
     standard_deviation: float = None
-    measurement_results: List[int] = None
-    distributions: List[Normal] = None
+    measurement_results: list[int] = None
+    distributions: list[Normal] = None
 
     def __post_init__(self):
         """Initialise parent class parameters."""
