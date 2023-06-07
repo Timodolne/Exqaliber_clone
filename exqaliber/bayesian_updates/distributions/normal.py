@@ -3,6 +3,8 @@ import numba
 import numpy as np
 from scipy.stats import norm
 
+# TODO is there a reason these aren't static methods?
+
 
 @numba.njit()
 def get_expected_bias(lamda: int, mu: float, sigma: float) -> float:
@@ -206,6 +208,7 @@ class Normal:
         """Get the variance of the normal distribution."""
         return self.standard_deviation**2
 
+    # TODO this seems redundant
     def get_parameters(self) -> dict[str, float | np.ndarray]:
         r"""Get the parameters that uniquely define the distribution.
 
@@ -218,6 +221,7 @@ class Normal:
         """
         return self.__parameters
 
+    # TODO this also seems redundant
     def sample(self, n: int = 10) -> np.ndarray:
         r"""Get n samples from the distribution.
 
