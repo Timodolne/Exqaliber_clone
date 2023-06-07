@@ -622,16 +622,15 @@ def run_single_experiment(experiment, output="sparse"):
 def run_experiment_single_rep(args, experiment_f=run_single_experiment):
     """Run a single repetition of an experiment."""
     experiment, filename, run_or_load = args
-    if run_or_load == "load":
-        if os.path.isfile(filename):
-            with open(filename, "rb") as f:
-                results = pickle.load(f)
-        else:
-            run_or_load = "run"
-    if run_or_load == "run":
-        results = experiment_f(experiment)
-        with open(filename, "wb") as f:
-            pickle.dump(results, f, protocol=-1)
+
+    if run_or_load == "load" and os.path.isfile(filename):
+        with open(filename, "rb") as f:
+            results = pickle.load(f)
+        return results
+
+    results = experiment_f(experiment)
+    with open(filename, "wb") as f:
+        pickle.dump(results, f, protocol=-1)
     return results
 
 
