@@ -253,6 +253,7 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
         measurement_results: list[float],
         circuit_depth: list[float],
         error_tol: float = 1e-6,
+        zeta: float = 0,
         plot_results: bool = False,
     ):
         """Compute the MLE for the given schedule and schedule results.
@@ -270,6 +271,8 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
             measurement.
         error_tol: float, optional
             Error tolerance for the final estimate
+        zeta : float, optional
+            Noise parameter for depolarising noise, by default 0.
         plot_results : bool, optional
             Whether to plot the log likelihood function, by default
             False.
@@ -288,13 +291,17 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
             count_dict[i_depth][i_mmt_result] += 1
 
         return ExqaliberAmplitudeEstimation._compute_fast_mle(
-            count_dict, error_tol=error_tol, plot_results=plot_results
+            count_dict,
+            error_tol=error_tol,
+            zeta=zeta,
+            plot_results=plot_results,
         )
 
     @staticmethod
     def _compute_fast_mle(
         binomial_measurement_results: Dict[int, list[int]],
         error_tol: float = 1e-6,
+        zeta: float = 0,
         plot_results: bool = False,
         true_value: float = None,
     ):
@@ -311,6 +318,8 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
             measurement.
         error_tol: float, optional
             Error tolerance for the final estimate
+        zeta : float, optional
+            Noise parameter for depolarising noise, by default 0.
         plot_results : bool, optional
             Whether to plot the log likelihood function, by default
             False.
@@ -341,8 +350,11 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
             loglik = np.zeros(1)
             for i_experiment in experiment_result_array:
                 angle = (2 * i_experiment[0] + 1) * theta / 2
-                loglik = loglik + np.log(np.sin(angle) ** 2) * i_experiment[2]
-                loglik = loglik + np.log(np.cos(angle) ** 2) * i_experiment[1]
+                p_1 = 0.5 * (
+                    1 - np.exp(-zeta * i_experiment[0]) * np.cos(2 * angle)
+                )
+                loglik = loglik + np.log(p_1) * i_experiment[2]
+                loglik = loglik + np.log(1 - p_1) * i_experiment[1]
             return -loglik
 
         nevals = int(np.pi * 0.5 / error_tol)
@@ -638,11 +650,15 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
             result.mle_estimate = self._compute_fast_mle(
                 binomial_measurements,
                 error_tol=self.epsilon_target,
+                zeta=self._zeta,
                 true_value=self._true_theta,
             )
-            result.mle_estimate_variance = self._compute_mle_variance(
-                binomial_measurements, result.mle_estimate
-            )
+
+            if self._zeta == 0:
+                result.mle_estimate_variance = self._compute_mle_variance(
+                    binomial_measurements, result.mle_estimate
+                )
+
             result.mle_estimate_epsilon = norm.ppf(
                 1 - self._alpha / 2
             ) * np.sqrt(result.mle_estimate_variance)
