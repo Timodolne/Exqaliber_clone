@@ -628,7 +628,7 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
         final_theta = prior_distributions[-1].mean
         estimation = np.sin(final_theta / 2) ** 2
 
-        result = ExqaliberAmplitudeEstimationResult(alpha=self._alpha)
+        result = ExqaliberAmplitudeEstimationResult()
         result.alpha = self._alpha
         result.epsilon_target = self.epsilon_target
         result.zeta = self._zeta
