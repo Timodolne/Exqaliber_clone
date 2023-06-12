@@ -515,83 +515,8 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
                     ) from exc
 
                 measurement_outcome = max(ret.quasi_dists[0], key=lambda x: x)
-
-                # shots = ret.metadata[0].get("shots")
-                # if shots is None:
-                #     raise NotImplementedError
-                #     circuit = self.construct_circuit(
-                #         estimation_problem, k=0, measurement=True
-                #     )
-                #     try:
-                #         job = self._sampler.run([circuit])
-                #         ret = job.result()
-                #     except Exception as exc:
-                #         raise AlgorithmError(
-                #             "The job was not completed successfully. "
-                #         ) from exc
-                #
-                #     # calculate the probability of measuring '1'
-                #     prob = _probabilities_from_sampler_result(
-                #         circuit.num_qubits, ret, estimation_problem
-                #     )
-                #     # tell MyPy it's a float and not Tuple[int, float]
-                #     prob = cast(
-                #         float, prob
-                #     )
-                #     # type: list[float]
-                #     a_confidence_interval = [prob, prob]
-                #     a_intervals.append(a_confidence_interval)
-                #
-                #     theta_i_interval = [
-                #         np.arccos(1 - 2 * a_i) / 2 / np.pi
-                #         for a_i in a_confidence_interval
-                #     ]
-                #     theta_intervals.append(theta_i_interval)
-                #     num_oracle_queries = (
-                #         0  # no Q-oracle call, only a single one to A
-                #     )
-                #     break
-                #
-                # counts = {
-                #     (
-                #         np.binary_repr(k, circuit.num_qubits):
-                #         round(v * shots)
-                #     )
-                #     for k, v in ret.quasi_dists[0].items()
-                # }
-                #
-                # # calculate the probability of measuring '1',
-                # # 'prob' is a_i in the paper
-                # num_qubits = circuit.num_qubits - circuit.num_ancillas
-                # # type: ignore
-                # one_counts, prob = self._good_state_probability(
-                #     estimation_problem, counts, num_qubits
-                # )
-                #
-                # num_one_shots.append(one_counts)
-                #
-                # # track number of Q-oracle calls
-                # num_oracle_queries += shots * k
-                #
-                # # if on the previous iterations we have K_{i-1}==K_i,
-                # # we sum these samples up
-                # j = 1  # number of times we stayed fixed at the same K
-                # round_shots = shots
-                # round_one_counts = one_counts
-                # if num_iterations > 1:
-                #     while (
-                #         (
-                #             powers[num_iterations - j] ==
-                #             powers[num_iterations]
-                #         )
-                #         and num_iterations >= j + 1
-                #     ):
-                #         j = j + 1
-                #         round_shots += shots
-                #         round_one_counts += num_one_shots[-j]
-                # num_oracle_queries += k
-
-            else:  # Cheat sampling
+            else:
+                # Sample directly from a Bernoulli distribution
                 noise = np.exp(-lamda * self._zeta)
                 p = 0.5 * (1 - noise * np.cos(lamda * self._true_theta))
                 measurement_outcome = np.random.binomial(1, p)
@@ -769,38 +694,6 @@ class ExqaliberAmplitudeEstimationResult(AmplitudeEstimatorResult):
     def variance(self) -> float:
         r"""Return the variance of the final estimate."""
         return self.standard_deviation**2
-
-
-def _chernoff_confint(
-    value: float, max_rounds: int, alpha: float
-) -> tuple[float, float]:
-    """Compute the Chernoff confidence interval for `shots`.
-
-    Uses i.i.d. Bernoulli trials.
-
-    The confidence interval is
-
-        [value - eps, value + eps], where
-        eps = sqrt(3 * log(2 * max_rounds/ alpha) / shots)
-
-    but at most [0, 1].
-
-
-    value:
-        The current estimate.
-    max_rounds:
-        The maximum number of rounds, used to compute epsilon_a.
-    alpha:
-        The confidence level, used to compute epsilon_a.
-
-    Returns
-    -------
-        The Chernoff confidence interval.
-    """
-    eps = np.sqrt(3 * np.log(2 * max_rounds / alpha))
-    lower = np.maximum(0, value - eps)
-    upper = np.minimum(1, value + eps)
-    return lower, upper
 
 
 if __name__ == "__main__":
