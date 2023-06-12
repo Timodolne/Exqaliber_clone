@@ -173,7 +173,7 @@ def get_variance_reduction_factor(
     """
     b = get_expected_bias(lamda, mu, sigma)
     chi = get_chi(lamda, mu, sigma)
-    noise = np.exp(-lamda * zeta)
+    noise = np.exp(-2 * lamda * zeta)
 
     if np.abs(b - 1) < 1e-8:
         return 0
