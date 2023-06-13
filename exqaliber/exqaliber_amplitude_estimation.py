@@ -2,7 +2,9 @@
 
 # from typing import cast
 
-from typing import Dict, List, Union
+from typing import Dict, Union
+
+import dataclasses
 
 import matplotlib.pyplot as plt
 import numba
@@ -22,13 +24,13 @@ from exqaliber.bayesian_updates.distributions.normal import Normal
 
 
 class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
-    r"""The Iterative Amplitude Estimation algorithm.
+    r"""The Exqaliber Amplitude Estimation algorithm.
 
     This class implements the Exqaliber Quantum Amplitude Estimation
     (EQAE) algorithm, developed by Capgemini Quantum Lab and Cambridge
     Consultants. The output of the algorithm is an estimate that, with
-    at least probability :math:`1 - \alpha`, differs by epsilon to the
-    target value, where both alpha and epsilon can be specified.
+    at least probability :math:`1 - \alpha`, differs by :math:`epsilon`
+    to the target value, where both alpha and epsilon are specified.
 
     It is based on Iterative Quantum Amplitude Estimation [1], but
     updates the Grover depth with a Bayes update rul. EQAE iteratively
@@ -53,26 +55,23 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
         sampler: BaseSampler | None = None,
         **kwargs,
     ) -> None:
-        r"""
-        TODO update docstring.
+        r"""Initialise Amplitude Estimation algorithm.
 
+        Parameters
+        ----------
         epsilon_target: float
-            Target precision for estimation target `theta`, has values
-            between 0 and 0.5
+            Target precision for estimation target :math:`\theta`, has
+            values between 0 and 0.5.
         alpha: float
-            Confidence level, the target probability is 1 - alpha, has
-            values between 0 and 1
+            Confidence level, the target probability is
+            :math:`1 - \alpha`, has values between 0 and 1.
         sampler: BaseSampler
             A sampler primitive to evaluate the circuits.
 
         Raises
         ------
-            AlgorithmError:
-                if the method to compute the confidence
-                intervals is not supported
-            ValueError: If the target epsilon is not in (0, 0.5]
-            ValueError: If alpha is not in (0, 1)
-            ValueError: If confint_method is not supported
+            ValueError: If the target :math:`epsilon` is not in (0, 0.5]
+            ValueError: If :math:`alpha` is not in (0, 1)
         """
         # validate ranges of input arguments
         if not 0 < epsilon_target <= 0.5:
@@ -87,6 +86,9 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
             )
 
         super().__init__()
+
+        # TODO add properties for other attributes that are stored but
+        # not accessed
 
         # store parameters
         self._epsilon = epsilon_target
@@ -114,8 +116,8 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
     def sampler(self, sampler: BaseSampler) -> None:
         """Set sampler primitive.
 
-        Args
-        ----
+        Parameters
+        ----------
             sampler: A sampler primitive to evaluate the circuits.
         """
         self._sampler = sampler
@@ -135,30 +137,28 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
     def epsilon_target(self, epsilon: float) -> None:
         """Set the target precision of the algorithm.
 
-        Args
-        ----
-            epsilon: Target precision for estimation target `a`.
+        Parameters
+        ----------
+            epsilon: float
+                Target precision for estimation target :math:`theta`.
         """
         self._epsilon = epsilon
 
+    # TODO Convert to Numpy docstring
     def _find_next_k(
         self, prior_distribution: Normal, method: str = "naive"
     ) -> int:
         """Find the next value of k for the Grover iterator power.
 
-        Args
-        ----
+        Parameters
+        ----------
             prior_distribution: prior distributions
             method: method for finding next lambda
 
         Returns
         -------
-            The next power k, and boolean flag for the extrapolated
-            interval.
-
-        Raises
-        ------
-            AlgorithmError: if min_ratio is smaller or equal to 1
+        int
+            The next power k.
         """
         analytical_lamda = int(1 / prior_distribution.standard_deviation)
         match method:
@@ -248,9 +248,10 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
 
     @staticmethod
     def _compute_mle(
-        measurement_results: List[float],
-        circuit_depth: List[float],
+        measurement_results: list[float],
+        circuit_depth: list[float],
         error_tol: float = 1e-6,
+        zeta: float = 0,
         plot_results: bool = False,
     ):
         """Compute the MLE for the given schedule and schedule results.
@@ -260,14 +261,16 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
 
         Parameters
         ----------
-        measurement_results : List[float]
+        measurement_results : list[float]
             Measurement outcomes for each circuit run. Should be a list
             of {0,1} values.
-        circuit_depth : List[float]
+        circuit_depth : list[float]
             Depth (k) of the corresponding circuits for each
             measurement.
         error_tol: float, optional
             Error tolerance for the final estimate
+        zeta : float, optional
+            Noise parameter for depolarising noise, by default 0.
         plot_results : bool, optional
             Whether to plot the log likelihood function, by default
             False.
@@ -286,13 +289,17 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
             count_dict[i_depth][i_mmt_result] += 1
 
         return ExqaliberAmplitudeEstimation._compute_fast_mle(
-            count_dict, error_tol=error_tol, plot_results=plot_results
+            count_dict,
+            error_tol=error_tol,
+            zeta=zeta,
+            plot_results=plot_results,
         )
 
     @staticmethod
     def _compute_fast_mle(
-        binomial_measurement_results: Dict[int, List[int]],
+        binomial_measurement_results: Dict[int, list[int]],
         error_tol: float = 1e-6,
+        zeta: float = 0,
         plot_results: bool = False,
         true_value: float = None,
     ):
@@ -300,15 +307,14 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
 
         Parameters
         ----------
-        binomial_measurement_results : Dict[int, List[int]]
+        binomial_measurement_results : Dict[int, list[int]]
             Map of measurement outcomes from a series of binomial
             distributions. Each element is of the form
             depth: [# 0's, # 1's]
-        circuit_depth : List[float]
-            Depth (k) of the corresponding circuits for each
-            measurement.
         error_tol: float, optional
             Error tolerance for the final estimate
+        zeta : float, optional
+            Noise parameter for depolarising noise, by default 0.
         plot_results : bool, optional
             Whether to plot the log likelihood function, by default
             False.
@@ -339,8 +345,11 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
             loglik = np.zeros(1)
             for i_experiment in experiment_result_array:
                 angle = (2 * i_experiment[0] + 1) * theta / 2
-                loglik = loglik + np.log(np.sin(angle) ** 2) * i_experiment[2]
-                loglik = loglik + np.log(np.cos(angle) ** 2) * i_experiment[1]
+                p_1 = 0.5 * (
+                    1 - np.exp(-zeta * i_experiment[0]) * np.cos(2 * angle)
+                )
+                loglik = loglik + np.log(p_1) * i_experiment[2]
+                loglik = loglik + np.log(1 - p_1) * i_experiment[1]
             return -loglik
 
         nevals = int(np.pi * 0.5 / error_tol)
@@ -366,7 +375,7 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
 
     @staticmethod
     def _compute_mle_variance(
-        binomial_measurements: Dict[int, List[int]], mle: float
+        binomial_measurements: Dict[int, list[int]], mle: float
     ) -> float:
         """Compute the variance of the mle estimator.
 
@@ -374,7 +383,7 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
 
         Parameters
         ----------
-        binomial_measurement_results : Dict[int, List[int]]
+        binomial_measurement_results : Dict[int, list[int]]
             Map of measurement outcomes from a series of binomial
             distributions. Each element is of the form
             depth: [# 0's, # 1's]
@@ -409,7 +418,7 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
             The estimation problem to run. If a float, simulate sampling
             from the probability distribution instead of generating a
             quantum circuit.
-        output : Union[str, List[str]] {'sparse', 'full'}, optional
+        output : Union[str, list[str]] {'sparse', 'full'}, optional
             The level of detail for the returned measurement detail. By
             default 'full', returning all of the information.
             Alternatively, specify a single property or list of
@@ -450,16 +459,16 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
                 mu = np.pi / 2
             self._prior_mean = np.random.normal(mu, self._prior_std) % np.pi
 
-        # initiliaze starting variables
+        # initialize starting variables
         prior = Normal(self._prior_mean, self._prior_std)
-        prior_distributions = [prior]
         num_iterations = 0  # keep track of the number of iterations
         sigma_tolerance = self.epsilon_target / norm.ppf(1 - self._alpha / 2)
 
         # initialize memory variables
+        prior_distributions = [prior]
         powers = []  # list of powers k: Q^k, (called 'k' in paper)
         measurement_results = []
-        binomial_measurements: Dict[int, List[int, int]] = dict()
+        binomial_measurements: Dict[int, list[int, int]] = dict()
         num_oracle_queries = 0
         theta_min_0, theta_max_0 = prior.confidence_interval(self._alpha)
         theta_intervals = [[theta_min_0, theta_max_0]]
@@ -501,83 +510,8 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
                     ) from exc
 
                 measurement_outcome = max(ret.quasi_dists[0], key=lambda x: x)
-
-                # shots = ret.metadata[0].get("shots")
-                # if shots is None:
-                #     raise NotImplementedError
-                #     circuit = self.construct_circuit(
-                #         estimation_problem, k=0, measurement=True
-                #     )
-                #     try:
-                #         job = self._sampler.run([circuit])
-                #         ret = job.result()
-                #     except Exception as exc:
-                #         raise AlgorithmError(
-                #             "The job was not completed successfully. "
-                #         ) from exc
-                #
-                #     # calculate the probability of measuring '1'
-                #     prob = _probabilities_from_sampler_result(
-                #         circuit.num_qubits, ret, estimation_problem
-                #     )
-                #     # tell MyPy it's a float and not Tuple[int, float]
-                #     prob = cast(
-                #         float, prob
-                #     )
-                #     # type: list[float]
-                #     a_confidence_interval = [prob, prob]
-                #     a_intervals.append(a_confidence_interval)
-                #
-                #     theta_i_interval = [
-                #         np.arccos(1 - 2 * a_i) / 2 / np.pi
-                #         for a_i in a_confidence_interval
-                #     ]
-                #     theta_intervals.append(theta_i_interval)
-                #     num_oracle_queries = (
-                #         0  # no Q-oracle call, only a single one to A
-                #     )
-                #     break
-                #
-                # counts = {
-                #     (
-                #         np.binary_repr(k, circuit.num_qubits):
-                #         round(v * shots)
-                #     )
-                #     for k, v in ret.quasi_dists[0].items()
-                # }
-                #
-                # # calculate the probability of measuring '1',
-                # # 'prob' is a_i in the paper
-                # num_qubits = circuit.num_qubits - circuit.num_ancillas
-                # # type: ignore
-                # one_counts, prob = self._good_state_probability(
-                #     estimation_problem, counts, num_qubits
-                # )
-                #
-                # num_one_shots.append(one_counts)
-                #
-                # # track number of Q-oracle calls
-                # num_oracle_queries += shots * k
-                #
-                # # if on the previous iterations we have K_{i-1}==K_i,
-                # # we sum these samples up
-                # j = 1  # number of times we stayed fixed at the same K
-                # round_shots = shots
-                # round_one_counts = one_counts
-                # if num_iterations > 1:
-                #     while (
-                #         (
-                #             powers[num_iterations - j] ==
-                #             powers[num_iterations]
-                #         )
-                #         and num_iterations >= j + 1
-                #     ):
-                #         j = j + 1
-                #         round_shots += shots
-                #         round_one_counts += num_one_shots[-j]
-                # num_oracle_queries += k
-
-            else:  # Cheat sampling
+            else:
+                # Sample directly from a Bernoulli distribution
                 noise = np.exp(-lamda * self._zeta)
                 p = 0.5 * (1 - noise * np.cos(lamda * self._true_theta))
                 measurement_outcome = np.random.binomial(1, p)
@@ -636,11 +570,15 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
             result.mle_estimate = self._compute_fast_mle(
                 binomial_measurements,
                 error_tol=self.epsilon_target,
+                zeta=self._zeta,
                 true_value=self._true_theta,
             )
-            result.mle_estimate_variance = self._compute_mle_variance(
-                binomial_measurements, result.mle_estimate
-            )
+
+            if self._zeta == 0:
+                result.mle_estimate_variance = self._compute_mle_variance(
+                    binomial_measurements, result.mle_estimate
+                )
+
             result.mle_estimate_epsilon = norm.ppf(
                 1 - self._alpha / 2
             ) * np.sqrt(result.mle_estimate_variance)
@@ -686,203 +624,71 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
         return result
 
 
+@dataclasses.dataclass
 class ExqaliberAmplitudeEstimationResult(AmplitudeEstimatorResult):
-    """The ``ExqaliberAmplitudeEstimation`` result object."""
+    r"""The ``ExqaliberAmplitudeEstimation`` result object.
 
-    def __init__(self) -> None:
+    Attributes
+    ----------
+    alpha : float
+        The confidence level of the estimate :math:`\alpha`.
+    epsilon_target : float
+        The specified precision of the final estimate.
+    epsilon_estimated : float
+        The estimated precision of the final estimate.
+    epsilon_estimated_processed : float
+        The estimated precision of the final estimate after
+        post-processing the result.
+    estimate_intervals : list[list[float]]
+        Confidence intervals of the estimate per step.
+    mle_estimate : float
+        The MLE estimate after processing all measurements.
+    mle_estimate_variance : float
+        The variance of the MLE estimate according to the observed
+        Fisher information.
+    mle_estimate_epsilon : float
+        The estimated precision according the mle_estimate_variance.
+    theta_intervals : list[list[float]]
+        The confidence intervals for theta at each stage.
+    powers : list[int]
+        The depth choice for Grover iterators at each stage.
+    confidence_interval_processed : list[list[float]]
+        Confidence intervals at each stage after post-processing.
+    standard_deviation : float
+        The standard deviation of the final estimate.
+    variance : float
+        The variance of the final estimate.
+    measurement_results: list[int]
+        The measurement outcome from each circuit execution, either 0 or
+        1.
+    distributions : list[Normal]
+        The distributions at each stage. The first element is the prior,
+        and the final distribution is the final posterior.
+    """
+
+    alpha: float = None
+    epsilon_target: float = None
+    epsilon_estimated: float = None
+    epsilon_estimated_processed: float = None
+    estimate_intervals: list[list[float]] = None
+    mle_estimate: float = None
+    mle_estimate_variance: float = None
+    mle_estimate_epsilon: float = None
+    theta_intervals: list[list[float]] = None
+    powers: list[int] = None
+    confidence_interval_processed: list[float] = None
+    standard_deviation: float = None
+    measurement_results: list[int] = None
+    distributions: list[Normal] = None
+
+    def __post_init__(self):
+        """Initialise parent class parameters."""
         super().__init__()
-        self._alpha = None
-        self._epsilon_target = None
-        self._epsilon_estimated = None
-        self._epsilon_estimated_processed = None
-        self._estimate_intervals = None
-        self._mle_estimate = None
-        self._mle_estimate_variance = None
-        self._mle_estimate_epsilon = None
-        self._theta_intervals = None
-        self._powers = None
-        self._confidence_interval_processed = None
-        self._standard_deviation = None
-        self._measurement_results = None
-
-    @property
-    def standard_deviation(self) -> float:
-        r"""Return the variance of the final estimate."""
-        return self._standard_deviation
-
-    @standard_deviation.setter
-    def standard_deviation(self, value: float) -> None:
-        r"""Set the variance of the final estimate."""
-        self._standard_deviation = value
 
     @property
     def variance(self) -> float:
         r"""Return the variance of the final estimate."""
         return self.standard_deviation**2
-
-    @property
-    def alpha(self) -> float:
-        r"""Return the confidence level :math:`\alpha`."""
-        return self._alpha
-
-    @alpha.setter
-    def alpha(self, value: float) -> None:
-        r"""Set the confidence level :math:`\alpha`."""
-        self._alpha = value
-
-    @property
-    def epsilon_target(self) -> float:
-        """Return the target half-width of the confidence interval."""
-        return self._epsilon_target
-
-    @epsilon_target.setter
-    def epsilon_target(self, value: float) -> None:
-        """Set the target half-width of the confidence interval."""
-        self._epsilon_target = value
-
-    @property
-    def epsilon_estimated(self) -> float:
-        """Return the estimated epsilon."""
-        return self._epsilon_estimated
-
-    @epsilon_estimated.setter
-    def epsilon_estimated(self, value: float) -> None:
-        """Set the estimated half-width of the confidence interval."""
-        self._epsilon_estimated = value
-
-    @property
-    def epsilon_estimated_processed(self) -> float:
-        """Return the post-processed epsilon."""
-        return self._epsilon_estimated_processed
-
-    @epsilon_estimated_processed.setter
-    def epsilon_estimated_processed(self, value: float) -> None:
-        """Set the post-processed epsilon."""
-        self._epsilon_estimated_processed = value
-
-    @property
-    def estimate_intervals(self) -> list[list[float]]:
-        """Return conf intervals for the estimate per iteration."""
-        return self._estimate_intervals
-
-    @estimate_intervals.setter
-    def estimate_intervals(self, value: list[list[float]]) -> None:
-        """Set conf intervals for the estimate per iteration."""
-        self._estimate_intervals = value
-
-    @property
-    def mle_estimate(self) -> float:
-        """Return the MLE estimate of the final theta."""
-        return self._mle_estimate
-
-    @mle_estimate.setter
-    def mle_estimate(self, value: float) -> None:
-        """Set the MLE estimate of the final theta."""
-        self._mle_estimate = value
-
-    @property
-    def mle_estimate_variance(self) -> float:
-        """Return the variance of the MLE estimate."""
-        return self._mle_estimate_variance
-
-    @mle_estimate_variance.setter
-    def mle_estimate_variance(self, val: float) -> None:
-        """Set the variance of the MLE estimate."""
-        self._mle_estimate_variance = val
-
-    @property
-    def mle_estimate_epsilon(self) -> float:
-        """Return the epsilon accuracy of the MLE estimate."""
-        return self._mle_estimate_epsilon
-
-    @mle_estimate_epsilon.setter
-    def mle_estimate_epsilon(self, val: float) -> None:
-        """Set the epsilon accuracy of the MLE estimate."""
-        self._mle_estimate_epsilon = val
-
-    @property
-    def theta_intervals(self) -> list[list[float]]:
-        """Return conf intervals for the angles in each iteration."""
-        return self._theta_intervals
-
-    @theta_intervals.setter
-    def theta_intervals(self, value: list[list[float]]) -> None:
-        """Set conf intervals for the angles in each iteration."""
-        self._theta_intervals = value
-
-    @property
-    def powers(self) -> list[int]:
-        """Return powers of the Grover operator in each iteration."""
-        return self._powers
-
-    @powers.setter
-    def powers(self, value: list[int]) -> None:
-        """Set the powers of the Grover operator in each iteration."""
-        self._powers = value
-
-    @property
-    def confidence_interval_processed(self) -> tuple[float, float]:
-        """Return the post-processed confidence interval."""
-        return self._confidence_interval_processed
-
-    @confidence_interval_processed.setter
-    def confidence_interval_processed(
-        self, value: tuple[float, float]
-    ) -> None:
-        """Set the post-processed confidence interval."""
-        self._confidence_interval_processed = value
-
-    @property
-    def distributions(self) -> list[Normal]:
-        """Return the full list of distributions."""
-        return self._distributions
-
-    @distributions.setter
-    def distributions(self, distributions: list[Normal]) -> None:
-        """Set the list of distributions."""
-        self._distributions = distributions
-
-    @property
-    def measurement_results(self) -> list[Normal]:
-        """Return the full list of measurement results."""
-        return self._measurement_results
-
-    @measurement_results.setter
-    def measurement_results(self, measurement_results: list[Normal]) -> None:
-        """Set the list of measurement results."""
-        self._measurement_results = measurement_results
-
-
-def _chernoff_confint(
-    value: float, max_rounds: int, alpha: float
-) -> tuple[float, float]:
-    """Compute the Chernoff confidence interval for `shots`.
-
-    Uses i.i.d. Bernoulli trials.
-
-    The confidence interval is
-
-        [value - eps, value + eps], where
-        eps = sqrt(3 * log(2 * max_rounds/ alpha) / shots)
-
-    but at most [0, 1].
-
-
-    value:
-        The current estimate.
-    max_rounds:
-        The maximum number of rounds, used to compute epsilon_a.
-    alpha:
-        The confidence level, used to compute epsilon_a.
-
-    Returns
-    -------
-        The Chernoff confidence interval.
-    """
-    eps = np.sqrt(3 * np.log(2 * max_rounds / alpha))
-    lower = np.maximum(0, value - eps)
-    upper = np.minimum(1, value + eps)
-    return lower, upper
 
 
 if __name__ == "__main__":

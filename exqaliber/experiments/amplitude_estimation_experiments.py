@@ -3,6 +3,7 @@ import hashlib
 import os.path
 import pickle
 import queue
+import warnings
 from fractions import Fraction
 from functools import partial
 from itertools import product
@@ -12,6 +13,9 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import animation
+from qiskit.algorithms.amplitude_estimators.amplitude_estimator import (
+    AmplitudeEstimatorResult,
+)
 from scipy.stats import norm
 
 try:
@@ -229,8 +233,9 @@ def convergence_plot(
     fig, axs = plt.subplots(1, 3, figsize=(15, 5))
 
     # Variance plot
-    x = range(n_iter)
     y = [np.log(dist.standard_deviation) for dist in distributions]
+    x = range(len(y))
+
     axs[0].plot(x, y)
 
     axs[0].set_xlim(0, n_iter)
@@ -271,6 +276,7 @@ def convergence_plot(
 
     # Powers plot
     y = 2 * np.array(result.powers) + 1
+    x = range(len(y))
     axs[2].plot(x, y)
 
     text_x = (1 / 10) * max(x)
@@ -619,22 +625,23 @@ def run_single_experiment(experiment, output="sparse"):
     return result
 
 
+# TODO Does this need a log warning?
 def run_experiment_single_rep(args, experiment_f=run_single_experiment):
     """Run a single repetition of an experiment."""
     experiment, filename, run_or_load = args
-    if run_or_load == "load":
-        if os.path.isfile(filename):
-            with open(filename, "rb") as f:
-                results = pickle.load(f)
-        else:
-            run_or_load = "run"
-    if run_or_load == "run":
-        results = experiment_f(experiment)
-        with open(filename, "wb") as f:
-            pickle.dump(results, f, protocol=-1)
+
+    if run_or_load == "load" and os.path.isfile(filename):
+        with open(filename, "rb") as f:
+            results = pickle.load(f)
+        return results
+
+    results = experiment_f(experiment)
+    with open(filename, "wb") as f:
+        pickle.dump(results, f, protocol=-1)
     return results
 
 
+# TODO update the variable names here
 def run_experiments_parameters(
     experiment,
     run_or_load,
@@ -679,101 +686,194 @@ def run_experiments_parameters(
             iterables.append(key)
         else:
             fixed.append(key)
+            experiment[key] = value
+
     results["iterables"] = iterables.copy()
     results["fixed"] = fixed.copy()
 
-    for fixed_value in fixed:
-        experiment[fixed_value] = parameters[fixed_value]
-
     n = parameters.get("reps", 1)
+    num_jobs = 0
 
     # create queues
     qs = [Queue()]
     q_lens = [0]
-    q_idx = 0
-    num_jobs = 0
 
-    for values in product(*[parameters[key] for key in iterables]):
+    for i_parameter_settings in product(
+        *[parameters[key] for key in iterables]
+    ):
         # setting the experiment
-        for iterable, value in zip(iterables, values):
-            experiment[iterable] = value
+        for j_parameter_name, j_parameter_value in zip(
+            iterables, i_parameter_settings
+        ):
+            experiment[j_parameter_name] = j_parameter_value
 
         # creating the experiment in the queue for reps repetitions.
-        for i in range(n):
+        for j_rep in range(n):
             filename = os.path.join(results_dir, f"{num_jobs:06d}.pkl")
+
             try:
-                qs[q_idx].put(
+                qs[-1].put(
                     (experiment.copy(), filename, run_or_load),
                     block=True,
                     timeout=0.1,
                 )
-                q_lens[q_idx] += 1
             except queue.Full:
                 qs.append(Queue())
                 q_lens.append(0)
-                q_idx += 1
-                qs[q_idx].put(
+                qs[-1].put(
                     (experiment.copy(), filename, run_or_load),
                     block=True,
                     timeout=0.1,
                 )
-                q_lens[q_idx] += 1
+
+            q_lens[-1] += 1
             num_jobs += 1
 
-    pool = Pool(np.min([num_jobs, num_processes]))
-    output = []
-
-    for q_len, q in tqdm(zip(q_lens, qs), total=len(qs)):
-        with tqdm(
-            total=q_len, position=1, leave=False
-        ) as pbar:  # create a progress bar with the total number of jobs
-            imap_func = partial(
-                run_experiment_single_rep, experiment_f=experiment_f
-            )
-            imap_iter = pool.imap(imap_func, [q.get() for _ in range(q_len)])
-            for result in imap_iter:
-                output.append(result)
-                pbar.update(1)
-
-    pool.close()
+    with Pool(np.min([num_jobs, num_processes])) as pool:
+        experiment_results = run_pooled_experiments(
+            pool, experiment_f, qs, q_lens
+        )
     pool.join()
 
     for values in product(*[parameters[key] for key in iterables]):
         n = parameters.get("reps", 1)
-        for i in range(n):
-            filename = os.path.join(results_dir, f"{num_jobs:06d}.pkl")
-            # q.put((experiment.copy(), filename, run_or_load))
-
-            results[(*values, i)] = output.pop(0)
+        for i_rep in range(n):
+            results[(*values, i_rep)] = experiment_results.pop(0)
 
     return results
 
 
-def get_results_slice(results, rules={}):
-    """Get results sliced based on a rule."""
+def task_generator(queue: Queue) -> tuple[dict, str, str]:
+    """Convert Queue to iterable.
+
+    Parameters
+    ----------
+    queue : Queue
+        Queue object containing sets of parameters, the name of the file
+        to save to and whether to try and load from file first or run
+        the algorithm regardless.
+
+    Yields
+    ------
+    tuple[dict, str, str]
+        An experiment instance, containing a parameter setting, the file
+        name to save the experiment to and whether to try and load from
+        file first or run the algorithm.
+    """
+    while not queue.empty():
+        yield queue.get()
+
+
+def run_pooled_experiments(
+    pool: Pool,
+    experiment_evaluation_function: callable,
+    experiment_queues: list[Queue],
+    experiment_queue_lengths: list[int],
+) -> list[AmplitudeEstimatorResult]:
+    """Run experiments using multiple CPUs.
+
+    Parameters
+    ----------
+    pool : Pool
+        Pool of CPUs to assign processes to.
+    experiment_evaluation_function : callable
+        The algorithm to call in each process.
+    experiment_queues : list[Queue]
+        Experiment setups as a series of queues.
+    experiment_queue_lengths : list[int]
+        The length of each queue for the progress bar.
+
+    Returns
+    -------
+    list[AmplitudeEstimatorResult]
+        Results from the experiments.
+    """
+    experiment_results = []
+    imap_func = partial(
+        run_experiment_single_rep, experiment_f=experiment_evaluation_function
+    )
+    for i_queue_length, i_queue in tqdm(
+        zip(experiment_queue_lengths, experiment_queues),
+        total=len(experiment_queues),
+    ):
+        with tqdm(
+            total=i_queue_length, position=1, leave=False
+        ) as pbar:  # create a progress bar with the total number of jobs
+
+            imap_iter = pool.imap(imap_func, task_generator(i_queue))
+
+            for result in imap_iter:
+                experiment_results.append(result)
+                pbar.update(1)
+
+    return experiment_results
+
+
+def get_results_slice(
+    results: dict,
+    rules: dict[str, float | int | list | tuple | set | np.ndarray] = None,
+) -> dict[tuple[float], AmplitudeEstimatorResult]:
+    """Get results sliced based on a rule.
+
+    Parameters
+    ----------
+    results : dict
+        Results from `run_experiments_parameters`. Should contain
+        keys corresponding to 'fixed', 'iterables', 'parameters' and
+        tuples with the chosen iterable parameters.
+    rules : dict, optional
+        Pairs of parameter names and allowed values for those
+        parameters, by default None.
+
+    Returns
+    -------
+    dict[tuple[float], AmplitudeEstimatorResult]
+        Pairs of the iterable parameter values and the corresponding
+        algorithm result.
+    """
+    rules = rules or {}
     out = {}
 
-    index = {}
-    for k, v in rules.items():
-        if k in results["iterables"]:
-            if not isinstance(v, (list, tuple, set, np.ndarray)):
-                index[results["iterables"].index(k)] = v
-            else:
-                for value in v:
-                    index[results["iterables"].index(k)] = value
-        if k in results["fixed"]:
+    iterables = results.get("iterables", [])
+    fixed = results.get("fixed", [])
+
+    # Convert all rules to iterables to simplify checks
+    rules = {
+        k: (v if isinstance(v, (list, tuple, set, np.ndarray)) else [v])
+        for k, v in rules.items()
+    }
+
+    # If any fixed parameters don't match rules, return an empty dict
+    for i_parameter_name in fixed:
+
+        # Skip checks where the parameter isn't specified by a rule.
+        if i_parameter_name not in rules:
             continue
 
-    if len(index) == 0:
-        for k, v in results.items():
-            if isinstance(k, str):
-                continue
-            out[k] = v
+        i_fixed_value = results.get("parameters").get(i_parameter_name)
+        i_allowed_values = rules.get(i_parameter_name)
 
+        if i_fixed_value not in i_allowed_values:
+            warnings.warn(
+                f"Fixed parameter {i_parameter_name}={i_fixed_value} doesn't "
+                f"match allowed values {i_allowed_values}, returning an empty "
+                "dictionary."
+            )
+            return {}
+
+    # Create a dictionary mapping iterable parameters to their
+    # corresponding indices.
+    indices = {iterables.index(k): rules[k] for k in rules if k in iterables}
+
+    # Iterate over the results
     for k, v in results.items():
+        # Only get experiment results, not other keys
         if isinstance(k, str):
             continue
-        if [k[i] for i in index] == list(index.values()):
+
+        # If the value at each indexed position matches the rule, add it
+        # to the output
+        if all(k[i] in indices.get(i, [k[i]]) for i in range(len(k))):
             out[k] = v
 
     return out

@@ -1,16 +1,19 @@
 """Normal distribution for Bayesian Updates."""
-from typing import Tuple
-
 import numba
 import numpy as np
 from scipy.stats import norm
+
+# TODO is there a reason these aren't static methods?
 
 
 @numba.njit()
 def get_expected_bias(
     lamda: int, mu: float, sigma: float, zeta: float = 0
 ) -> float:
-    """Get the expected bias the updated normal distribution.
+    """Evaluate the expected bias of a updated normal distribution.
+
+    This bias is computed with respect to a given normal distribution
+    and Grover circuit depth, d, for 2(2d+1) = lambda.
 
     Parameters
     ----------
@@ -26,7 +29,7 @@ def get_expected_bias(
     Returns
     -------
     float
-        Expected bias
+        Expected bias at lambda, mu, sigma
     """
     exp = np.exp(-0.5 * lamda**2 * sigma**2)
     noise = np.exp(-lamda * zeta)
@@ -36,7 +39,10 @@ def get_expected_bias(
 
 @numba.njit()
 def get_chi(lamda: int, mu: float, sigma: float, zeta: float = 0) -> float:
-    """Get the expected bias the updated normal distribution.
+    """Evaluate the chi function.
+
+    Evaluate the chi function with respect to a given normal
+    distribution and Grover circuit depth, d, for 2(2d+1) = lambda.
 
     Parameters
     ----------
@@ -52,7 +58,7 @@ def get_chi(lamda: int, mu: float, sigma: float, zeta: float = 0) -> float:
     Returns
     -------
     float
-        Expected bias
+        Chi function at lambda, mu, sigma
     """
     exp = (-1) * lamda * np.exp(-0.5 * lamda**2 * sigma**2)
     noise = np.exp(-lamda * zeta)
@@ -152,6 +158,8 @@ def get_variance_reduction_factor(
 ) -> float:
     """Get the variance reduction factor for given lambda.
 
+    Note that if |b| = 1, the variance reduction factor is 0.
+
     Parameters
     ----------
     lamda : int
@@ -168,8 +176,8 @@ def get_variance_reduction_factor(
     float
         Variance reduction factor
     """
-    b = get_expected_bias(lamda, mu, sigma, zeta)
-    chi = get_chi(lamda, mu, sigma, zeta)
+    b = get_expected_bias(lamda, mu, sigma)
+    chi = get_chi(lamda, mu, sigma)
 
     if np.abs(b - 1) < 1e-8:
         return 0
@@ -189,10 +197,6 @@ class Normal:
 
         self.__parameters = {"mu": mu, "sigma": sigma}
 
-    """
-    Parameters / Getters for the base distribution
-    """
-
     @property
     def mean(self) -> float:
         """Get the mean of the normal distribution."""
@@ -208,6 +212,7 @@ class Normal:
         """Get the variance of the normal distribution."""
         return self.standard_deviation**2
 
+    # TODO this seems redundant
     def get_parameters(self) -> dict[str, float | np.ndarray]:
         r"""Get the parameters that uniquely define the distribution.
 
@@ -220,6 +225,7 @@ class Normal:
         """
         return self.__parameters
 
+    # TODO this also seems redundant
     def sample(self, n: int = 10) -> np.ndarray:
         r"""Get n samples from the distribution.
 
@@ -237,14 +243,10 @@ class Normal:
         """
         return np.random.normal(self.mean, self.standard_deviation, size=n)
 
-    """
-    Update method given a Bernoulli measurement.
-    """
-
     @staticmethod
     def update(
         measurement: int, lamda: int, mu: float, sigma: float, zeta: float = 0
-    ) -> Tuple[float, float]:
+    ) -> tuple[float, float]:
         """Get the mean and std of the updated normal distribution.
 
         Updates the mean and standard deviation using a normal prior and
@@ -265,7 +267,7 @@ class Normal:
 
         Returns
         -------
-        Tuple[float, float]
+        tuple[float, float]
             Mean and standard deviation of the new distribution
         """
         posterior_mu = get_first_moment_posterior(
@@ -309,8 +311,22 @@ class Normal:
             ]
         )
 
-    def confidence_interval(self, alpha):
-        """Return (1-alpha)% confidence interval."""
+    def confidence_interval(self, alpha: float) -> tuple[float]:
+        """Return (1-alpha)% confidence interval.
+
+        Confidence interval is generated from the current Normal
+        distribution.
+
+        Parameters
+        ----------
+        alpha : float
+            Confidence level for interval.
+
+        Returns
+        -------
+        tuple[float]
+            Lower and upper bounds for the confidence interval.
+        """
         theta_min = norm.ppf(alpha / 2, self.mean, self.standard_deviation)
         theta_max = norm.ppf(1 - alpha / 2, self.mean, self.standard_deviation)
 
