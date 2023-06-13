@@ -229,8 +229,9 @@ def convergence_plot(
     fig, axs = plt.subplots(1, 3, figsize=(15, 5))
 
     # Variance plot
-    x = range(n_iter)
     y = [np.log(dist.standard_deviation) for dist in distributions]
+    x = range(len(y))
+
     axs[0].plot(x, y)
 
     axs[0].set_xlim(0, n_iter)
@@ -271,6 +272,7 @@ def convergence_plot(
 
     # Powers plot
     y = 2 * np.array(result.powers) + 1
+    x = range(len(y))
     axs[2].plot(x, y)
 
     text_x = (1 / 10) * max(x)
