@@ -24,13 +24,13 @@ from exqaliber.bayesian_updates.distributions.normal import Normal
 
 
 class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
-    r"""The Iterative Amplitude Estimation algorithm.
+    r"""The Exqaliber Amplitude Estimation algorithm.
 
     This class implements the Exqaliber Quantum Amplitude Estimation
     (EQAE) algorithm, developed by Capgemini Quantum Lab and Cambridge
     Consultants. The output of the algorithm is an estimate that, with
-    at least probability :math:`1 - \alpha`, differs by epsilon to the
-    target value, where both alpha and epsilon can be specified.
+    at least probability :math:`1 - \alpha`, differs by :math:`epsilon`
+    to the target value, where both alpha and epsilon are specified.
 
     It is based on Iterative Quantum Amplitude Estimation [1], but
     updates the Grover depth with a Bayes update rul. EQAE iteratively
@@ -60,22 +60,18 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
         Parameters
         ----------
         epsilon_target: float
-            Target precision for estimation target `theta`, has values
-            between 0 and 0.5
+            Target precision for estimation target :math:`\theta`, has
+            values between 0 and 0.5.
         alpha: float
-            Confidence level, the target probability is 1 - alpha, has
-            values between 0 and 1
+            Confidence level, the target probability is
+            :math:`1 - \alpha`, has values between 0 and 1.
         sampler: BaseSampler
             A sampler primitive to evaluate the circuits.
 
         Raises
         ------
-            AlgorithmError:
-                if the method to compute the confidence
-                intervals is not supported
-            ValueError: If the target epsilon is not in (0, 0.5]
-            ValueError: If alpha is not in (0, 1)
-            ValueError: If confint_method is not supported
+            ValueError: If the target :math:`epsilon` is not in (0, 0.5]
+            ValueError: If :math:`alpha` is not in (0, 1)
         """
         # validate ranges of input arguments
         if not 0 < epsilon_target <= 0.5:
@@ -90,6 +86,9 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
             )
 
         super().__init__()
+
+        # TODO add properties for other attributes that are stored but
+        # not accessed
 
         # store parameters
         self._epsilon = epsilon_target
@@ -117,8 +116,8 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
     def sampler(self, sampler: BaseSampler) -> None:
         """Set sampler primitive.
 
-        Args
-        ----
+        Parameters
+        ----------
             sampler: A sampler primitive to evaluate the circuits.
         """
         self._sampler = sampler
@@ -138,30 +137,28 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
     def epsilon_target(self, epsilon: float) -> None:
         """Set the target precision of the algorithm.
 
-        Args
-        ----
-            epsilon: Target precision for estimation target `a`.
+        Parameters
+        ----------
+            epsilon: float
+                Target precision for estimation target :math:`theta`.
         """
         self._epsilon = epsilon
 
+    # TODO Convert to Numpy docstring
     def _find_next_k(
         self, prior_distribution: Normal, method: str = "naive"
     ) -> int:
         """Find the next value of k for the Grover iterator power.
 
-        Args
-        ----
+        Parameters
+        ----------
             prior_distribution: prior distributions
             method: method for finding next lambda
 
         Returns
         -------
-            The next power k, and boolean flag for the extrapolated
-            interval.
-
-        Raises
-        ------
-            AlgorithmError: if min_ratio is smaller or equal to 1
+        int
+            The next power k.
         """
         analytical_lamda = int(1 / prior_distribution.standard_deviation)
         match method:
@@ -314,9 +311,6 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
             Map of measurement outcomes from a series of binomial
             distributions. Each element is of the form
             depth: [# 0's, # 1's]
-        circuit_depth : list[float]
-            Depth (k) of the corresponding circuits for each
-            measurement.
         error_tol: float, optional
             Error tolerance for the final estimate
         zeta : float, optional
@@ -465,13 +459,13 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
                 mu = np.pi / 2
             self._prior_mean = np.random.normal(mu, self._prior_std) % np.pi
 
-        # initiliaze starting variables
+        # initialize starting variables
         prior = Normal(self._prior_mean, self._prior_std)
-        prior_distributions = [prior]
         num_iterations = 0  # keep track of the number of iterations
         sigma_tolerance = self.epsilon_target / norm.ppf(1 - self._alpha / 2)
 
         # initialize memory variables
+        prior_distributions = [prior]
         powers = []  # list of powers k: Q^k, (called 'k' in paper)
         measurement_results = []
         binomial_measurements: Dict[int, list[int, int]] = dict()
