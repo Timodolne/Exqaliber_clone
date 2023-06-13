@@ -3,6 +3,7 @@ import hashlib
 import os.path
 import pickle
 import queue
+import warnings
 from fractions import Fraction
 from functools import partial
 from itertools import product
@@ -624,6 +625,7 @@ def run_single_experiment(experiment, output="sparse"):
     return result
 
 
+# TODO Does this need a log warning?
 def run_experiment_single_rep(args, experiment_f=run_single_experiment):
     """Run a single repetition of an experiment."""
     experiment, filename, run_or_load = args
@@ -639,6 +641,7 @@ def run_experiment_single_rep(args, experiment_f=run_single_experiment):
     return results
 
 
+# TODO update the variable names here
 def run_experiments_parameters(
     experiment,
     run_or_load,
@@ -806,31 +809,71 @@ def run_pooled_experiments(
     return experiment_results
 
 
-def get_results_slice(results, rules={}):
-    """Get results sliced based on a rule."""
+def get_results_slice(
+    results: dict,
+    rules: dict[str, float | int | list | tuple | set | np.ndarray] = None,
+) -> dict[tuple[float], AmplitudeEstimatorResult]:
+    """Get results sliced based on a rule.
+
+    Parameters
+    ----------
+    results : dict
+        Results from `run_experiments_parameters`. Should contain
+        keys corresponding to 'fixed', 'iterables', 'parameters' and
+        tuples with the chosen iterable parameters.
+    rules : dict, optional
+        Pairs of parameter names and allowed values for those
+        parameters, by default None.
+
+    Returns
+    -------
+    dict[tuple[float], AmplitudeEstimatorResult]
+        Pairs of the iterable parameter values and the corresponding
+        algorithm result.
+    """
+    rules = rules or {}
     out = {}
 
-    index = {}
-    for k, v in rules.items():
-        if k in results["iterables"]:
-            if not isinstance(v, (list, tuple, set, np.ndarray)):
-                index[results["iterables"].index(k)] = v
-            else:
-                for value in v:
-                    index[results["iterables"].index(k)] = value
-        if k in results["fixed"]:
+    iterables = results.get("iterables", [])
+    fixed = results.get("fixed", [])
+
+    # Convert all rules to iterables to simplify checks
+    rules = {
+        k: (v if isinstance(v, (list, tuple, set, np.ndarray)) else [v])
+        for k, v in rules.items()
+    }
+
+    # If any fixed parameters don't match rules, return an empty dict
+    for i_parameter_name in fixed:
+
+        # Skip checks where the parameter isn't specified by a rule.
+        if i_parameter_name not in rules:
             continue
 
-    if len(index) == 0:
-        for k, v in results.items():
-            if isinstance(k, str):
-                continue
-            out[k] = v
+        i_fixed_value = results.get("parameters").get(i_parameter_name)
+        i_allowed_values = rules.get(i_parameter_name)
 
+        if i_fixed_value not in i_allowed_values:
+            warnings.warn(
+                f"Fixed parameter {i_parameter_name}={i_fixed_value} doesn't "
+                f"match allowed values {i_allowed_values}, returning an empty "
+                "dictionary."
+            )
+            return {}
+
+    # Create a dictionary mapping iterable parameters to their
+    # corresponding indices.
+    indices = {iterables.index(k): rules[k] for k in rules if k in iterables}
+
+    # Iterate over the results
     for k, v in results.items():
+        # Only get experiment results, not other keys
         if isinstance(k, str):
             continue
-        if [k[i] for i in index] == list(index.values()):
+
+        # If the value at each indexed position matches the rule, add it
+        # to the output
+        if all(k[i] in indices.get(i, [k[i]]) for i in range(len(k))):
             out[k] = v
 
     return out
