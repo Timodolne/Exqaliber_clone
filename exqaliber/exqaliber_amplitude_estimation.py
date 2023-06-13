@@ -55,9 +55,10 @@ class ExqaliberAmplitudeEstimation(AmplitudeEstimator):
         sampler: BaseSampler | None = None,
         **kwargs,
     ) -> None:
-        r"""
-        TODO update docstring.
+        r"""Initialise Amplitude Estimation algorithm.
 
+        Parameters
+        ----------
         epsilon_target: float
             Target precision for estimation target `theta`, has values
             between 0 and 0.5
