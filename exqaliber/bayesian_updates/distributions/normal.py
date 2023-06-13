@@ -7,7 +7,9 @@ from scipy.stats import norm
 
 
 @numba.njit()
-def get_expected_bias(lamda: int, mu: float, sigma: float) -> float:
+def get_expected_bias(
+    lamda: int, mu: float, sigma: float, zeta: float = 0
+) -> float:
     """Get the expected bias the updated normal distribution.
 
     Parameters
@@ -18,6 +20,8 @@ def get_expected_bias(lamda: int, mu: float, sigma: float) -> float:
         Location parameter of the current normal distribution
     sigma : float
         Scale parameter of the current normal distribution
+    zeta : float, optional
+        Noise parameter for depolarising noise, by default 0
 
     Returns
     -------
@@ -25,12 +29,13 @@ def get_expected_bias(lamda: int, mu: float, sigma: float) -> float:
         Expected bias
     """
     exp = np.exp(-0.5 * lamda**2 * sigma**2)
+    noise = np.exp(-lamda * zeta)
     trig = np.cos(lamda * mu)
-    return exp * trig
+    return exp * noise * trig
 
 
 @numba.njit()
-def get_chi(lamda: int, mu: float, sigma: float) -> float:
+def get_chi(lamda: int, mu: float, sigma: float, zeta: float = 0) -> float:
     """Get the expected bias the updated normal distribution.
 
     Parameters
@@ -41,6 +46,8 @@ def get_chi(lamda: int, mu: float, sigma: float) -> float:
         Location parameter of the current normal distribution
     sigma : float
         Scale parameter of the current normal distribution
+    zeta : float, optional
+        Noise parameter for depolarising noise, by default 0
 
     Returns
     -------
@@ -48,8 +55,9 @@ def get_chi(lamda: int, mu: float, sigma: float) -> float:
         Expected bias
     """
     exp = (-1) * lamda * np.exp(-0.5 * lamda**2 * sigma**2)
+    noise = np.exp(-lamda * zeta)
     trig = np.sin(lamda * mu)
-    return exp * trig
+    return exp * noise * trig
 
 
 @numba.njit()
@@ -84,12 +92,11 @@ def get_first_moment_posterior(
         First moment of the posterior
     """
     sign = (-1) ** measurement
-    b = get_expected_bias(lamda, mu, sigma)
-    chi = get_chi(lamda, mu, sigma)
-    noise = np.exp(-lamda * zeta)
+    b = get_expected_bias(lamda, mu, sigma, zeta)
+    chi = get_chi(lamda, mu, sigma, zeta)
 
-    denom = 1 + sign * b * noise
-    numer = mu + sign * (sigma**2 * chi + mu * b) * noise
+    denom = 1 + sign * b
+    numer = mu + sign * (sigma**2 * chi + mu * b)
 
     return numer / denom
 
@@ -122,11 +129,10 @@ def get_second_moment_posterior(
         Second moment of the posterior
     """
     sign = (-1) ** measurement
-    b = get_expected_bias(lamda, mu, sigma)
-    chi = get_chi(lamda, mu, sigma)
-    noise = np.exp(-lamda * zeta)
+    b = get_expected_bias(lamda, mu, sigma, zeta)
+    chi = get_chi(lamda, mu, sigma, zeta)
 
-    denom = 1 + sign * b * noise
+    denom = 1 + sign * b
     numer = (
         sigma**2
         + mu**2
@@ -135,7 +141,6 @@ def get_second_moment_posterior(
             (sigma**2 + mu**2 - lamda**2 * sigma**4) * b
             + 2 * mu * chi * sigma**2
         )
-        * noise
     )
 
     return numer / denom
@@ -163,14 +168,13 @@ def get_variance_reduction_factor(
     float
         Variance reduction factor
     """
-    b = get_expected_bias(lamda, mu, sigma)
-    chi = get_chi(lamda, mu, sigma)
-    noise = np.exp(-lamda * zeta)
+    b = get_expected_bias(lamda, mu, sigma, zeta)
+    chi = get_chi(lamda, mu, sigma, zeta)
 
     if np.abs(b - 1) < 1e-8:
         return 0
     else:
-        return (noise * chi**2) / (1 - noise * b**2)
+        return chi**2 / (1 - b**2)
 
 
 class Normal:
